@@ -11,8 +11,9 @@ import { generateInterviewQuestions, evaluateInterview, QAPair, EvaluateIntervie
 import { textInAudioOut } from "@/lib/voiceBot";
 import Penguine from "@/../public/assets/icons/penguin_2273664.png";
 import Image from "next/image";
+import { useSearchParams, useRouter } from "next/navigation";
 
-const POSTING_TITLE = "Senior Sales Executive";
+// const POSTING_TITLE = "Senior Sales Executive";
 const WORK_EXPERIENCE = "5+ years";
 
 // Azure Speech Services configuration
@@ -20,6 +21,8 @@ const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
 const SPEECH_REGION = process.env.NEXT_PUBLIC_AZURE_REGION;
 
 export default function VoiceInterviewPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [started, setStarted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -52,7 +55,7 @@ export default function VoiceInterviewPage() {
         }
         try {
             const res = await generateInterviewQuestions({
-                posting_title: POSTING_TITLE,
+                posting_title: searchParams?.get('role') as string || "Senior Sales Executive",
                 work_experience: WORK_EXPERIENCE,
                 profile_id: profile_id
             });
@@ -337,7 +340,10 @@ export default function VoiceInterviewPage() {
                     ))}
                 </div>
                 <div className="mb-2 text-center">
-                    <Button onClick={() => window.location.reload()} className="mt-2">Restart Interview</Button>
+                    <Button onClick={() => {
+                        // window.location.reload();
+                        router.push(`/interview/communication`);
+                    }} className="mt-2">Continue to Next Interview</Button>
                 </div>
             </Card>
         );

@@ -1,8 +1,12 @@
+"use client"
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -39,7 +43,11 @@ export default function Home() {
               <Badge className="bg-experience text-foreground">5+ Years Experience</Badge>
               <Badge className="bg-location text-foreground">Mumbai/Remote</Badge>
             </div>
-            <Button className="w-full sm:w-auto px-8 py-2 text-base font-semibold">Apply Now</Button>
+            <Button className="w-full sm:w-auto px-8 py-2 text-base font-semibold"
+              onClick={() => {
+                router.push('/resume?role=senior_account_executive');
+              }}
+            >Apply Now</Button>
           </CardContent>
         </Card>
       </main>

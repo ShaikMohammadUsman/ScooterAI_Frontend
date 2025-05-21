@@ -16,6 +16,7 @@ import ErrorBox from "@/components/ui/error";
 import { FiUploadCloud } from "react-icons/fi";
 import { MdOutlineEditNote } from "react-icons/md";
 import { FaRegSave } from "react-icons/fa";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const defaultProfile: ResumeProfile = {
     basic_information: {
@@ -76,6 +77,8 @@ const FormMessage = ({ children, className }: { children: React.ReactNode; class
 );
 
 export default function ResumePage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [file, setFile] = useState<File | null>(null);
     const [profile, setProfile] = useState<ResumeProfile | null>(null);
     const [loading, setLoading] = useState(false);
@@ -143,6 +146,9 @@ export default function ResumePage() {
             localStorage.setItem('profile_id', res.profile_id);
             setSuccess("Profile saved! ID: " + res.profile_id);
             toast({ title: "Profile saved!", description: `ID: ${res.profile_id}` });
+            setTimeout(() => {
+                router.push(`/interview/general?role=${searchParams.get('role')}`);
+            }, 1000);
         } catch (err: any) {
             setError(err.message || "Failed to save profile");
             toast({ title: "Error", description: err.message || "Failed to save profile", variant: "destructive" });
