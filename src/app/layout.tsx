@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./index.css";
+import { Suspense } from "react";
+import LoadingComponent from "@/components/ui/loadingComponent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,8 +29,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Suspense fallback={<InterviewLoading />}>
+          {children}
+        </Suspense>
       </body>
     </html>
+  );
+}
+
+function InterviewLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <LoadingComponent text="Loading..." />
+    </div>
   );
 }
