@@ -3,14 +3,10 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { parseResume, addResumeProfile, ResumeProfile, ParseResumeResponse } from "@/lib/resumeService";
-import LoadingComponent from "@/components/ui/loadingComponent";
+import { parseResume, addResumeProfile, ResumeProfile, ParseResumeResponse, CompanyHistory } from "@/lib/resumeService";
 import LoadingSpinner from "@/components/ui/loadingSpinner";
 import ErrorBox from "@/components/ui/error";
 import { FiUploadCloud } from "react-icons/fi";
@@ -34,6 +30,7 @@ const defaultProfile: ResumeProfile = {
         average_tenure_per_role: 0,
         employment_gaps: { has_gaps: false, duration: "" },
         promotion_history: false,
+        company_history: [],
     },
     sales_context: {
         sales_type: [],
@@ -130,6 +127,48 @@ export default function ResumePage() {
             const updated = { ...prev };
             (updated as any)[section][key] = arr;
             return { ...updated };
+        });
+    };
+
+    // Handle company history change
+    const handleCompanyHistoryChange = (index: number, field: keyof CompanyHistory, value: any) => {
+        if (!profile) return;
+        setProfile((prev) => {
+            if (!prev) return prev;
+            const updated = { ...prev };
+            const companyHistory = [...updated.career_overview.company_history];
+            companyHistory[index] = { ...companyHistory[index], [field]: value };
+            updated.career_overview.company_history = companyHistory;
+            return updated;
+        });
+    };
+
+    // Add a new company history entry
+    const addCompanyHistory = () => {
+        if (!profile) return;
+        setProfile((prev) => {
+            if (!prev) return prev;
+            const updated = { ...prev };
+            updated?.career_overview?.company_history?.push({
+                company_name: "",
+                position: "",
+                start_date: "",
+                end_date: "",
+                duration_months: 0,
+                is_current: false,
+            });
+            return updated;
+        });
+    };
+
+    // Remove a company history entry
+    const removeCompanyHistory = (index: number) => {
+        if (!profile) return;
+        setProfile((prev) => {
+            if (!prev) return prev;
+            const updated = { ...prev };
+            updated.career_overview.company_history = updated.career_overview.company_history.filter((_, i) => i !== index);
+            return updated;
         });
     };
 
@@ -329,6 +368,87 @@ export default function ResumePage() {
                                                 checked={profile.career_overview.promotion_history}
                                                 onCheckedChange={v => handleFieldChange("career_overview", "promotion_history", v)}
                                             />
+                                        </FormControl>
+                                        <FormControl >
+                                            <FormLabel>Company History</FormLabel>
+                                            <div className="space-y-4">
+                                                {profile?.career_overview?.company_history?.map((company, index) => (
+                                                    <Card key={index} className="p-4">
+                                                        <div className="flex justify-between items-center mb-4">
+                                                            <h4 className="font-medium">Company {index + 1}</h4>
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => removeCompanyHistory(index)}
+                                                            >
+                                                                Remove
+                                                            </Button>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <FormControl>
+                                                                <FormLabel>Company Name</FormLabel>
+                                                                <Input
+                                                                    value={company.company_name}
+                                                                    onChange={e => handleCompanyHistoryChange(index, "company_name", e.target.value)}
+                                                                    required
+                                                                />
+                                                            </FormControl>
+                                                            <FormControl>
+                                                                <FormLabel>Position</FormLabel>
+                                                                <Input
+                                                                    value={company.position}
+                                                                    onChange={e => handleCompanyHistoryChange(index, "position", e.target.value)}
+                                                                    required
+                                                                />
+                                                            </FormControl>
+                                                            <FormControl>
+                                                                <FormLabel>Start Date</FormLabel>
+                                                                <Input
+                                                                    type="date"
+                                                                    value={company.start_date}
+                                                                    onChange={e => handleCompanyHistoryChange(index, "start_date", e.target.value)}
+                                                                    required
+                                                                />
+                                                            </FormControl>
+                                                            <FormControl>
+                                                                <FormLabel>End Date</FormLabel>
+                                                                <Input
+                                                                    type="date"
+                                                                    value={company.end_date}
+                                                                    onChange={e => handleCompanyHistoryChange(index, "end_date", e.target.value)}
+                                                                    disabled={company.is_current}
+                                                                    required={!company.is_current}
+                                                                />
+                                                            </FormControl>
+                                                            <FormControl>
+                                                                <FormLabel>Duration (months)</FormLabel>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={company.duration_months}
+                                                                    onChange={e => handleCompanyHistoryChange(index, "duration_months", Number(e.target.value))}
+                                                                    min={0}
+                                                                    required
+                                                                />
+                                                            </FormControl>
+                                                            <FormControl>
+                                                                <FormLabel>Current Position</FormLabel>
+                                                                <Switch
+                                                                    checked={company.is_current}
+                                                                    onCheckedChange={v => handleCompanyHistoryChange(index, "is_current", v)}
+                                                                />
+                                                            </FormControl>
+                                                        </div>
+                                                    </Card>
+                                                ))}
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={addCompanyHistory}
+                                                    className="w-full"
+                                                >
+                                                    Add Company
+                                                </Button>
+                                            </div>
                                         </FormControl>
                                     </AccordionContent>
                                 </AccordionItem>

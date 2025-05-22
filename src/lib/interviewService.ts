@@ -8,7 +8,6 @@ const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.az
 // INTERVIEW QUESTIONS
 export interface GenerateInterviewQuestionsRequest {
   posting_title: string;
-  work_experience: string;
   profile_id: string;
 }
 export interface GenerateInterviewQuestionsResponse {

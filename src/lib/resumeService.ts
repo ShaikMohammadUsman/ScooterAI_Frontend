@@ -10,6 +10,14 @@ export interface BasicInformation {
   expected_ctc: number;
 }
 
+export interface CompanyHistory {
+  company_name: string;
+  position: string;
+  start_date: string;
+  end_date: string;
+  duration_months: number;
+  is_current:boolean;
+}
 export interface CareerOverview {
   total_years_experience: number;
   years_sales_experience: number;
@@ -19,6 +27,7 @@ export interface CareerOverview {
     duration: string;
   };
   promotion_history: boolean;
+  company_history: CompanyHistory[];
 }
 
 export interface SalesContext {
