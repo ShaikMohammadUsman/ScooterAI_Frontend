@@ -1,7 +1,14 @@
 import { motion } from "framer-motion";
 import { FaMicrophone } from "react-icons/fa";
 
-export function AnimatedPlaceholder({ onStart }: { onStart: () => void }) {
+interface AnimatedPlaceholderProps {
+    onStart: () => void;
+    title: string;
+    description: string;
+    buttonText: string;
+}
+
+export function AnimatedPlaceholder({ onStart, title, description, buttonText }: AnimatedPlaceholderProps) {
     return (
         <div className="flex flex-col items-center justify-center h-screen w-screen relative overflow-hidden text-center px-6">
             {/* Animated Gradient Blob */}
@@ -25,16 +32,16 @@ export function AnimatedPlaceholder({ onStart }: { onStart: () => void }) {
                     }}
                     className="text-indigo-600 bg-white/80 p-6 rounded-2xl shadow-lg border border-indigo-100 backdrop-blur-md"
                 >
-                    <div className="text-2xl font-semibold mb-2">Ready for Your Interview?</div>
+                    <div className="text-2xl font-semibold mb-2">{title}</div>
                     <div className="text-sm text-muted-foreground mb-6">
-                        Click the button below to begin your voice-based interview simulation.
+                        {description}
                     </div>
                     <button
                         onClick={onStart}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-full shadow transition-all duration-200 flex items-center gap-2"
                     >
                         <FaMicrophone />
-                        Start Interview
+                        {buttonText}
                     </button>
                 </motion.div>
             </motion.div>

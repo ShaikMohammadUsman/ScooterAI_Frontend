@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react";
-import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo } from "react-icons/fa";
+import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight } from "react-icons/fa";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingDots } from "@/components/ui/loadingDots";
@@ -218,6 +218,14 @@ export default function VoiceInterviewPage() {
 
         const isLastQuestion = currentQ === questionsRef.current.length - 1;
         setIsSubmitting(true);
+
+        // Create the new QA pair
+        const newQAPair = {
+            question: questionsRef.current[currentQ],
+            answer: recognizedText
+        };
+
+        // Update messages
         setMessages((prev) => [...prev, {
             own: true,
             text: recognizedText,
@@ -225,10 +233,14 @@ export default function VoiceInterviewPage() {
             status: retakeCount[currentQ] > 0 ? 'retaken' : 'completed'
         }]);
 
-        setQaPairs((prev) => [...prev, {
-            question: questionsRef.current[currentQ],
-            answer: recognizedText
-        }]);
+        // Update QA pairs and wait for the update
+        await new Promise<void>((resolve) => {
+            setQaPairs((prev) => {
+                const updated = [...prev, newQAPair];
+                resolve();
+                return updated;
+            });
+        });
 
         setRecognizedText("");
         setIsListening(false);
@@ -249,7 +261,9 @@ export default function VoiceInterviewPage() {
             // For last question, proceed to evaluation
             setSubmissionSuccess(false);
             setIsSubmitting(false);
-            evaluateInterviewResults();
+            // Get the latest qaPairs before evaluation
+            const currentQAPairs = [...qaPairs, newQAPair];
+            evaluateInterviewResults(currentQAPairs);
         }
     };
 
@@ -268,27 +282,34 @@ export default function VoiceInterviewPage() {
     };
 
     // Evaluate interview results
-    const evaluateInterviewResults = async () => {
+    const evaluateInterviewResults = async (qaPairsToEvaluate: QAPair[] = qaPairs) => {
         const profile_id = localStorage.getItem('profile_id');
         if (!profile_id) {
             setError("No profile ID found");
             return;
         }
 
-        setLoading(true);
+        setIsSubmitting(true);
+        console.log("Evaluating qaPairs:", qaPairsToEvaluate);
         try {
-            setShowResults(true);
-            await evaluateInterview({
-                qa_pairs: qaPairs,
+            const res = await evaluateInterview({
+                qa_pairs: qaPairsToEvaluate,
                 user_id: profile_id,
             });
+            if (res && res.interview_summary) {
+                setIsSubmitting(false);
+                setSubmissionSuccess(true);
+                setShowResults(true);
+                // if (res.interview_summary.audio_interview_status) {
+                //     setShowResults(true);
+                // }
+            }
         } catch (err: any) {
             setError(err.message || "Failed to evaluate interview");
         } finally {
             setLoading(false);
             setIsListening(false);
             setIsSubmitting(false);
-            // setSubmissionSuccess(false);
         }
     };
 
@@ -341,16 +362,19 @@ export default function VoiceInterviewPage() {
                                         animate={{ y: 0, opacity: 1 }}
                                         className="text-xl font-semibold text-green-600"
                                     >
-                                        Answer Submitted!
+                                        Answers Submitted!
                                     </motion.h3>
-                                    <motion.p
+                                    <motion.button
                                         initial={{ y: 20, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{ delay: 0.1 }}
-                                        className="text-muted-foreground"
+                                        className="flex flex-row items-center gap-2 text-accent-foreground bg-slate-400 px-4 py-2 rounded-md"
+                                        onClick={() => {
+                                            setSubmissionSuccess(false);
+                                        }}
                                     >
-                                        Moving to next question...
-                                    </motion.p>
+                                        Done <FaCheck />
+                                    </motion.button>
                                 </>
                             )}
                         </motion.div>
@@ -385,79 +409,97 @@ export default function VoiceInterviewPage() {
 
 
             {/* Main Content */}
-            <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
-                <div className="h-full flex flex-col sm:flex-row">
+            {
+                showResults ? (
+                    <AnimatedPlaceholder
+                        onStart={() => {
+                            router.push("/interview/communication");
+                        }}
+                        title="Thank you for your interview!"
+                        description="Click the button below to continue to next interview."
+                        buttonText="Continue to next interview"
+                    />
+                ) : (
 
-                    {/* Question Progress */}
-                    {started ? (
-                        <div className="w-full sm:w-56 m-4 flex-grow-0 border-1 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/80 p-5 shadow-inner overflow-y-auto">
-                            <h3 className="font-semibold text-gray-800 mb-4 text-lg">Questions</h3>
-                            <div className="space-y-3 gap-4">
-                                {questions.map((q, i) => (
-                                    <div
-                                        key={i}
-                                        className={`flex items-center gap-3 text-sm transition-all ${i === currentQ
-                                            ? "text-indigo-600 font-semibold"
-                                            : i < currentQ || (i === currentQ && qaPairs.length > currentQ)
-                                                ? "text-green-600"
-                                                : "text-gray-400"
-                                            }`}
-                                    >
-                                        {i < currentQ || (i === currentQ && qaPairs.length > currentQ) ? (
-                                            <FaCheck className="text-green-500" />
-                                        ) : (
-                                            <div className="w-4 h-4 rounded-full border border-gray-300" />
-                                        )}
-                                        <span className="truncate">Q{i + 1}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex justify-center items-center h-full">
-                            <AnimatedPlaceholder onStart={handleStart} />
-                        </div>
-                    )}
+                    <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
+                        <div className="h-full flex flex-col sm:flex-row">
 
-
-                    {/* Chat Area */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-2">
-                        <AnimatePresence>
-                            {messages.map((msg, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    className={`flex items-start gap-3 mb-3 ${msg.own ? "justify-end" : "justify-start"}`}
-                                >
-                                    <div className="flex-shrink-0">{msg.icon}</div>
-                                    <div
-                                        className={`rounded-2xl px-4 py-2 max-w-[80%] relative shadow-sm backdrop-blur-sm ${msg.own
-                                            ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white"
-                                            : "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"
-                                            }`}
-                                    >
-                                        {msg.text}
-                                        {msg.status && (
-                                            <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                                                {msg.status === "completed" ? (
+                            {/* Question Progress */}
+                            {started ? (
+                                <div className="w-full sm:w-56 m-4 flex-grow-0 border-1 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/80 p-5 shadow-inner overflow-y-auto">
+                                    <h3 className="font-semibold text-gray-800 mb-4 text-lg">Questions</h3>
+                                    <div className="space-y-3 gap-4">
+                                        {questions.map((q, i) => (
+                                            <div
+                                                key={i}
+                                                className={`flex items-center gap-3 text-sm transition-all ${i === currentQ
+                                                    ? "text-indigo-600 font-semibold"
+                                                    : i < currentQ || (i === currentQ && qaPairs.length > currentQ)
+                                                        ? "text-green-600"
+                                                        : "text-gray-400"
+                                                    }`}
+                                            >
+                                                {i < currentQ || (i === currentQ && qaPairs.length > currentQ) ? (
                                                     <FaCheck className="text-green-500" />
                                                 ) : (
-                                                    <FaRedo className="text-blue-500" />
+                                                    <div className="w-4 h-4 rounded-full border border-gray-300" />
+                                                )}
+                                                <span className="truncate">Q{i + 1}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex justify-center items-center h-full">
+                                    <AnimatedPlaceholder
+                                        onStart={handleStart}
+                                        title="Ready for Your Interview?"
+                                        description="Click the button below to begin your interview."
+                                        buttonText="Start Interview"
+                                    />
+                                </div>
+                            )}
+
+
+                            {/* Chat Area */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-2">
+                                <AnimatePresence>
+                                    {messages.map((msg, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -20 }}
+                                            className={`flex items-start gap-3 mb-3 ${msg.own ? "justify-end" : "justify-start"}`}
+                                        >
+                                            <div className="flex-shrink-0">{msg.icon}</div>
+                                            <div
+                                                className={`rounded-2xl px-4 py-2 max-w-[80%] relative shadow-sm backdrop-blur-sm ${msg.own
+                                                    ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white"
+                                                    : "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"
+                                                    }`}
+                                            >
+                                                {msg.text}
+                                                {msg.status && (
+                                                    <div className="absolute -right-6 top-1/2 -translate-y-1/2">
+                                                        {msg.status === "completed" ? (
+                                                            <FaCheck className="text-green-500" />
+                                                        ) : (
+                                                            <FaRedo className="text-blue-500" />
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
 
-                        {loading && <LoadingDots bg="#e0e7ff" logo={Penguine} />}
-                        <div ref={scrollRef} />
+                                {loading && <LoadingDots bg="#e0e7ff" logo={Penguine} />}
+                                <div ref={scrollRef} />
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
+                )}
 
             {/* Controls */}
             <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
@@ -528,7 +570,6 @@ export default function VoiceInterviewPage() {
                     </div>
                 )}
             </div>
-
         </div>
     );
 }

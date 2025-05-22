@@ -96,6 +96,8 @@ export interface ConversationalInterviewResponse {
   trait: string;
   question: string;
   step: string;
+  status?: string;
+    message?: string;
 }
 
 export async function startConversationalInterview(
@@ -208,4 +210,32 @@ export async function continueSalesScenario(
   } catch (err: any) {
     throw new Error(err.response?.data?.detail || err.response?.data?.message || "Failed to continue sales scenario");
   }
+}
+
+// UPLOAD INTERVIEW VIDEO
+interface UploadVideoRequest {
+    file: File;
+    user_id: string;
+    onProgress?: (progress: number) => void;
+}
+
+export async function uploadInterviewVideo({ file, user_id, onProgress }: UploadVideoRequest): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('user_id', user_id);
+
+    try {
+        await axios.post(`${API_BASE}/upload-video/`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (progressEvent) => {
+                if (progressEvent.total && onProgress) {
+                    const progress = progressEvent.loaded / progressEvent.total;
+                    onProgress(progress);
+                }
+            },
+        });
+    } catch (error) {
+        console.error('Error uploading video:', error);
+        throw error;
+    }
 }
