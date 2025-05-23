@@ -512,30 +512,56 @@ function CommunicationInterview() {
                     <div className="flex-1 h-full overflow-y-auto p-6 space-y-2">
                         <AnimatePresence>
                             {messages.map((msg, i) => (
+                                // <motion.div
+                                //     key={i}
+                                //     initial={{ opacity: 0, y: 20 }}
+                                //     animate={{ opacity: 1, y: 0 }}
+                                //     exit={{ opacity: 0, y: -20 }}
+                                //     className={`flex items-start gap-3 mb-3 ${msg.own ? "justify-end" : "justify-start"}`}
+                                // >
+                                //     <div className="flex-shrink-0">{msg.icon}</div>
+                                //     <div
+                                //         className={`rounded-2xl px-4 py-2 max-w-[80%] relative shadow-sm backdrop-blur-sm ${msg.own
+                                //             ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white"
+                                //             : "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"
+                                //             }`}
+                                //     >
+                                //         {msg.loading ? (
+                                //             <div className="min-w-[100px]">
+                                //                 <LoadingDots bg="slate-300" />
+                                //             </div>
+                                //         ) : (
+                                //             msg.text
+                                //         )}
+                                //         {msg.status && (
+                                //             <div className="absolute -right-6 top-1/2 -translate-y-1/2">
+                                //                 <FaCheck className="text-green-500" />
+                                //             </div>
+                                //         )}
+                                //     </div>
+                                // </motion.div>
                                 <motion.div
                                     key={i}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -20 }}
-                                    className={`flex items-start gap-3 mb-3 ${msg.own ? "justify-end" : "justify-start"}`}
+                                    className={`flex items-start gap-3 mb-3 justify-start`}
                                 >
-                                    <div className="flex-shrink-0">{msg.icon}</div>
+                                    {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
                                     <div
-                                        className={`rounded-2xl px-4 py-2 max-w-[80%] relative shadow-sm backdrop-blur-sm ${msg.own
-                                            ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white"
-                                            : "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"
-                                            }`}
+                                        className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900" ${msg.own ? "" : "px-4 py-2"}`}
                                     >
                                         {msg.loading ? (
                                             <div className="min-w-[100px]">
                                                 <LoadingDots bg="slate-300" />
                                             </div>
                                         ) : (
-                                            msg.text
+                                            !msg.own && (msg.text)
                                         )}
                                         {msg.status && (
-                                            <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                                                <FaCheck className="text-green-500" />
+                                            <div className="float-right flex flex-row items-center gap-2 p-1 bg-green-800 rounded-md">
+                                                <FaCheck className="text-green-500" size={10} />
+                                                <span className="text-slate-100 text-[10px]">Answered</span>
                                             </div>
                                         )}
                                     </div>

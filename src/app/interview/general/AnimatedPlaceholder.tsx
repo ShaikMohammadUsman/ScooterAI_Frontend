@@ -38,7 +38,7 @@ export function AnimatedPlaceholder({ onStart, title, description, buttonText }:
                     </div>
                     <button
                         onClick={onStart}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-full shadow transition-all duration-200 flex items-center gap-2"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-full shadow transition-all duration-200 flex items-center gap-2 cursor-pointer"
                     >
                         <FaMicrophone />
                         {buttonText}

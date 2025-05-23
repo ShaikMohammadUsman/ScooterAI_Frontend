@@ -29,26 +29,26 @@ const roles = [
     queryParam: "marketing manager",
   },
   {
-    title: "Product Designer",
+    title: "Sales Development Representative",
     description:
-      "Design intuitive and delightful user experiences that shape how people interact with Scooter’s products.",
+      "Proactively identify and qualify new business opportunities, building the foundation for our sales pipeline.",
     badges: [
-      { label: "UX/UI", className: "bg-pink-100 text-pink-800" },
-      { label: "Figma, Framer", className: "bg-indigo-100 text-indigo-800" },
-      { label: "Remote", className: "bg-gray-100 text-gray-800" },
+      { label: "Lead Generation", className: "bg-blue-100 text-blue-800" },
+      { label: "1+ Years Experience", className: "bg-orange-100 text-orange-800" },
+      { label: "Remote", className: "bg-location text-foreground" },
     ],
-    queryParam: "product designer",
+    queryParam: "sales development representative",
   },
   {
-    title: "Software Engineer",
+    title: "Digital Marketing Specialist",
     description:
-      "Build scalable, high-performance systems that power Scooter's platform used by thousands of customers daily.",
+      "Create and optimize digital marketing campaigns across multiple channels to drive brand awareness and lead generation.",
     badges: [
-      { label: "Full Stack", className: "bg-blue-100 text-blue-800" },
-      { label: "2+ Years Experience", className: "bg-orange-100 text-orange-800" },
+      { label: "Social Media", className: "bg-pink-100 text-pink-800" },
+      { label: "2+ Years Experience", className: "bg-yellow-100 text-yellow-800" },
       { label: "Delhi/Remote", className: "bg-location text-foreground" },
     ],
-    queryParam: "software engineer",
+    queryParam: "digital marketing specialist",
   },
 ];
 

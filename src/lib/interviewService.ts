@@ -62,8 +62,9 @@ export interface InterviewSummary {
   audio_interview_status: boolean;
 }
 export interface EvaluateInterviewResponse {
-  qa_evaluations: QAEvaluation[];
-  interview_summary: InterviewSummary;
+  status: boolean;
+  message: string;
+  qualified_for_video_round: boolean;
 }
 
 export async function evaluateInterview(

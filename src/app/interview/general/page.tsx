@@ -41,6 +41,7 @@ export default function VoiceInterviewPage() {
     const recognizerRef = useRef<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
+    const [passed, setPassed] = useState(false);
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -296,13 +297,13 @@ export default function VoiceInterviewPage() {
                 qa_pairs: qaPairsToEvaluate,
                 user_id: profile_id,
             });
-            if (res && res.interview_summary) {
+            if (res && res.status) {
                 setIsSubmitting(false);
                 setSubmissionSuccess(true);
                 setShowResults(true);
-                // if (res.interview_summary.audio_interview_status) {
-                //     setShowResults(true);
-                // }
+                if (res.qualified_for_video_round) {
+                    setPassed(res.qualified_for_video_round);
+                }
             }
         } catch (err: any) {
             setError(err.message || "Failed to evaluate interview");
@@ -368,7 +369,7 @@ export default function VoiceInterviewPage() {
                                         initial={{ y: 20, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{ delay: 0.1 }}
-                                        className="flex flex-row items-center gap-2 text-accent-foreground bg-slate-400 px-4 py-2 rounded-md"
+                                        className="flex flex-row items-center gap-2 text-accent-foreground bg-slate-400 px-4 py-2 rounded-md hover:bg-slate-500 cursor-pointer"
                                         onClick={() => {
                                             setSubmissionSuccess(false);
                                         }}
@@ -413,11 +414,15 @@ export default function VoiceInterviewPage() {
                 showResults ? (
                     <AnimatedPlaceholder
                         onStart={() => {
-                            router.push("/interview/communication");
+                            if (passed) {
+                                router.push("/interview/communication");
+                            } else {
+                                window.location.reload();
+                            }
                         }}
-                        title="Thank you for your interview!"
-                        description="Click the button below to continue to next interview."
-                        buttonText="Continue to next interview"
+                        title="Thank you for completing the interview!"
+                        description={passed ? "You are qualified for the next interview." : "You did not pass the interview. Please try again."}
+                        buttonText={passed ? "Continue to next interview" : "Try again"}
                     />
                 ) : (
 
@@ -465,6 +470,7 @@ export default function VoiceInterviewPage() {
                             <div className="flex-1 overflow-y-auto p-6 space-y-2">
                                 <AnimatePresence>
                                     {messages.map((msg, i) => (
+                                        !msg.own &&
                                         <motion.div
                                             key={i}
                                             initial={{ opacity: 0, y: 20 }}
@@ -491,6 +497,31 @@ export default function VoiceInterviewPage() {
                                                 )}
                                             </div>
                                         </motion.div>
+
+                                        // <motion.div
+                                        //     key={i}
+                                        //     initial={{ opacity: 0, y: 20 }}
+                                        //     animate={{ opacity: 1, y: 0 }}
+                                        //     exit={{ opacity: 0, y: -20 }}
+                                        //     className={`flex items-start gap-3 mb-3 justify-start`}
+                                        // >
+                                        //     {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
+                                        //     <div
+                                        //         className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"}`}
+                                        //     >
+                                        //         {!msg.own && msg.text}
+                                        //         {msg.status && (
+                                        //             // <div className="absolute -right-6 top-1/2 -translate-y-1/2">
+                                        //             <div className="">
+                                        //                 {msg.status === "completed" ? (
+                                        //                     <FaCheck className="text-green-500" />
+                                        //                 ) : (
+                                        //                     <FaRedo className="text-blue-500" />
+                                        //                 )}
+                                        //             </div>
+                                        //         )}
+                                        //     </div>
+                                        // </motion.div>
                                     ))}
                                 </AnimatePresence>
 
