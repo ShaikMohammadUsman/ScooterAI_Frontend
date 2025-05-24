@@ -279,11 +279,12 @@ function CommunicationInterview() {
             if (recognizerRef.current) {
                 try {
                     await recognizerRef.current.stopContinuousRecognitionAsync();
-                    setIsListening(false);
+                    // setIsListening(false);
                     setLoading(false);
                 } catch (error) {
                     console.error("Error stopping recognition:", error);
                     setError("Failed to stop recording");
+                    setIsListening(false);
                 }
             }
             return;
@@ -314,6 +315,10 @@ function CommunicationInterview() {
                 if (e.reason === speechsdk.CancellationReason.Error) {
                     setError(`Speech recognition error: ${e.errorDetails}`);
                 }
+            };
+
+            recognizer.sessionStopped = (s, e) => {
+                setIsListening(false);
             };
 
             await recognizer.startContinuousRecognitionAsync();
@@ -636,11 +641,11 @@ function CommunicationInterview() {
                     </div>
                 ) : !showResults && (
                     <div className="flex flex-col items-center gap-6 w-full">
-                        {recognizedText && (
+                        {/* {recognizedText && (
                             <div className="w-full max-w-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 px-6 py-3 rounded-2xl text-sm text-indigo-800 border border-indigo-200 shadow-sm">
                                 <span className="font-semibold text-indigo-600">You:</span> {recognizedText}
                             </div>
-                        )}
+                        )} */}
 
                         <div className="flex flex-wrap justify-center gap-4">
                             {(!recognizedText || isListening) && (

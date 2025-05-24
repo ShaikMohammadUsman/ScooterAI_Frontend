@@ -42,6 +42,7 @@ export default function VoiceInterviewPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
     const [passed, setPassed] = useState(false);
+    const [recognizing, setRecognizing] = useState(false);
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -155,21 +156,22 @@ export default function VoiceInterviewPage() {
     // Handle user's answer (STT)
     const handleMic = async () => {
         if (!SPEECH_KEY || !SPEECH_REGION) {
-            setError("Azure Speech Services configuration is missing");
+            setError("Speech Services configuration is missing");
             return;
         }
 
-        if (isListening) {
+        if (recognizing) {
             // Stop listening
             if (recognizerRef.current) {
                 try {
                     await recognizerRef.current.stopContinuousRecognitionAsync();
                     setIsListening(false);
-                    // Remove loading state when stopping recording
+                    // Keep recognizing true until we get the final result
                     setLoading(false);
                 } catch (error) {
                     console.error("Error stopping recognition:", error);
                     setError("Failed to stop recording");
+                    setRecognizing(false);
                 }
             }
             return;
@@ -178,6 +180,7 @@ export default function VoiceInterviewPage() {
         // Start listening
         setIsListening(true);
         setRecognizedText("");
+        setRecognizing(true);
         // Remove loading state when starting recording
         setLoading(false);
 
@@ -202,6 +205,14 @@ export default function VoiceInterviewPage() {
                 if (e.reason === speechsdk.CancellationReason.Error) {
                     setError(`Speech recognition error: ${e.errorDetails}`);
                 }
+                // Only set recognizing to false when recognition is completely stopped
+                setRecognizing(false);
+            };
+
+            // Add session stopped event handler
+            recognizer.sessionStopped = (s, e) => {
+                // Set recognizing to false when the session is completely stopped
+                setRecognizing(false);
             };
 
             await recognizer.startContinuousRecognitionAsync();
@@ -210,6 +221,7 @@ export default function VoiceInterviewPage() {
             setError(err.message || "Speech recognition failed");
             setIsListening(false);
             setLoading(false);
+            setRecognizing(false);
         }
     };
 
@@ -340,7 +352,7 @@ export default function VoiceInterviewPage() {
                                     <p className="text-muted-foreground">
                                         {showResults
                                             ? "Please wait while we evaluate your interview"
-                                            : "Please wait while we prepare the next question"}
+                                            : `Please wait while we prepare ${questionsRef.current && questionsRef.current.length > 0 ? `the next question` : `the interview`}`}
                                     </p>
                                 </>
                             ) : isSubmitting ? (
@@ -414,15 +426,12 @@ export default function VoiceInterviewPage() {
                 showResults ? (
                     <AnimatedPlaceholder
                         onStart={() => {
-                            if (passed) {
-                                router.push("/interview/communication");
-                            } else {
-                                window.location.reload();
-                            }
+                            router.push("/");
                         }}
                         title="Thank you for completing the interview!"
-                        description={passed ? "You are qualified for the next interview." : "You did not pass the interview. Please try again."}
-                        buttonText={passed ? "Continue to next interview" : "Try again"}
+                        description="We will reach out to you soon."
+                        buttonText="Continue to home"
+
                     />
                 ) : (
 
@@ -432,19 +441,19 @@ export default function VoiceInterviewPage() {
                             {/* Question Progress */}
                             {started ? (
                                 <div className="w-full sm:w-56 m-4 flex-grow-0 border-1 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/80 p-5 shadow-inner overflow-y-auto">
-                                    <h3 className="font-semibold text-gray-800 mb-4 text-lg">Questions</h3>
+                                    <h3 className="font-semibold text-gray-800 mb-4 text-lg">Answers</h3>
                                     <div className="space-y-3 gap-4">
                                         {questions.map((q, i) => (
                                             <div
                                                 key={i}
                                                 className={`flex items-center gap-3 text-sm transition-all ${i === currentQ
                                                     ? "text-indigo-600 font-semibold"
-                                                    : i < currentQ || (i === currentQ && qaPairs.length > currentQ)
+                                                    : i < currentQ && qaPairs[i]?.answer?.trim()
                                                         ? "text-green-600"
                                                         : "text-gray-400"
                                                     }`}
                                             >
-                                                {i < currentQ || (i === currentQ && qaPairs.length > currentQ) ? (
+                                                {i < currentQ && qaPairs[i]?.answer?.trim() ? (
                                                     <FaCheck className="text-green-500" />
                                                 ) : (
                                                     <div className="w-4 h-4 rounded-full border border-gray-300" />
@@ -543,34 +552,40 @@ export default function VoiceInterviewPage() {
                     <></>
                 ) : !showResults && (
                     <div className="flex flex-col items-center gap-6 w-full">
-                        {recognizedText && (
+                        {/* {recognizedText && (
                             <div className="w-full max-w-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 px-6 py-3 rounded-2xl text-sm text-indigo-800 border border-indigo-200 shadow-sm">
                                 <span className="font-semibold text-indigo-600">You:</span> {recognizedText}
                             </div>
-                        )}
+                        )} */}
 
                         <div className="flex flex-wrap justify-center gap-4">
-                            {(!recognizedText || isListening) && (
+                            {(!recognizedText || isListening || recognizing) && (
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button
                                                 onClick={handleMic}
-                                                className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-colors shadow-sm ${isListening ? "bg-red-500 hover:bg-red-600 text-white" : "bg-primary text-white hover:bg-primary/90"}`}
-                                                disabled={isSpeaking || (!micEnabled && !isListening)}
+                                                className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-colors shadow-sm ${recognizing ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" : "bg-primary text-white hover:bg-primary/90"}`}
+                                                disabled={isSpeaking || (!micEnabled && !recognizing)}
                                             >
-                                                <FaMicrophone className="mr-2" />
-                                                {isListening ? "Stop" : "Answer"}
+
+                                                {recognizing ? "Stop" : "Answer"}
+                                                {recognizing &&
+                                                    <div className="relative flex items-center justify-center m-2">
+                                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border-2 border-t-0 border-gray-200 rounded-full animate-spin" />
+                                                        <FaMicrophone className="" />
+                                                    </div>
+                                                }
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            {isListening ? "Click to stop recording" : "Click to start recording"}
+                                            {recognizing ? "Click to stop recording" : "Click to start recording"}
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
                             )}
 
-                            {recognizedText && !isListening && (
+                            {recognizedText && !recognizing && (
                                 <div className="flex gap-3">
                                     <Button
                                         onClick={submitAnswer}
