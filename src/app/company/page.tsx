@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaBuilding, FaUsers, FaChartLine, FaRocket, FaArrowRight } from 'react-icons/fa';
-import CompanyAuth from './(auth)/page';
+import CompanyAuth from './(auth)/CompanyAuth';
 
 export default function CompanyPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
