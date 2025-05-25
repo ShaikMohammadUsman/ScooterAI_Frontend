@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { FaHome, FaBriefcase, FaSearch, FaSignOutAlt, FaBars } from 'react-icons/fa';
+import Link from 'next/link';
 
 export default function CompanyLayout({
     children,
@@ -14,24 +15,47 @@ export default function CompanyLayout({
     const pathname = usePathname();
     const [companyName, setCompanyName] = useState('Welcome back!');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
         const companyId = localStorage.getItem('company_id');
-        const storedName = localStorage.getItem('company_name');
-        setCompanyName('Welcome' + (storedName ? ' ' + storedName : ''));
-        if (!companyId && pathname !== '/company/auth') {
-            router.push('/company/auth');
+        const companyDetails = localStorage.getItem('company_details');
+        if (companyDetails) {
+            const companyDetailsObj = JSON.parse(companyDetails);
+            setCompanyName('Welcome ' + companyDetailsObj.company_name);
+        }
+        if (!companyId && pathname !== '/company') {
+            router.push('/company');
+        }
+        if (companyId) {
+            setIsAuthenticated(true);
+        } else {
+            setIsAuthenticated(false);
         }
     }, [pathname]);
 
     const handleLogout = () => {
         localStorage.removeItem('company_id');
-        localStorage.removeItem('company_name');
-        router.push('/company/auth');
+        localStorage.removeItem('company_details');
+        router.push('/company');
     };
 
-    if (pathname === '/company/auth') {
-        return children;
+    if (!isAuthenticated) {
+        return (
+            <div className="flex flex-col min-h-screen">
+                <header className="fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-8 py-6 border-b border-muted bg-white/80">
+                    <div className="text-2xl font-bold text-primary">ScooterAI</div>
+                    <nav className="flex gap-8 justify-center items-center text-muted-foreground font-medium text-lg">
+                        <Link href="/home" className="hover:text-primary transition-colors">About</Link>
+                        <Link href="/home/careers" className="hover:text-primary transition-colors">Careers</Link>
+                        <Link href="/company" className="hover:text-slate-500 transition-colors bg-cyan-400 text-white px-4 py-2 rounded-md">Post Jobs</Link>
+                    </nav>
+                </header>
+                <div className="mt-20">
+                    {children}
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -139,7 +163,7 @@ export default function CompanyLayout({
             </nav>
 
             {/* Main Content */}
-            <main className="p-4 sm:p-6">{children}</main>
+            <main className="">{children}</main>
         </div>
     );
 }

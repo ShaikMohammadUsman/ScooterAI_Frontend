@@ -215,6 +215,17 @@ export interface SearchProfilesResponse {
     profiles: Profile[];
 }
 
+export interface AuthResponse{
+    status: boolean;
+    message: string;
+    company_id: string;
+    company_name: string;
+    email: string;
+    contact_number: string;
+    description: string;
+    address: string;
+}
+
 // Get candidates for a job
 export const getJobCandidates = async (
     jobId: string,
@@ -243,12 +254,23 @@ export const getJobCandidates = async (
 };
 
 // Company signup
-export const companySignup = async (data: CompanySignupData): Promise<any> => {
+export const companySignup = async (data: CompanySignupData): Promise<AuthResponse> => {
     try {
         const response = await axios.post(`${BASE_URL}/company-signup/`, data);
         return response.data;
     } catch (error) {
         console.error('Error in company signup:', error);
+        throw error;
+    }
+};
+
+// Company login
+export const companyLogin = async (data: CompanyLoginData): Promise<AuthResponse> => {
+    try {
+        const response = await axios.post(`${BASE_URL}/company-login/`, data);
+        return response.data;
+    } catch (error) {
+        console.error('Error in company login:', error);
         throw error;
     }
 };
@@ -275,16 +297,6 @@ export const getCompanyJobRoles = async (companyId: string): Promise<JobRolesRes
     }
 };
 
-// Company login
-export const companyLogin = async (data: CompanyLoginData): Promise<{ status?: boolean, message?: string, token?: string, company_id?: string, company_name?: string }> => {
-    try {
-        const response = await axios.post(`${BASE_URL}/company-login/`, data);
-        return response.data;
-    } catch (error) {
-        console.error('Error in company login:', error);
-        throw error;
-    }
-};
 
 // Search profiles
 export const searchProfiles = async (data: SearchProfileData, exact: boolean = false): Promise<SearchProfilesResponse> => {

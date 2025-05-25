@@ -73,7 +73,7 @@ export default function JobsPage() {
     useEffect(() => {
         const companyId = localStorage.getItem('company_id');
         if (!companyId) {
-            router.push('/company/auth');
+            router.push('/company');
             return;
         }
         fetchJobs(companyId);
