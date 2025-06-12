@@ -4,10 +4,21 @@ export interface BasicInformation {
   full_name: string;
   current_location: string;
   open_to_relocation: boolean;
-  languages_spoken: string[];
-  notice_period_days: number;
-  current_ctc: number;
-  expected_ctc: number;
+  phone_number: string;
+  linkedin_url: string;
+  email: string;
+  specific_phone_number: string;
+  notice_period: string;
+  current_ctc: {
+    currencyType: string;
+    value: number;
+    cadence?: "annual" | "monthly";
+  };
+  expected_ctc: {
+    currencyType: string;
+    value: number;
+    cadence?: "annual" | "monthly";
+  };
 }
 
 export interface CompanyHistory {
@@ -16,8 +27,9 @@ export interface CompanyHistory {
   start_date: string;
   end_date: string;
   duration_months: number;
-  is_current:boolean;
+  is_current: boolean;
 }
+
 export interface CareerOverview {
   total_years_experience: number;
   years_sales_experience: number;
@@ -31,8 +43,8 @@ export interface CareerOverview {
 }
 
 export interface SalesContext {
-  sales_type: string[];
-  sales_motion: string[];
+  sales_type: string;
+  sales_motion: string;
   industries_sold_into: string[];
   regions_sold_into: string[];
   buyer_personas: string[];
@@ -49,19 +61,20 @@ export interface RoleProcessExposure {
   sales_role_type: string;
   position_level: string;
   sales_stages_owned: string[];
-  average_deal_size_range: string;
+  average_deal_size: string;
   sales_cycle_length: string;
-  monthly_deal_volume: number;
-  quota_ownership: QuotaOwnership;
+  own_quota: boolean;
+  quota_ownership: any[];
+  quota_attainment: string;
 }
 
 export interface ToolsPlatforms {
-  crm_used: string[];
+  crm_tools: string[];
   sales_tools: string[];
-  communication_tools: string[];
 }
 
-export interface ResumeProfile {
+// This interface represents the raw data from the server
+export interface ParseResumeResponse {
   basic_information: BasicInformation;
   career_overview: CareerOverview;
   sales_context: SalesContext;
@@ -69,7 +82,57 @@ export interface ResumeProfile {
   tools_platforms: ToolsPlatforms;
 }
 
-export interface ParseResumeResponse extends ResumeProfile {}
+// This interface represents our transformed data structure used in the UI
+export interface ResumeProfile {
+  basic_information: {
+    full_name: string;
+    current_location: string;
+    open_to_relocation: boolean;
+    phone_number: string;
+    linkedin_url: string;
+    email: string;
+    specific_phone_number: string;
+    notice_period: string;
+    current_ctc: {
+      currencyType: string;
+      value: number;
+      cadence?: "annual" | "monthly";
+    };
+    expected_ctc: {
+      currencyType: string;
+      value: number;
+      cadence?: "annual" | "monthly";
+    };
+  };
+  career_overview: CareerOverview;
+  sales_context: {
+    sales_type: string[];
+    sales_motion: string[];
+    industries_sold_into: string[];
+    regions_sold_into: string[];
+    buyer_personas: string[];
+  };
+  role_process_exposure: {
+    sales_role_type: string;
+    position_level: string;
+    sales_stages_owned: string[];
+    average_deal_size_range: string;
+    sales_cycle_length: string;
+    monthly_deal_volume: number;
+    quota_ownership: {
+      has_quota: boolean;
+      amount: number;
+      cadence: string;
+      attainment_history: string;
+    };
+  };
+  tools_platforms: {
+    crm_used: string[];
+    sales_tools: string[];
+    communication_tools: string[];
+  };
+}
+
 export interface AddResumeProfileResponse { profile_id: string; }
 
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
@@ -87,9 +150,9 @@ export async function parseResume(file: File): Promise<ParseResumeResponse> {
   }
 }
 
-export async function addResumeProfile(profile: ResumeProfile): Promise<AddResumeProfileResponse> {
+export async function addResumeProfile(profile: ResumeProfile, job_id: string): Promise<AddResumeProfileResponse> {
   try {
-    const res = await axios.post(`${API_BASE}/add-resume-profile/`, profile, {
+    const res = await axios.post(`${API_BASE}/add-resume-profile/`, { ...profile, job_id }, {
       headers: { "Content-Type": "application/json" },
     });
     return res.data;
