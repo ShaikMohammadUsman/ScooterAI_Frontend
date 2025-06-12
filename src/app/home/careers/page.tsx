@@ -1,90 +1,171 @@
 'use client'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation";
-
-const roles = [
-    {
-        title: "Senior Account Executive",
-        description:
-            "Build and grow relationships with enterprise customers across India, driving revenue and delivering exceptional client experiences.",
-        badges: [
-            { label: "B2B Sales", className: "bg-b2b text-primary-foreground" },
-            { label: "5+ Years Experience", className: "bg-experience text-foreground" },
-            { label: "Mumbai/Remote", className: "bg-location text-foreground" },
-        ],
-        queryParam: "senior account executive",
-    },
-    {
-        title: "Marketing Manager",
-        description:
-            "Develop and execute strategic marketing campaigns that amplify our brand and drive customer acquisition.",
-        badges: [
-            { label: "Brand Strategy", className: "bg-purple-200 text-purple-800" },
-            { label: "3+ Years Experience", className: "bg-yellow-100 text-yellow-800" },
-            { label: "Bangalore", className: "bg-green-100 text-green-800" },
-        ],
-        queryParam: "marketing manager",
-    },
-    {
-        title: "Sales Development Representative",
-        description:
-            "Proactively identify and qualify new business opportunities, building the foundation for our sales pipeline.",
-        badges: [
-            { label: "Lead Generation", className: "bg-blue-100 text-blue-800" },
-            { label: "1+ Years Experience", className: "bg-orange-100 text-orange-800" },
-            { label: "Remote", className: "bg-location text-foreground" },
-        ],
-        queryParam: "sales development representative",
-    },
-    {
-        title: "Digital Marketing Specialist",
-        description:
-            "Create and optimize digital marketing campaigns across multiple channels to drive brand awareness and lead generation.",
-        badges: [
-            { label: "Social Media", className: "bg-pink-100 text-pink-800" },
-            { label: "2+ Years Experience", className: "bg-yellow-100 text-yellow-800" },
-            { label: "Delhi/Remote", className: "bg-location text-foreground" },
-        ],
-        queryParam: "digital marketing specialist",
-    },
-];
+import { useRouter } from "next/navigation"
+import { getAllJobs, Job, JobsResponse } from "@/lib/userService"
+import LoadingSpinner from "@/components/ui/loadingSpinner"
+import ErrorBox from "@/components/ui/error"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 function CareersPage() {
-
     const router = useRouter();
-    return (
-        <div className="min-h-screen bg-background flex flex-col mt-20">
+    const [jobs, setJobs] = useState<Job[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState<JobsResponse['pagination'] | null>(null);
+    const pageSize = 6; // Number of jobs per page
 
-            <main className="flex-1 flex flex-col items-center px-4 py-12 bg-background">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl w-full">
-                    {roles.map((role, idx) => (
-                        <Card key={idx} className="bg-card shadow-lg">
+    useEffect(() => {
+        fetchJobs(currentPage);
+    }, [currentPage]);
+
+    const fetchJobs = async (page: number) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getAllJobs(page, pageSize);
+            setJobs(response.jobs);
+            setPagination(response.pagination);
+        } catch (err: any) {
+            setError(err.message || "Failed to fetch jobs");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to get badge color based on badge text
+    const getBadgeColor = (badge: string): string => {
+        const badgeColors: { [key: string]: string } = {
+            'Direct Sales': 'bg-b2b text-primary-foreground',
+            'Technology': 'bg-blue-100 text-blue-800',
+            'Manager': 'bg-purple-200 text-purple-800',
+            'Mid': 'bg-yellow-100 text-yellow-800',
+            'Remote Work': 'bg-green-100 text-green-800',
+            'Open to Relocation': 'bg-location text-foreground',
+            'Entry Level': 'bg-orange-100 text-orange-800',
+            'Senior': 'bg-red-100 text-red-800',
+            'Full Time': 'bg-indigo-100 text-indigo-800',
+            'Part Time': 'bg-pink-100 text-pink-800',
+            'Contract': 'bg-cyan-100 text-cyan-800',
+            'Internship': 'bg-amber-100 text-amber-800',
+        };
+
+        // Default color if no specific match
+        return badgeColors[badge] || 'bg-gray-100 text-gray-800';
+    };
+
+    if (loading && !jobs.length) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <LoadingSpinner />
+                    <p className="text-muted-foreground">Loading available positions...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error && !jobs.length) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4 px-4">
+                    <ErrorBox message={error} />
+                    <Button
+                        onClick={() => fetchJobs(currentPage)}
+                    >
+                        Try Again
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-background mt-20">
+            <main className="container mx-auto px-4 py-12">
+                {loading && jobs.length > 0 && (
+                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="flex flex-col items-center gap-4">
+                            <LoadingSpinner />
+                            <p className="text-muted-foreground">Loading more positions...</p>
+                        </div>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {jobs.map((job) => (
+                        <Card key={job.job_id} className="bg-card shadow-lg hover:shadow-xl transition-shadow">
                             <CardHeader>
-                                <CardTitle>{role.title}</CardTitle>
+                                <CardTitle className="text-xl">{job.title}</CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                    {job.company.company_name} • {job.company.address}
+                                </p>
                             </CardHeader>
                             <CardContent>
-                                <p className="mb-4 text-foreground">{role.description}</p>
+                                <p className="mb-4 text-foreground line-clamp-3">{job.description}</p>
                                 <div className="flex flex-wrap gap-2 mb-6">
-                                    {role.badges.map((badge, i) => (
-                                        <Badge key={i} className={badge.className}>{badge.label}</Badge>
+                                    {job.badges.map((badge, i) => (
+                                        <Badge key={i} className={getBadgeColor(badge)}>
+                                            {badge}
+                                        </Badge>
                                     ))}
                                 </div>
-                                <Button
-                                    className="w-full sm:w-auto px-8 py-2 text-base font-semibold"
-                                    onClick={() => router.push(`/resume?role=${role.queryParam}`)}
-                                >
-                                    Apply Now
-                                </Button>
+                                <div className="flex justify-between items-center">
+                                    <Button
+                                        className="px-8 py-2 text-base font-semibold"
+                                        onClick={() => router.push(`/resume?role=${encodeURIComponent(job.title)}&job_id=${job.job_id}`)}
+                                    >
+                                        Apply Now
+                                    </Button>
+                                    <p className="text-sm text-muted-foreground">
+                                        Posted {new Date(job.created_at).toLocaleDateString()}
+                                    </p>
+                                </div>
                             </CardContent>
                         </Card>
                     ))}
                 </div>
+
+                {pagination && (
+                    <div className="mt-8 flex items-center justify-center gap-4">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={!pagination.has_previous}
+                            className="h-10 w-10"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                            <span className="sr-only">Previous page</span>
+                        </Button>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                                Page {pagination.current_page} of {pagination.total_pages}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                                ({pagination.total_jobs} jobs)
+                            </span>
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setCurrentPage(prev => Math.min(pagination.total_pages, prev + 1))}
+                            disabled={!pagination.has_next}
+                            className="h-10 w-10"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                            <span className="sr-only">Next page</span>
+                        </Button>
+                    </div>
+                )}
             </main>
         </div>
-    )
+    );
 }
 
 export default CareersPage;
