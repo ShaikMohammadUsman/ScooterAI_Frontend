@@ -10,11 +10,13 @@ import { companyLogin, companySignup } from '@/lib/adminService';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function CompanyAuth() {
     const router = useRouter();
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -30,7 +32,8 @@ export default function CompanyAuth() {
         company_name: '',
         contact_number: '',
         description: '',
-        address: ''
+        address: '',
+        other: ''
     });
 
     const validateForm = () => {
@@ -41,7 +44,8 @@ export default function CompanyAuth() {
             company_name: '',
             contact_number: '',
             description: '',
-            address: ''
+            address: '',
+            other: '',
         };
 
         // Email validation
@@ -119,8 +123,12 @@ export default function CompanyAuth() {
                         toast.success('Login successful!');
                         router.push('/company/dashboard');
                     } else {
+                        setError(prev => ({ ...prev, other: response.message }))
                         toast.error('Invalid response from server');
                     }
+                } else {
+                    setError(prev => ({ ...prev, other: response.message }));
+                    toast.error(response.message || 'Login failed');
                 }
             } else {
                 const response = await companySignup({
@@ -134,6 +142,9 @@ export default function CompanyAuth() {
                 if (response.status) {
                     toast.success('Signup successful! Please login.');
                     setIsLogin(true);
+                } else {
+                    toast.error('Signup Failed!');
+                    setError(prev => ({ ...prev, other: response.message }))
                 }
             }
         } catch (error: any) {
@@ -240,13 +251,31 @@ export default function CompanyAuth() {
 
                             <div className="space-y-2">
                                 <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                // required
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        className="pr-10"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4 text-gray-500" />
+                                        ) : (
+                                            <Eye className="h-4 w-4 text-gray-500" />
+                                        )}
+                                        <span className="sr-only">
+                                            {showPassword ? "Hide password" : "Show password"}
+                                        </span>
+                                    </Button>
+                                </div>
                                 {error.password && (
                                     <p className="text-sm text-red-500">{error.password}</p>
                                 )}
@@ -265,6 +294,10 @@ export default function CompanyAuth() {
                                 {loading ? 'Processing...' : isLogin ? 'Login' : 'Signup'}
                             </Button>
 
+                            {error.other && (
+                                <p className="text-sm text-red-500">{error.other}</p>
+                            )}
+
                             <div className="text-center">
                                 <button
                                     type="button"
@@ -276,7 +309,8 @@ export default function CompanyAuth() {
                                             company_name: '',
                                             contact_number: '',
                                             description: '',
-                                            address: ''
+                                            address: '',
+                                            other: ''
                                         });
                                     }}
                                     className="text-sm text-indigo-600 hover:text-indigo-500"

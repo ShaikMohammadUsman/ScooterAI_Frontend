@@ -112,7 +112,7 @@ export interface SearchProfileData {
         years_sales_experience?: number;
     };
     sales_context?: {
-        sales_type?: string[];
+        sales_type?: string;
         industries_sold_into?: string[];
         regions_sold_into?: string[];
     };
@@ -151,10 +151,15 @@ export interface Profile {
         full_name: string;
         current_location: string;
         open_to_relocation: boolean;
-        languages_spoken: string[];
-        notice_period_days: number;
-        current_ctc: number;
-        expected_ctc: number;
+        languages_spoken?: string[];
+        notice_period_days?: number;
+        notice_period?: string;
+        current_ctc: number | { currencyType: string; value: number };
+        expected_ctc: number | { currencyType: string; value: number };
+        phone_number?: string;
+        linkedin_url?: string;
+        email?: string;
+        specific_phone_number?: string;
     };
     career_overview: {
         total_years_experience: number;

@@ -84,7 +84,7 @@ export default function CandidateSearch() {
             years_sales_experience: 0
         },
         sales_context: {
-            sales_type: [] as string[],
+            sales_type: '',
             industries_sold_into: [] as string[],
             regions_sold_into: [] as string[]
         },
@@ -100,7 +100,14 @@ export default function CandidateSearch() {
     const handleSearch = async () => {
         setLoading(true);
         try {
-            const response = await searchProfiles(searchParams, exactMatch);
+            const paramsToSend = {
+                ...searchParams,
+                sales_context: {
+                    ...searchParams.sales_context,
+                    sales_type: searchParams.sales_context.sales_type || undefined
+                }
+            };
+            const response = await searchProfiles(paramsToSend, exactMatch);
             setSearchResponse(response);
         } catch (error) {
             console.error('Error searching candidates:', error);
@@ -114,9 +121,7 @@ export default function CandidateSearch() {
         setSearchParams(prev => {
             const newParams = { ...prev };
             if (category === 'sales_context.sales_type') {
-                newParams.sales_context.sales_type = prev.sales_context.sales_type.includes(value)
-                    ? prev.sales_context.sales_type.filter(v => v !== value)
-                    : [...prev.sales_context.sales_type, value];
+                newParams.sales_context.sales_type = prev.sales_context.sales_type === value ? '' : value;
             } else if (category === 'sales_context.industries_sold_into') {
                 newParams.sales_context.industries_sold_into = prev.sales_context.industries_sold_into.includes(value)
                     ? prev.sales_context.industries_sold_into.filter(v => v !== value)
@@ -238,7 +243,7 @@ export default function CandidateSearch() {
                                         <div key={type} className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={type}
-                                                checked={searchParams.sales_context.sales_type.includes(type)}
+                                                checked={searchParams.sales_context.sales_type === type}
                                                 onCheckedChange={() => handleCheckboxChange('sales_context.sales_type', type)}
                                             />
                                             <Label htmlFor={type}>{type}</Label>
@@ -441,13 +446,15 @@ export default function CandidateSearch() {
                                     <p className="text-gray-600 mt-1">
                                         {selectedProfile.basic_information.current_location}
                                     </p>
-                                    <div className="flex gap-2 mt-2">
-                                        {selectedProfile.basic_information.languages_spoken.map((lang: string, index: number) => (
-                                            <span key={index} className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
-                                                {lang}
-                                            </span>
-                                        ))}
-                                    </div>
+                                    {selectedProfile.basic_information.languages_spoken && selectedProfile.basic_information.languages_spoken.length > 0 && (
+                                        <div className="flex gap-2 mt-2">
+                                            {selectedProfile.basic_information.languages_spoken.map((lang: string, index: number) => (
+                                                <span key={index} className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                                                    {lang}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
                                     <div className="flex items-center gap-2">
@@ -484,7 +491,9 @@ export default function CandidateSearch() {
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg">
                                         <p className="text-sm text-gray-600">Notice Period</p>
-                                        <p className="text-lg font-semibold">{selectedProfile.basic_information.notice_period_days} days</p>
+                                        <p className="text-lg font-semibold">
+                                            {selectedProfile.basic_information.notice_period_days || selectedProfile.basic_information.notice_period || 'Not specified'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -501,7 +510,7 @@ export default function CandidateSearch() {
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm text-gray-600">
-                                                    {new Date(company.start_date).toLocaleDateString()} - {company.is_current ? 'Present' : new Date(company.end_date).toLocaleDateString()}
+                                                    {new Date(company.start_date).toLocaleDateString()} - {company.is_current ? 'Present' : (company.end_date ? new Date(company.end_date).toLocaleDateString() : 'Not specified')}
                                                 </p>
                                                 <p className="text-sm text-gray-500">{company.duration_months} months</p>
                                             </div>
@@ -511,66 +520,61 @@ export default function CandidateSearch() {
                             </div>
 
                             {/* Communication Assessment */}
-                            <div className="mb-6">
-                                <h4 className="text-lg font-semibold text-gray-900 mb-3">Communication Assessment</h4>
+                            {selectedProfile.communication_scores && (
+                                <div className="mb-6">
+                                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Communication Assessment</h4>
 
-                                {/* Radar Chart */}
-                                <div className="h-80 mb-6">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <RadarChart data={getCommunicationChartData(selectedProfile.communication_scores)}>
-                                            <PolarGrid />
-                                            <PolarAngleAxis dataKey="subject" />
-                                            <PolarRadiusAxis angle={30} domain={[0, 5]} />
-                                            <Radar
-                                                name="Score"
-                                                dataKey="A"
-                                                stroke="#4F46E5"
-                                                fill="#4F46E5"
-                                                fillOpacity={0.3}
-                                            />
-                                        </RadarChart>
-                                    </ResponsiveContainer>
-                                </div>
+                                    {/* Radar Chart */}
+                                    <div className="h-80 mb-6">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <RadarChart data={getCommunicationChartData(selectedProfile.communication_scores)}>
+                                                <PolarGrid />
+                                                <PolarAngleAxis dataKey="subject" />
+                                                <PolarRadiusAxis angle={30} domain={[0, 5]} />
+                                                <Radar
+                                                    name="Score"
+                                                    dataKey="A"
+                                                    stroke="#4F46E5"
+                                                    fill="#4F46E5"
+                                                    fillOpacity={0.3}
+                                                />
+                                            </RadarChart>
+                                        </ResponsiveContainer>
+                                    </div>
 
-                                {/* Detailed Scores */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {Object.entries(selectedProfile.communication_scores).map(([key, value]) => {
-                                        if (key === 'overall_score') return null;
-                                        const score = value as { score: number; feedback: string };
-                                        return (
-                                            <div key={key} className="bg-gray-50 p-4 rounded-lg">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <h5 className="font-medium text-gray-900 capitalize">
-                                                        {key.replace(/_/g, ' ')}
-                                                    </h5>
-                                                    <span className="px-2 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                                                        {score.score}/5
-                                                    </span>
+                                    {/* Detailed Scores */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Object.entries(selectedProfile.communication_scores).map(([key, value]) => {
+                                            if (key === 'overall_score') return null;
+                                            const score = value as { score: number; feedback: string };
+                                            return (
+                                                <div key={key} className="bg-gray-50 p-4 rounded-lg">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <h5 className="font-medium text-gray-900 capitalize">
+                                                            {key.replace(/_/g, ' ')}
+                                                        </h5>
+                                                        <span className="px-2 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full">
+                                                            {score.score}/5
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">{score.feedback}</p>
                                                 </div>
-                                                <p className="text-sm text-gray-600">{score.feedback}</p>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="mt-4 p-4 bg-indigo-50 rounded-lg">
-                                    <div className="flex justify-between items-center">
-                                        <h5 className="font-medium text-indigo-900">Overall Score</h5>
-                                        <span className="px-3 py-1 text-lg font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                                            {selectedProfile.communication_scores.overall_score}/5
-                                        </span>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="mt-4 p-4 bg-indigo-50 rounded-lg">
+                                        <div className="flex justify-between items-center">
+                                            <h5 className="font-medium text-indigo-900">Overall Score</h5>
+                                            <span className="px-3 py-1 text-lg font-medium bg-indigo-100 text-indigo-800 rounded-full">
+                                                {selectedProfile.communication_scores.overall_score}/5
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Action Buttons */}
                             <div className="flex gap-4">
-                                {/* <Button
-                                    variant="outline"
-                                    className="flex-1"
-                                    onClick={() => router.push(`/company/candidates/${selectedProfile._id}`)}
-                                >
-                                    View Full Profile
-                                </Button> */}
                                 {selectedProfile.video_url && (
                                     <Button
                                         variant="default"

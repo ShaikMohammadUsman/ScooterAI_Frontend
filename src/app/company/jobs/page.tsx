@@ -128,7 +128,7 @@ export default function JobsPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Search and Stats */}
                 <div className="mb-8">
-                    <div className="flex items-center gap-4 mb-6">
+                    {/* <div className="flex items-center gap-4 mb-6">
                         <div className="relative flex-1">
                             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                             <Input
@@ -138,7 +138,7 @@ export default function JobsPage() {
                                 className="pl-10"
                             />
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Card className="p-6">
