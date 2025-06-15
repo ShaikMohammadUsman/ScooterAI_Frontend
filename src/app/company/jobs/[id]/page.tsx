@@ -148,7 +148,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                             >
                                 Audio Passed
                             </Button>
-                            <Button
+                            {/* <Button
                                 variant={filters.videoAttended ? "default" : "outline"}
                                 onClick={() => setFilters(prev => ({
                                     ...prev,
@@ -165,7 +165,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 }))}
                             >
                                 Audio Uploaded
-                            </Button>
+                            </Button> */}
                         </div>
                     </div>
                 </Card>
