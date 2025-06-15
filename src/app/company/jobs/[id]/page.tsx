@@ -6,9 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getJobCandidates } from '@/lib/adminService';
+import { getJobCandidates, Candidate, CandidatesResponse } from '@/lib/adminService';
 import { toast } from 'sonner';
-import { FaArrowLeft, FaFilter, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaFilter, FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck } from 'react-icons/fa';
 import { use } from 'react';
 
 interface PageProps {
@@ -18,7 +18,8 @@ interface PageProps {
 export default function JobCandidatesPage({ params }: PageProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [candidates, setCandidates] = useState<any[]>([]);
+    const [candidates, setCandidates] = useState<Candidate[]>([]);
+    const [jobDetails, setJobDetails] = useState<CandidatesResponse['job_details'] | null>(null);
     const resolvedParams = use(params);
     const jobId = resolvedParams.id;
     const [filters, setFilters] = useState({
@@ -30,12 +31,20 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
     useEffect(() => {
         fetchCandidates();
-    }, [jobId]);
+    }, [jobId, filters]);
 
     const fetchCandidates = async () => {
         try {
-            const response = await getJobCandidates(jobId);
+            const response = await getJobCandidates(
+                jobId,
+                1, // page
+                20, // pageSize
+                filters.audioPassed || undefined,
+                filters.videoAttended || undefined,
+                filters.audioUploaded || undefined
+            );
             setCandidates(response.candidates);
+            setJobDetails(response.job_details);
         } catch (error) {
             console.error('Error fetching candidates:', error);
             toast.error('Failed to fetch candidates');
@@ -45,8 +54,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
     };
 
     const filteredCandidates = candidates.filter(candidate =>
-        candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        candidate.email.toLowerCase().includes(searchTerm.toLowerCase())
+        candidate.basic_information.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+        // ||
+        // (candidate.basic_information?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -63,9 +73,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
             <div className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            Job Candidates
-                        </h1>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                {jobDetails?.title || 'Job Candidates'}
+                            </h1>
+                            {jobDetails?.description && (
+                                <p className="text-gray-600 mt-1">{jobDetails.description}</p>
+                            )}
+                        </div>
                         <Button
                             variant="outline"
                             onClick={() => router.back()}
@@ -122,35 +137,49 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 {/* Candidates List */}
                 <div className="grid grid-cols-1 gap-6">
                     {filteredCandidates.map((candidate) => (
-                        <Card key={candidate._id} className="p-6">
+                        <Card key={candidate.profile_id} className="p-6">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">{candidate.name}</h3>
-                                    <p className="text-gray-600 mt-2">{candidate.email}</p>
+                                    <h3 className="text-lg font-semibold text-gray-900">
+                                        {candidate.basic_information.full_name}
+                                    </h3>
+                                    {/* <p className="text-gray-600 mt-2">
+                                        {candidate.basic_information.email}
+                                    </p> */}
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <span className="text-sm text-gray-500">
+                                            {candidate.career_overview.total_years_experience} years exp
+                                        </span>
+                                        <span className="text-gray-300">•</span>
+                                        <span className="text-sm text-gray-500">
+                                            {candidate.career_overview.years_sales_experience} years sales
+                                        </span>
+                                    </div>
                                 </div>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${candidate.status === 'approved'
-                                    ? 'bg-green-100 text-green-800'
-                                    : candidate.status === 'rejected'
-                                        ? 'bg-red-100 text-red-800'
-                                        : 'bg-yellow-100 text-yellow-800'
-                                    }`}>
-                                    {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
-                                </span>
-                            </div>
-                            <div className="mt-4 flex flex-wrap gap-2">
-                                {candidate.skills.map((skill: string, index: number) => (
-                                    <span
-                                        key={index}
-                                        className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
-                                    >
-                                        {skill}
-                                    </span>
-                                ))}
+                                <div className="flex items-center gap-2">
+                                    {candidate.interview_status.audio_interview_passed && (
+                                        <span className="flex items-center gap-2 p-2 text-green-600 bg-green-50 rounded-full">
+                                            <FaMicrophone /> <FaCheck />
+                                        </span>
+                                    )}
+                                    {candidate.interview_status.video_attended && (
+                                        <span className="flex items-center gap-2 p-2 text-blue-600 bg-blue-50 rounded-full">
+                                            <FaVideo /> <FaCheck />
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <div className="mt-4 flex items-center justify-between">
-                                <span className="text-sm text-gray-500">
-                                    Applied {new Date(candidate.applied_at).toLocaleDateString()}
-                                </span>
+                                <div className="flex gap-2">
+                                    {candidate.basic_information.languages_spoken?.map((lang, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
+                                        >
+                                            {lang}
+                                        </span>
+                                    ))}
+                                </div>
                                 <div className="flex gap-2">
                                     <Button
                                         variant="outline"
