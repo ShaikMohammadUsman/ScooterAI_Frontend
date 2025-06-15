@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getJobCandidates, Candidate, CandidatesResponse } from '@/lib/adminService';
+import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus } from '@/lib/adminService';
 import { toast } from 'sonner';
 import { FaArrowLeft, FaFilter, FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt } from 'react-icons/fa';
 import { use } from 'react';
@@ -30,6 +30,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
         audioUploaded: false,
     });
     const [searchTerm, setSearchTerm] = useState('');
+    const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
     useEffect(() => {
         fetchCandidates();
@@ -68,6 +69,30 @@ export default function JobCandidatesPage({ params }: PageProps) {
             { subject: 'Non-Verbal', A: scores.non_verbal.score },
             { subject: 'Presence & Authenticity', A: scores.presence_and_authenticity.score }
         ];
+    };
+
+    const handleApplicationStatus = async (candidateId: string, status: boolean, reason: string) => {
+        setUpdatingStatus(candidateId);
+        try {
+            const response = await updateApplicationStatus({
+                user_id: candidateId,
+                application_status: status,
+                reason: reason
+            });
+
+            if (response.status || response?.user_id) {
+                toast.success(status ? 'Candidate approved successfully' : 'Candidate rejected successfully');
+                // Refresh the candidates list
+                fetchCandidates();
+            } else {
+                toast.error(response.message || 'Failed to update application status');
+            }
+        } catch (error) {
+            console.error('Error updating application status:', error);
+            toast.error('Failed to update application status');
+        } finally {
+            setUpdatingStatus(null);
+        }
     };
 
     if (loading) {
@@ -211,21 +236,59 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             View Resume
                                         </Button>
                                     )}
-                                    <Button
-                                        className="flex items-center gap-2"
-                                        onClick={() => {/* Handle approve */ }}
-                                    >
-                                        <FaCheckCircle />
-                                        Approve
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        className="flex items-center gap-2"
-                                        onClick={() => {/* Handle reject */ }}
-                                    >
-                                        <FaTimesCircle />
-                                        Reject
-                                    </Button>
+                                    {typeof candidate.application_status === 'string' ? (
+                                        <>
+                                            <Button
+                                                className="flex items-center gap-2"
+                                                onClick={() => handleApplicationStatus(
+                                                    candidate.profile_id,
+                                                    true,
+                                                    'Candidate passed all interview rounds'
+                                                )}
+                                                disabled={updatingStatus === candidate.profile_id}
+                                            >
+                                                <FaCheckCircle />
+                                                {updatingStatus === candidate.profile_id ? 'Updating...' : 'Approve'}
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                className="flex items-center gap-2"
+                                                onClick={() => handleApplicationStatus(
+                                                    candidate.profile_id,
+                                                    false,
+                                                    'Candidate did not meet requirements'
+                                                )}
+                                                disabled={updatingStatus === candidate.profile_id}
+                                            >
+                                                <FaTimesCircle />
+                                                {updatingStatus === candidate.profile_id ? 'Updating...' : 'Reject'}
+                                            </Button>
+                                        </>
+                                    ) : candidate.application_status ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-md">
+                                                <FaCheckCircle />
+                                                <span>Accepted</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-md">
+                                                <FaCheckCircle />
+                                                <span>{candidate.application_status_reason}</span>
+                                            </div>
+                                        </div>
+
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-md">
+                                                <FaTimesCircle />
+                                                <span>Rejected</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-md">
+                                                <FaTimesCircle />
+                                                <span>{candidate.application_status_reason}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </Card>

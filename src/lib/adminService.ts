@@ -21,6 +21,8 @@ export interface JobRoleData {
 
 export interface Candidate {
     profile_id: string;
+    application_status?: boolean;  // true for accepted, false for rejected, undefined for pending
+    application_status_reason?: string;
     basic_information: {
         full_name: string;
         current_location: string;
@@ -243,6 +245,29 @@ export interface AuthResponse{
     address: string;
 }
 
+export interface UpdateApplicationStatusRequest {
+    user_id: string;
+    application_status: boolean;
+    reason: string;
+}
+
+export interface UpdateApplicationStatusResponse {
+    status: boolean;
+    message: string;
+    user_id?: string;
+    application_status?: boolean;
+    reason?:string;
+}
+
+function getToken(): string {
+    const companyDetails = localStorage.getItem('company_details');
+    if (companyDetails) {
+        const details = JSON.parse(companyDetails);
+        return details.token || '';
+    }
+    return '';
+}
+
 // Get candidates for a job
 export const getJobCandidates = async (
     jobId: string,
@@ -324,4 +349,28 @@ export const searchProfiles = async (data: SearchProfileData, exact: boolean = f
         console.error('Error searching profiles:', error);
         throw error;
     }
-}; 
+};
+
+export async function updateApplicationStatus(
+    request: UpdateApplicationStatusRequest
+): Promise<UpdateApplicationStatusResponse> {
+    try {
+        const response = await fetch(`${BASE_URL}/application-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update application status');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating application status:', error);
+        throw error;
+    }
+} 
