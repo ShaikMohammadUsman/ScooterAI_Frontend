@@ -25,10 +25,20 @@ export interface Candidate {
         full_name: string;
         current_location: string;
         open_to_relocation: boolean;
-        languages_spoken: string[];
-        notice_period_days: number;
-        current_ctc: number;
-        expected_ctc: number;
+        phone_number: string;
+        linkedin_url: string;
+        email: string;
+        specific_phone_number: string;
+        notice_period: string;
+        current_ctc: {
+            currencyType: string;
+            value: number;
+        };
+        expected_ctc: {
+            currencyType: string;
+            value: number;
+        };
+        languages_spoken?: string[];
     };
     career_overview: {
         total_years_experience: number;
@@ -50,9 +60,11 @@ export interface Candidate {
     };
     interview_status: {
         audio_interview_passed: boolean;
-        video_interview: boolean;
-        video_attended: boolean;
-        audio_uploaded: boolean;
+        video_interview_attended: boolean;
+        audio_interview_attended: boolean;
+        video_interview_url: string | null;
+        audio_interview_url: string | null;
+        resume_url: string | null;
     };
 }
 
