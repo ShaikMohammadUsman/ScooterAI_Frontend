@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { FaArrowLeft, FaFilter, FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt } from 'react-icons/fa';
 import { use } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -456,6 +457,166 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         </Button>
                                     )}
                                 </div>
+
+                                {/* Audio Interview Q&A */}
+                                {selectedCandidate.audio_interview_details && (
+                                    <div className="mt-8">
+                                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Audio Interview Evaluation</h4>
+
+                                        {/* Summary */}
+                                        <div className="mb-6">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <p className="text-sm text-gray-600">Average Score</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate.audio_interview_details.audio_interview_summary.average_score.toFixed(1)}/5</p>
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <p className="text-sm text-gray-600">Credibility</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate.audio_interview_details.audio_interview_summary.dimension_averages.credibility.toFixed(1)}/5</p>
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <p className="text-sm text-gray-600">Ownership</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate.audio_interview_details.audio_interview_summary.dimension_averages.ownership_depth.toFixed(1)}/5</p>
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <p className="text-sm text-gray-600">Communication</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate.audio_interview_details.audio_interview_summary.dimension_averages.communication.toFixed(1)}/5</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Areas for Improvement */}
+                                            {selectedCandidate.audio_interview_details.audio_interview_summary.areas_for_improvement.length > 0 && (
+                                                <div className="bg-red-50 p-4 rounded-lg">
+                                                    <h5 className="font-medium text-red-900 mb-2">Areas for Improvement</h5>
+                                                    <ul className="list-disc list-inside space-y-1">
+                                                        {selectedCandidate.audio_interview_details.audio_interview_summary.areas_for_improvement.map((area, index) => (
+                                                            <li key={index} className="text-sm text-red-700">{area}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Q&A Evaluations */}
+                                        <Accordion type="single" collapsible className="space-y-4">
+                                            {selectedCandidate.audio_interview_details.qa_evaluations.map((qa, index) => (
+                                                <AccordionItem key={index} value={`audio-qa-${index}`} className="bg-gray-50 rounded-lg px-4">
+                                                    <AccordionTrigger className="hover:no-underline">
+                                                        <div className="flex items-center gap-4">
+                                                            <span className="font-medium text-gray-900">Question {index + 1}</span>
+                                                            <span className="text-sm text-gray-500">
+                                                                Score: {qa.evaluation.overall_score}/5
+                                                            </span>
+                                                        </div>
+                                                    </AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <div className="space-y-4 pt-2">
+                                                            <div>
+                                                                <h5 className="font-medium text-gray-900 mb-2">Question</h5>
+                                                                <p className="text-gray-700">{qa.question}</p>
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="font-medium text-gray-900 mb-2">Answer</h5>
+                                                                <p className="text-gray-700">{qa.answer}</p>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                                <div>
+                                                                    <p className="text-sm text-gray-600">Credibility</p>
+                                                                    <p className="font-medium">{qa.evaluation.credibility.score}/5</p>
+                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation.credibility.feedback}</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm text-gray-600">Ownership</p>
+                                                                    <p className="font-medium">{qa.evaluation.ownership_depth.score}/5</p>
+                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation.ownership_depth.feedback}</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm text-gray-600">Communication</p>
+                                                                    <p className="font-medium">{qa.evaluation.communication.score}/5</p>
+                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation.communication.feedback}</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm text-gray-600">Confidence</p>
+                                                                    <p className="font-medium">{qa.evaluation.confidence.score}/5</p>
+                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation.confidence.feedback}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm text-gray-600">Summary</p>
+                                                                <p className="text-sm text-gray-500 mt-1">{qa.evaluation.summary}</p>
+                                                            </div>
+                                                        </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </div>
+                                )}
+
+                                {/* Video Interview Q&A */}
+                                {selectedCandidate.interview_details && (
+                                    <div className="mt-8">
+                                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Video Interview Evaluation</h4>
+
+                                        {/* Communication Evaluation */}
+                                        <div className="mb-6">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <p className="text-sm text-gray-600">Overall Score</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate.interview_details.communication_evaluation.overall_score.toFixed(1)}/5</p>
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <p className="text-sm text-gray-600">Content & Thought</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate.interview_details.communication_evaluation.content_and_thought.score}/5</p>
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <p className="text-sm text-gray-600">Verbal Delivery</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate.interview_details.communication_evaluation.verbal_delivery.score}/5</p>
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                    <p className="text-sm text-gray-600">Non-Verbal</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate.interview_details.communication_evaluation.non_verbal.score}/5</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <h5 className="font-medium text-gray-900 mb-2">Summary</h5>
+                                                <p className="text-gray-700">{selectedCandidate.interview_details.communication_evaluation.summary}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Q&A Evaluations */}
+                                        <Accordion type="single" collapsible className="space-y-4">
+                                            {selectedCandidate.interview_details.qa_evaluations.map((qa, index) => (
+                                                <AccordionItem key={index} value={`video-qa-${index}`} className="bg-gray-50 rounded-lg px-4">
+                                                    <AccordionTrigger className="hover:no-underline">
+                                                        <div className="flex items-center justify-between w-full pr-4">
+                                                            <div className="flex items-center gap-4">
+                                                                <span className="font-medium text-gray-900">{qa.trait}</span>
+                                                                <span className="text-sm text-gray-500 capitalize">{qa.step}</span>
+                                                            </div>
+                                                            <span className="text-sm text-gray-500">
+                                                                {new Date(qa.timestamp).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    </AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <div className="space-y-4 pt-2">
+                                                            <div>
+                                                                <h5 className="font-medium text-gray-900 mb-2">Question</h5>
+                                                                <p className="text-gray-700">{qa.question}</p>
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="font-medium text-gray-900 mb-2">Answer</h5>
+                                                                <p className="text-gray-700">{qa.answer}</p>
+                                                            </div>
+                                                        </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </div>
+                                )}
                             </div>
                         </Card>
                     </div>

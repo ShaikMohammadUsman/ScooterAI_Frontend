@@ -21,7 +21,7 @@ export interface JobRoleData {
 
 export interface Candidate {
     profile_id: string;
-    application_status?: boolean;  // true for accepted, false for rejected, undefined for pending
+    application_status?: boolean | string;  // true for accepted, false for rejected, undefined for pending
     application_status_reason?: string;
     basic_information: {
         full_name: string;
@@ -35,10 +35,12 @@ export interface Candidate {
         current_ctc: {
             currencyType: string;
             value: number;
+            cadence?: string;
         };
         expected_ctc: {
             currencyType: string;
             value: number;
+            cadence?: string;
         };
         languages_spoken?: string[];
     };
@@ -67,6 +69,54 @@ export interface Candidate {
         video_interview_url: string | null;
         audio_interview_url: string | null;
         resume_url: string | null;
+    };
+    audio_interview_details?: {
+        audio_interview_id: string;
+        created_at: string;
+        qa_evaluations: Array<{
+            question: string;
+            answer: string;
+            evaluation: {
+                credibility: { score: number; feedback: string };
+                ownership_depth: { score: number; feedback: string };
+                communication: { score: number; feedback: string };
+                confidence: { score: number; feedback: string };
+                overall_score: number;
+                summary: string;
+            };
+        }>;
+        audio_interview_summary: {
+            average_score: number;
+            dimension_averages: {
+                credibility: number;
+                ownership_depth: number;
+                communication: number;
+                confidence: number;
+            };
+            total_questions: number;
+            strengths: string[];
+            areas_for_improvement: string[];
+            audio_interview_status: boolean;
+        };
+    };
+    interview_details?: {
+        session_id: string;
+        created_at: string;
+        communication_evaluation: {
+            content_and_thought: { score: number; feedback: string };
+            verbal_delivery: { score: number; feedback: string };
+            non_verbal: { score: number; feedback: string };
+            presence_and_authenticity: { score: number; feedback: string };
+            overall_score: number;
+            summary: string;
+        };
+        qa_evaluations: Array<{
+            trait: string;
+            step: string;
+            question: string;
+            answer: string;
+            timestamp: string;
+        }>;
     };
 }
 
