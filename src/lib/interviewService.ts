@@ -240,3 +240,33 @@ export async function uploadInterviewVideo({ file, user_id, onProgress }: Upload
         throw error;
     }
 }
+
+// -------------------------------------------------------------------------------------------------------------------
+
+// VIDEO INTERVIEW LOGIN
+export interface VideoInterviewLoginRequest {
+  email: string;
+  code: string;
+}
+
+export interface VideoInterviewLoginResponse {
+  status: boolean;
+  message: string;
+  user_id: string | null;
+  full_name: string | null;
+}
+
+export async function videoInterviewLogin(
+  data: VideoInterviewLoginRequest
+): Promise<VideoInterviewLoginResponse> {
+  try {
+    const res = await axios.post(`${API_BASE}/video-interview-login/`, data, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to verify interview access");
+  }
+}
+
+// -------------------------------------------------------------------------------------------------------------------

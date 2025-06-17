@@ -3,12 +3,12 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { UserVideo } from './components/UserVideo';
-import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, evaluateCommunication } from '@/lib/interviewService';
+import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, evaluateCommunication, videoInterviewLogin } from '@/lib/interviewService';
 import { textInAudioOut } from '@/lib/voiceBot';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaMicrophone, FaUser, FaUserTie, FaCheck } from "react-icons/fa";
+import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaShieldAlt, FaEnvelope, FaKey } from "react-icons/fa";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingDots } from "@/components/ui/loadingDots";
 import { SubmissionModal } from "./components/SubmissionModal";
+import { toast } from "@/hooks/use-toast";
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
@@ -33,6 +34,7 @@ interface ConversationalInterviewResponse {
 
 function CommunicationInterview() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [started, setStarted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -61,6 +63,28 @@ function CommunicationInterview() {
     const [resumeError, setResumeError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Verification states
+    const [showVerification, setShowVerification] = useState(false);
+    const [showUnauthorized, setShowUnauthorized] = useState(false);
+    const [verificationCode, setVerificationCode] = useState("");
+    const [email, setEmail] = useState("");
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [verificationError, setVerificationError] = useState<string | null>(null);
+    const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string } | null>(null);
+
+    // Check for verification parameter on mount
+    useEffect(() => {
+        const verifyCode = searchParams.get('verify');
+        if (!verifyCode) {
+            setShowUnauthorized(true);
+        } else if (!/^[A-Z0-9]{5}$/.test(verifyCode)) {
+            setShowUnauthorized(true);
+        } else {
+            setVerificationCode(verifyCode);
+            setShowVerification(true);
+        }
+    }, [searchParams]);
+
     // Scroll to bottom on new message
     useEffect(() => {
         scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,12 +100,49 @@ function CommunicationInterview() {
         };
     }, []);
 
+    // Handle verification
+    const handleVerification = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email.trim() || !verificationCode.trim()) {
+            setVerificationError("Please enter both email and verification code");
+            return;
+        }
+
+        setIsVerifying(true);
+        setVerificationError(null);
+
+        try {
+            const response = await videoInterviewLogin({
+                email: email.trim(),
+                code: verificationCode.trim()
+            });
+
+            if (response.status) {
+                setVerifiedUser({
+                    user_id: response.user_id!,
+                    full_name: response.full_name!
+                });
+                setShowVerification(false);
+                toast({
+                    title: "Verification successful!",
+                    description: `Welcome, ${response.full_name}! You can now proceed with the interview.`
+                });
+            } else {
+                setVerificationError(response.message);
+            }
+        } catch (err: any) {
+            setVerificationError(err.message || "Verification failed");
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
     // Start interview with camera check
     const handleStart = async () => {
         setLoading(true);
         setError(null);
-        const profile_id = localStorage.getItem('profile_id');
-        if (!profile_id) {
+        const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
+        if (!userId) {
             setError("No profile ID found");
             setLoading(false);
             return;
@@ -204,8 +265,8 @@ function CommunicationInterview() {
         setLoading(true);
         setIsProcessingResponse(true);
         setError(null);
-        const profile_id = localStorage.getItem('profile_id');
-        if (!profile_id) {
+        const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
+        if (!userId) {
             setError("No profile ID found");
             setLoading(false);
             setIsProcessingResponse(false);
@@ -219,7 +280,7 @@ function CommunicationInterview() {
             const res = await startConversationalInterview({
                 file: resumeFile,
                 role: "communication",
-                user_id: profile_id
+                user_id: userId
             });
 
             if (res.status === "failed") {
@@ -360,9 +421,9 @@ function CommunicationInterview() {
 
                 // Stop recording and get final video
                 const videoBlob = await stopRecording();
-                const profile_id = localStorage.getItem('profile_id');
+                const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
 
-                if (profile_id) {
+                if (userId) {
                     // Upload the complete video
                     setIsUploadingVideo(true);
                     setSubmissionStep('uploading');
@@ -371,7 +432,7 @@ function CommunicationInterview() {
                         file: new File([videoBlob], `interview_${Date.now()}.webm`, {
                             type: 'video/webm;codecs=vp9,opus'
                         }),
-                        user_id: profile_id,
+                        user_id: userId,
                         onProgress: (progress) => {
                             setUploadProgress(Math.round(progress * 100));
                         }
@@ -457,9 +518,9 @@ function CommunicationInterview() {
         try {
             // Stop recording
             const videoBlob = await stopRecording();
-            const profile_id = localStorage.getItem('profile_id');
+            const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
 
-            if (profile_id) {
+            if (userId) {
                 // Upload the complete video
                 setIsUploadingVideo(true);
                 setSubmissionStep('uploading');
@@ -468,7 +529,7 @@ function CommunicationInterview() {
                     file: new File([videoBlob], `interview_${Date.now()}.webm`, {
                         type: 'video/webm;codecs=vp9,opus'
                     }),
-                    user_id: profile_id
+                    user_id: userId
                 });
 
                 // Evaluate communication
@@ -505,231 +566,363 @@ function CommunicationInterview() {
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
-                <div className="h-full flex flex-col sm:flex-row ">
-                    {/* Video Area */}
-                    <div className="w-full h-full sm:w-1/3 p-2 rounded-lg">
-                        <UserVideo />
+            {/* Unauthorized Screen */}
+            {showUnauthorized && (
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-white via-slate-50 to-white">
+                    <Card className="w-full max-w-md shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+                        <CardHeader className="text-center pb-6">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6">
+                                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </div>
+                            <CardTitle className="text-2xl font-bold text-gray-900">
+                                Access Denied
+                            </CardTitle>
+                            <p className="text-gray-600">
+                                You are not authorized to access this interview
+                            </p>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600">
+                                    This interview requires a valid verification code. Please check your email for the correct interview link or contact support if you believe this is an error.
+                                </p>
+                                <Button
+                                    onClick={() => router.push('/')}
+                                    className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90"
+                                >
+                                    Return to Home
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Verification Screen */}
+            {showVerification && !verifiedUser && (
+                <div className="flex-1 flex flex-col lg:flex-row bg-gradient-to-br from-white via-slate-50 to-white">
+                    {/* Instructions Section */}
+                    <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
+                        <div className="max-w-lg mx-auto lg:mx-0">
+                            <div className="mb-8">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-6">
+                                    <FaShieldAlt className="w-8 h-8 text-blue-600" />
+                                </div>
+                                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+                                    Verify Your Interview Access
+                                </h1>
+                                <p className="text-lg text-gray-600 leading-relaxed">
+                                    Please verify your identity to access your scheduled communication skills interview.
+                                </p>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                                    <div className="flex-shrink-0 mt-1">
+                                        <FaEnvelope className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-blue-900 mb-1">Email Verification</h3>
+                                        <p className="text-sm text-blue-700">
+                                            Enter the email address you used when scheduling this interview.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-4 p-4 bg-green-50 rounded-xl border border-green-200">
+                                    <div className="flex-shrink-0 mt-1">
+                                        <FaKey className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-green-900 mb-1">Verification Code</h3>
+                                        <p className="text-sm text-green-700">
+                                            Your 5-digit verification code has been pre-filled. This ensures secure access to your interview.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                                    <h3 className="font-semibold text-amber-900 mb-2">What to Expect</h3>
+                                    <ul className="text-sm text-amber-700 space-y-1">
+                                        <li>• 2-3 short communication questions</li>
+                                        <li>• Video recording for evaluation</li>
+                                        <li>• Takes approximately 5-10 minutes</li>
+                                        {/* <li>• You can re-record if needed</li> */}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Chat Area */}
-                    <div className="flex-1 h-full overflow-y-auto p-6 space-y-2">
-                        <AnimatePresence>
-                            {messages.map((msg, i) => (
-                                // <motion.div
-                                //     key={i}
-                                //     initial={{ opacity: 0, y: 20 }}
-                                //     animate={{ opacity: 1, y: 0 }}
-                                //     exit={{ opacity: 0, y: -20 }}
-                                //     className={`flex items-start gap-3 mb-3 ${msg.own ? "justify-end" : "justify-start"}`}
-                                // >
-                                //     <div className="flex-shrink-0">{msg.icon}</div>
-                                //     <div
-                                //         className={`rounded-2xl px-4 py-2 max-w-[80%] relative shadow-sm backdrop-blur-sm ${msg.own
-                                //             ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white"
-                                //             : "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"
-                                //             }`}
-                                //     >
-                                //         {msg.loading ? (
-                                //             <div className="min-w-[100px]">
-                                //                 <LoadingDots bg="slate-300" />
-                                //             </div>
-                                //         ) : (
-                                //             msg.text
-                                //         )}
-                                //         {msg.status && (
-                                //             <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                                //                 <FaCheck className="text-green-500" />
-                                //             </div>
-                                //         )}
-                                //     </div>
-                                // </motion.div>
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    className={`flex items-start gap-3 mb-3 justify-start`}
-                                >
-                                    {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
-                                    <div
-                                        className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900" ${msg.own ? "" : "px-4 py-2"}`}
+                    {/* Verification Form */}
+                    <div className="lg:w-1/2 p-8 lg:p-12 flex items-center justify-center">
+                        <Card className="w-full max-w-md shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+                            <CardHeader className="text-center pb-6">
+                                <CardTitle className="text-2xl font-bold text-gray-900">
+                                    Enter Your Details
+                                </CardTitle>
+                                <p className="text-gray-600">
+                                    Verify your identity to proceed with the interview
+                                </p>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleVerification} className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                                            Email Address
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="your.email@example.com"
+                                            className="h-12 text-base"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="code" className="text-sm font-medium text-gray-700">
+                                            Verification Code
+                                        </Label>
+                                        <Input
+                                            id="code"
+                                            type="text"
+                                            value={verificationCode}
+                                            onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
+                                            placeholder="XXXXX"
+                                            className="h-12 text-base font-mono text-center tracking-widest"
+                                            maxLength={5}
+                                            required
+                                        />
+                                    </div>
+
+                                    {verificationError && (
+                                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                            <p className="text-sm text-red-700">{verificationError}</p>
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        type="submit"
+                                        disabled={isVerifying}
+                                        className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90"
                                     >
-                                        {msg.loading ? (
-                                            <div className="min-w-[100px]">
-                                                <LoadingDots bg="slate-300" />
+                                        {isVerifying ? (
+                                            <div className="flex items-center gap-2">
+                                                <LoadingDots bg="white" />
+                                                <span>Verifying...</span>
                                             </div>
                                         ) : (
-                                            !msg.own && (msg.text)
+                                            "Verify & Continue"
                                         )}
-                                        {msg.status && (
-                                            <div className="float-right flex flex-row items-center gap-2 p-1 bg-green-800 rounded-md">
-                                                <FaCheck className="text-green-500" size={10} />
-                                                <span className="text-slate-100 text-[10px]">Answered</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                        <div ref={scrollRef} />
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Controls */}
-            <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
-                {!started ? (
-                    <div className="flex justify-center">
-                        <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
-                            Start Camera Check
-                        </Button>
-                    </div>
-                ) : !sessionId ? (
-                    <div className="flex flex-col items-center gap-6 w-full">
-                        <div className="w-full max-w-md space-y-4">
-                            <Label htmlFor="resume" className="text-lg font-semibold">
-                                Upload Your Resume (PDF)
-                            </Label>
-                            <div className="flex items-center gap-4">
-                                <Input
-                                    id="resume"
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={handleResumeChange}
-                                    ref={fileInputRef}
-                                    className="flex-1"
-                                />
-                                {resumeFile && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setResumeFile(null);
-                                            if (fileInputRef.current) {
-                                                fileInputRef.current.value = '';
-                                            }
-                                        }}
-                                    >
-                                        Clear
-                                    </Button>
-                                )}
+            {/* Main Interview Content - Only show if verified */}
+            {verifiedUser && (
+                <>
+                    {/* Main Content */}
+                    <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
+                        <div className="h-full flex flex-col sm:flex-row ">
+                            {/* Video Area */}
+                            <div className="w-full h-full sm:w-1/3 p-2 rounded-lg">
+                                <UserVideo />
                             </div>
-                            {resumeError && (
-                                <p className="text-red-500 text-sm">{resumeError}</p>
-                            )}
-                            {resumeFile && (
-                                <p className="text-green-500 text-sm">
-                                    Resume uploaded: {resumeFile.name}
-                                </p>
-                            )}
-                        </div>
-                        <Button
-                            onClick={startActualInterview}
-                            className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md"
-                            disabled={!resumeFile || loading || isProcessingResponse}
-                        >
-                            {isProcessingResponse ? (
-                                <div className="flex items-center gap-2">
-                                    <LoadingDots bg="slate-300" />
-                                    <span>Processing...</span>
-                                </div>
-                            ) : (
-                                "Start Interview"
-                            )}
-                        </Button>
-                    </div>
-                ) : !showResults && (
-                    <div className="flex flex-col items-center gap-6 w-full">
-                        {/* {recognizedText && (
-                            <div className="w-full max-w-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 px-6 py-3 rounded-2xl text-sm text-indigo-800 border border-indigo-200 shadow-sm">
-                                <span className="font-semibold text-indigo-600">You:</span> {recognizedText}
-                            </div>
-                        )} */}
 
-                        <div className="flex flex-wrap justify-center gap-4">
-                            {(!recognizedText || isListening) && (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                onClick={handleMic}
-                                                className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-colors shadow-sm ${isListening ? "bg-red-500 hover:bg-red-600 text-white" : "bg-primary text-white hover:bg-primary/90"}`}
-                                                disabled={isSpeaking || (!micEnabled && !isListening) || isProcessingResponse}
+                            {/* Chat Area */}
+                            <div className="flex-1 h-full overflow-y-auto p-6 space-y-2">
+                                <AnimatePresence>
+                                    {messages.map((msg, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -20 }}
+                                            className={`flex items-start gap-3 mb-3 justify-start`}
+                                        >
+                                            {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
+                                            <div
+                                                className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900" ${msg.own ? "" : "px-4 py-2"}`}
                                             >
-                                                <FaMicrophone className="mr-2" />
-                                                {isListening ? "Stop" : "Answer"}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {isListening ? "Click to stop recording" : "Click to start recording"}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            )}
+                                                {msg.loading ? (
+                                                    <div className="min-w-[100px]">
+                                                        <LoadingDots bg="slate-300" />
+                                                    </div>
+                                                ) : (
+                                                    !msg.own && (msg.text)
+                                                )}
+                                                {msg.status && (
+                                                    <div className="float-right flex flex-row items-center gap-2 p-1 bg-green-800 rounded-md">
+                                                        <FaCheck className="text-green-500" size={10} />
+                                                        <span className="text-slate-100 text-[10px]">Answered</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                                <div ref={scrollRef} />
+                            </div>
+                        </div>
+                    </div>
 
-                            {recognizedText && !isListening && (
+                    {/* Controls */}
+                    <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
+                        {!started ? (
+                            <div className="flex justify-center">
+                                <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
+                                    Start Camera Check
+                                </Button>
+                            </div>
+                        ) : !sessionId ? (
+                            <div className="flex flex-col items-center gap-6 w-full">
+                                <div className="w-full max-w-md space-y-4">
+                                    <Label htmlFor="resume" className="text-lg font-semibold">
+                                        Upload Your Resume (PDF)
+                                    </Label>
+                                    <div className="flex items-center gap-4">
+                                        <Input
+                                            id="resume"
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={handleResumeChange}
+                                            ref={fileInputRef}
+                                            className="flex-1"
+                                        />
+                                        {resumeFile && (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setResumeFile(null);
+                                                    if (fileInputRef.current) {
+                                                        fileInputRef.current.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                Clear
+                                            </Button>
+                                        )}
+                                    </div>
+                                    {resumeError && (
+                                        <p className="text-red-500 text-sm">{resumeError}</p>
+                                    )}
+                                    {resumeFile && (
+                                        <p className="text-green-500 text-sm">
+                                            Resume uploaded: {resumeFile.name}
+                                        </p>
+                                    )}
+                                </div>
                                 <Button
-                                    onClick={submitAnswer}
-                                    className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                    disabled={loading || isSpeaking || isProcessingResponse}
+                                    onClick={startActualInterview}
+                                    className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md"
+                                    disabled={!resumeFile || loading || isProcessingResponse}
                                 >
                                     {isProcessingResponse ? (
                                         <div className="flex items-center gap-2">
                                             <LoadingDots bg="slate-300" />
+                                            <span>Processing...</span>
                                         </div>
                                     ) : (
-                                        "Submit"
+                                        "Start Interview"
                                     )}
                                 </Button>
-                            )}
+                            </div>
+                        ) : !showResults && (
+                            <div className="flex flex-col items-center gap-6 w-full">
+                                <div className="flex flex-wrap justify-center gap-4">
+                                    {(!recognizedText || isListening) && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        onClick={handleMic}
+                                                        className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-colors shadow-sm ${isListening ? "bg-red-500 hover:bg-red-600 text-white" : "bg-primary text-white hover:bg-primary/90"}`}
+                                                        disabled={isSpeaking || (!micEnabled && !isListening) || isProcessingResponse}
+                                                    >
+                                                        <FaMicrophone className="mr-2" />
+                                                        {isListening ? "Stop" : "Answer"}
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {isListening ? "Click to stop recording" : "Click to start recording"}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
 
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                        disabled={loading || isSpeaking || isEndingInterview || isProcessingResponse}
-                                    >
-                                        End Interview
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>End Interview Early?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Are you sure you want to end the interview now? Your responses will be evaluated based on the questions you've answered so far.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={endInterviewEarly}
-                                            className="bg-red-500 hover:bg-red-600"
+                                    {recognizedText && !isListening && (
+                                        <Button
+                                            onClick={submitAnswer}
+                                            className="w-36 h-12 text-base rounded-xl shadow-sm"
+                                            disabled={loading || isSpeaking || isProcessingResponse}
                                         >
-                                            End Interview
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </div>
-                )}
+                                            {isProcessingResponse ? (
+                                                <div className="flex items-center gap-2">
+                                                    <LoadingDots bg="slate-300" />
+                                                </div>
+                                            ) : (
+                                                "Submit"
+                                            )}
+                                        </Button>
+                                    )}
 
-                {error && (
-                    <div className="text-red-600 text-center mt-4 font-medium">
-                        {error}
-                    </div>
-                )}
-            </div>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className="w-36 h-12 text-base rounded-xl shadow-sm"
+                                                disabled={loading || isSpeaking || isEndingInterview || isProcessingResponse}
+                                            >
+                                                End Interview
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>End Interview Early?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Are you sure you want to end the interview now? Your responses will be evaluated based on the questions you've answered so far.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={endInterviewEarly}
+                                                    className="bg-red-500 hover:bg-red-600"
+                                                >
+                                                    End Interview
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </div>
+                        )}
 
-            {/* Submission Modal */}
-            <SubmissionModal
-                open={showSubmissionModal}
-                onOpenChange={setShowSubmissionModal}
-                submissionStep={submissionStep}
-                uploadProgress={uploadProgress}
-            />
+                        {error && (
+                            <div className="text-red-600 text-center mt-4 font-medium">
+                                {error}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Submission Modal */}
+                    <SubmissionModal
+                        open={showSubmissionModal}
+                        onOpenChange={setShowSubmissionModal}
+                        submissionStep={submissionStep}
+                        uploadProgress={uploadProgress}
+                    />
+                </>
+            )}
         </div>
     );
 }
