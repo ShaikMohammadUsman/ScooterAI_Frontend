@@ -66,7 +66,7 @@ export async function getAllJobs(page: number = 1, pageSize: number = 10): Promi
 export async function getJobById(jobId: string): Promise<Job> {
     try {
         const response = await axios.get(`${API_BASE}/job/${jobId}`);
-        return response.data.job;
+        return response.data;
     } catch (err: any) {
         throw new Error(err.response?.data?.message || "Failed to fetch job details");
     }

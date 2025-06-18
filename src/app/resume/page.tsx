@@ -136,6 +136,7 @@ export default function ResumePage() {
     const [submitting, setSubmitting] = useState(false);
     const [showSuccessScreen, setShowSuccessScreen] = useState(false);
     const [consentToUpdates, setConsentToUpdates] = useState<boolean>(false);
+    const [linkedInUrl, setLinkedInUrl] = useState<string>("");
 
     // Handle file upload and parse
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -446,12 +447,22 @@ export default function ResumePage() {
                                             </Tooltip>
                                         </TooltipProvider>
                                     </div>
-                                    <Input
-                                        value={profile?.basic_information.linkedin_url || ""}
-                                        onChange={e => handleFieldChange("basic_information", "linkedin_url", e.target.value)}
-                                        placeholder="https://linkedin.com/in/your-profile"
-                                        className="flex-1"
-                                    />
+                                    <div className="flex gap-2">
+                                        <Input
+                                            value={linkedInUrl}
+                                            onChange={e => setLinkedInUrl(e.target.value)}
+                                            placeholder="https://linkedin.com/in/your-profile"
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => window.open(`${linkedInUrl}`, "_blank")}
+                                        >
+                                            <Linkedin className="h-4 w-4 mr-2" />
+                                            Find URL
+                                        </Button>
+                                    </div>
                                 </FormControl>
                             </div>
 
@@ -562,7 +573,7 @@ export default function ResumePage() {
                                                             </TooltipProvider>
                                                         </div>
                                                         <Input
-                                                            value={profile.basic_information.full_name}
+                                                            value={profile?.basic_information.full_name || ""}
                                                             onChange={e => handleFieldChange("basic_information", "full_name", e.target.value)}
                                                             placeholder="Enter your full name"
                                                             required
@@ -589,7 +600,7 @@ export default function ResumePage() {
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Combobox
-                                                                value={profile.basic_information.current_location}
+                                                                value={profile?.basic_information.current_location || ""}
                                                                 onChange={(value: string) => handleFieldChange("basic_information", "current_location", value)}
                                                                 placeholder="Search for your city..."
                                                                 className="flex-1"
@@ -685,7 +696,7 @@ export default function ResumePage() {
                                                         <div className="flex gap-2">
                                                             <Input
                                                                 type="tel"
-                                                                value={profile.basic_information.phone_number}
+                                                                value={profile?.basic_information.phone_number || ""}
                                                                 onChange={e => handleFieldChange("basic_information", "phone_number", e.target.value)}
                                                                 placeholder="+1 (555) 555-5555"
                                                                 required
@@ -714,7 +725,7 @@ export default function ResumePage() {
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Input
-                                                                value={profile.basic_information.linkedin_url}
+                                                                value={profile?.basic_information.linkedin_url || ""}
                                                                 onChange={e => handleFieldChange("basic_information", "linkedin_url", e.target.value)}
                                                                 placeholder="https://linkedin.com/in/your-profile"
                                                                 className="flex-1"
@@ -750,7 +761,7 @@ export default function ResumePage() {
                                                         </div>
                                                         <Input
                                                             type="email"
-                                                            value={profile.basic_information.email}
+                                                            value={profile?.basic_information.email || ""}
                                                             onChange={e => handleFieldChange("basic_information", "email", e.target.value)}
                                                             placeholder="your.email@example.com"
                                                             required
@@ -777,7 +788,7 @@ export default function ResumePage() {
                                                         </div>
                                                         <Input
                                                             type="tel"
-                                                            value={profile.basic_information.specific_phone_number}
+                                                            value={profile?.basic_information.specific_phone_number || ""}
                                                             onChange={e => handleFieldChange("basic_information", "specific_phone_number", e.target.value)}
                                                             placeholder="+1 (555) 555-5555"
                                                         />
@@ -802,7 +813,7 @@ export default function ResumePage() {
                                                             </TooltipProvider>
                                                         </div>
                                                         <Select
-                                                            value={profile.basic_information.notice_period}
+                                                            value={profile?.basic_information.notice_period || ""}
                                                             onValueChange={(value) => handleFieldChange("basic_information", "notice_period", value)}
                                                         >
                                                             <SelectTrigger>
@@ -853,8 +864,8 @@ export default function ResumePage() {
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Select
-                                                                value={profile.basic_information.current_ctc.currencyType}
-                                                                onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile.basic_information.current_ctc, currencyType: value })}
+                                                                value={profile?.basic_information.current_ctc.currencyType || ""}
+                                                                onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, currencyType: value })}
                                                             >
                                                                 <SelectTrigger className="w-[100px]">
                                                                     <SelectValue placeholder="₹" />
@@ -868,14 +879,14 @@ export default function ResumePage() {
                                                             </Select>
                                                             <Input
                                                                 type="number"
-                                                                value={profile.basic_information.current_ctc.value || ""}
-                                                                onChange={e => handleFieldChange("basic_information", "current_ctc", { ...profile.basic_information.current_ctc, value: Number(e.target.value) })}
+                                                                value={profile?.basic_information.current_ctc.value || ""}
+                                                                onChange={e => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, value: Number(e.target.value) })}
                                                                 placeholder="Enter amount"
                                                                 className="flex-1"
                                                             />
                                                             <Select
-                                                                value={profile.basic_information.current_ctc.cadence || "annual"}
-                                                                onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile.basic_information.current_ctc, cadence: value })}
+                                                                value={profile?.basic_information.current_ctc.cadence || "annual"}
+                                                                onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, cadence: value })}
                                                             >
                                                                 <SelectTrigger className="w-[120px]">
                                                                     <SelectValue placeholder="Annual" />
@@ -908,8 +919,8 @@ export default function ResumePage() {
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Select
-                                                                value={profile.basic_information.expected_ctc.currencyType}
-                                                                onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile.basic_information.expected_ctc, currencyType: value })}
+                                                                value={profile?.basic_information.expected_ctc.currencyType || ""}
+                                                                onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, currencyType: value })}
                                                             >
                                                                 <SelectTrigger className="w-[100px]">
                                                                     <SelectValue placeholder="₹" />
@@ -923,14 +934,14 @@ export default function ResumePage() {
                                                             </Select>
                                                             <Input
                                                                 type="number"
-                                                                value={profile.basic_information.expected_ctc.value || ""}
-                                                                onChange={e => handleFieldChange("basic_information", "expected_ctc", { ...profile.basic_information.expected_ctc, value: Number(e.target.value) })}
+                                                                value={profile?.basic_information.expected_ctc.value || ""}
+                                                                onChange={e => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, value: Number(e.target.value) })}
                                                                 placeholder="Enter amount"
                                                                 className="flex-1"
                                                             />
                                                             <Select
-                                                                value={profile.basic_information.expected_ctc.cadence || "annual"}
-                                                                onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile.basic_information.expected_ctc, cadence: value })}
+                                                                value={profile?.basic_information.expected_ctc.cadence || "annual"}
+                                                                onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, cadence: value })}
                                                             >
                                                                 <SelectTrigger className="w-[120px]">
                                                                     <SelectValue placeholder="Annual" />
