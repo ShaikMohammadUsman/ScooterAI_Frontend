@@ -57,10 +57,10 @@ export default function JobCandidatesPage({ params }: PageProps) {
         }
     };
 
-    const filteredCandidates = candidates.filter(candidate =>
-        candidate.basic_information.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredCandidates = candidates?.filter(candidate =>
+        candidate?.basic_information?.full_name?.toLowerCase().includes(searchTerm?.toLowerCase())
         // ||
-        // (candidate.basic_information?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+        // (candidate?.basic_information?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     const getCommunicationChartData = (scores: any) => {
@@ -174,32 +174,32 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 {/* Candidates List */}
                 <div className="grid grid-cols-1 gap-6">
                     {filteredCandidates.map((candidate) => (
-                        <Card key={candidate.profile_id} className="p-6">
+                        <Card key={candidate?.profile_id} className="p-6">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-900">
-                                        {candidate.basic_information.full_name}
+                                        {candidate?.basic_information?.full_name}
                                     </h3>
                                     {/* <p className="text-gray-600 mt-2">
-                                        {candidate.basic_information.email}
+                                        {candidate?.basic_information?.email}
                                     </p> */}
                                     <div className="mt-2 flex items-center gap-2">
                                         <span className="text-sm text-gray-500">
-                                            {candidate.career_overview.total_years_experience} years exp
+                                            {candidate?.career_overview?.total_years_experience} years exp
                                         </span>
                                         <span className="text-gray-300">•</span>
                                         <span className="text-sm text-gray-500">
-                                            {candidate.career_overview.years_sales_experience} years sales
+                                            {candidate?.career_overview?.years_sales_experience} years sales
                                         </span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    {candidate.interview_status.audio_interview_passed && (
+                                <div className="flex flex-col md:flex-row items-center gap-2">
+                                    {candidate?.interview_status?.audio_interview_passed && (
                                         <span className="flex items-center gap-2 p-2 text-green-600 bg-green-50 rounded-full">
                                             <FaMicrophone /> <FaCheck />
                                         </span>
                                     )}
-                                    {candidate.interview_status.video_interview_attended && (
+                                    {candidate?.interview_status?.video_interview_attended && (
                                         <span className="flex items-center gap-2 p-2 text-blue-600 bg-blue-50 rounded-full">
                                             <FaVideo /> <FaCheck />
                                         </span>
@@ -214,7 +214,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                             </div>
                             <div className="mt-4 flex items-center justify-between">
                                 <div className="flex gap-2">
-                                    {candidate.basic_information.languages_spoken?.map((lang, index) => (
+                                    {candidate?.basic_information?.languages_spoken?.map((lang, index) => (
                                         <span
                                             key={index}
                                             className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
@@ -223,58 +223,58 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         </span>
                                     ))}
                                 </div>
-                                <div className="flex gap-2">
-                                    {candidate.interview_status.resume_url && (
+                                <div className="flex flex-col md:flex-row gap-2">
+                                    {candidate?.interview_status?.resume_url && (
                                         <Button
                                             variant="outline"
                                             className="flex items-center gap-2"
                                             onClick={() => {
-                                                if (candidate.interview_status.resume_url) {
-                                                    window.open(candidate.interview_status.resume_url, '_blank');
+                                                if (candidate?.interview_status?.resume_url) {
+                                                    window.open(candidate?.interview_status?.resume_url, '_blank');
                                                 }
                                             }}
                                         >
                                             View Resume
                                         </Button>
                                     )}
-                                    {typeof candidate.application_status === 'string' ? (
+                                    {typeof candidate?.application_status === 'string' ? (
                                         <>
                                             <Button
                                                 className="flex items-center gap-2"
                                                 onClick={() => handleApplicationStatus(
-                                                    candidate.profile_id,
+                                                    candidate?.profile_id,
                                                     true,
                                                     'Candidate passed all interview rounds'
                                                 )}
-                                                disabled={updatingStatus === candidate.profile_id}
+                                                disabled={updatingStatus === candidate?.profile_id}
                                             >
                                                 <FaCheckCircle />
-                                                {updatingStatus === candidate.profile_id ? 'Updating...' : 'Approve'}
+                                                {updatingStatus === candidate?.profile_id ? 'Updating...' : 'Approve'}
                                             </Button>
                                             <Button
                                                 variant="destructive"
                                                 className="flex items-center gap-2"
                                                 onClick={() => handleApplicationStatus(
-                                                    candidate.profile_id,
+                                                    candidate?.profile_id,
                                                     false,
                                                     'Candidate did not meet requirements'
                                                 )}
-                                                disabled={updatingStatus === candidate.profile_id}
+                                                disabled={updatingStatus === candidate?.profile_id}
                                             >
                                                 <FaTimesCircle />
-                                                {updatingStatus === candidate.profile_id ? 'Updating...' : 'Reject'}
+                                                {updatingStatus === candidate?.profile_id ? 'Updating...' : 'Reject'}
                                             </Button>
                                         </>
-                                    ) : candidate.application_status ? (
+                                    ) : candidate?.application_status ? (
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-md">
                                                 <FaCheckCircle />
                                                 <span>Accepted</span>
                                             </div>
 
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-md">
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 text-sm rounded-md">
                                                 <FaCheckCircle />
-                                                <span>{candidate.application_status_reason}</span>
+                                                <span>{candidate?.application_status_reason || ''}</span>
                                             </div>
                                         </div>
 
@@ -284,9 +284,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 <FaTimesCircle />
                                                 <span>Rejected</span>
                                             </div>
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-md">
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 text-sm rounded-md">
                                                 <FaTimesCircle />
-                                                <span>{candidate.application_status_reason}</span>
+                                                <span>{candidate?.application_status_reason || ''}</span>
                                             </div>
                                         </div>
                                     )}
@@ -305,14 +305,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 <div className="flex items-start justify-between mb-6">
                                     <div>
                                         <h3 className="text-2xl font-semibold text-gray-900">
-                                            {selectedCandidate.basic_information.full_name}
+                                            {selectedCandidate?.basic_information?.full_name}
                                         </h3>
                                         <p className="text-gray-600 mt-1">
-                                            {selectedCandidate.basic_information.current_location}
+                                            {selectedCandidate?.basic_information?.current_location}
                                         </p>
-                                        {selectedCandidate.basic_information.languages_spoken && selectedCandidate.basic_information.languages_spoken.length > 0 && (
+                                        {selectedCandidate?.basic_information?.languages_spoken && selectedCandidate?.basic_information?.languages_spoken?.length > 0 && (
                                             <div className="flex gap-2 mt-2">
-                                                {selectedCandidate.basic_information.languages_spoken.map((lang: string, index: number) => (
+                                                {selectedCandidate?.basic_information?.languages_spoken?.map((lang: string, index: number) => (
                                                     <span key={index} className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
                                                         {lang}
                                                     </span>
@@ -324,15 +324,15 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-medium">Current CTC:</span>
                                             <span className="px-2 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                                                {selectedCandidate.basic_information.current_ctc?.value ?
-                                                    `${selectedCandidate.basic_information.current_ctc.currencyType} ${selectedCandidate.basic_information.current_ctc.value.toLocaleString()}` :
+                                                {selectedCandidate?.basic_information?.current_ctc?.value ?
+                                                    `${selectedCandidate?.basic_information.current_ctc.currencyType} ${selectedCandidate?.basic_information.current_ctc.value.toLocaleString()}` :
                                                     'Not specified'}
                                             </span>
                                         </div>
                                         <Button
                                             variant="ghost"
                                             onClick={() => setSelectedCandidate(null)}
-                                            className="text-gray-500 hover:text-gray-700"
+                                            className="text-gray-50 hover:text-white hover:bg-red-700 bg-red-500"
                                         >
                                             Close
                                         </Button>
@@ -345,20 +345,20 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div className="bg-gray-50 p-3 rounded-lg">
                                             <p className="text-sm text-gray-600">Total Experience</p>
-                                            <p className="text-lg font-semibold">{selectedCandidate.career_overview.total_years_experience} years</p>
+                                            <p className="text-lg font-semibold">{selectedCandidate?.career_overview?.total_years_experience} years</p>
                                         </div>
                                         <div className="bg-gray-50 p-3 rounded-lg">
                                             <p className="text-sm text-gray-600">Sales Experience</p>
-                                            <p className="text-lg font-semibold">{selectedCandidate.career_overview.years_sales_experience} years</p>
+                                            <p className="text-lg font-semibold">{selectedCandidate?.career_overview?.years_sales_experience} years</p>
                                         </div>
                                         <div className="bg-gray-50 p-3 rounded-lg">
                                             <p className="text-sm text-gray-600">Avg. Tenure</p>
-                                            <p className="text-lg font-semibold">{selectedCandidate.career_overview.average_tenure_per_role} years</p>
+                                            <p className="text-lg font-semibold">{selectedCandidate?.career_overview?.average_tenure_per_role} years</p>
                                         </div>
                                         <div className="bg-gray-50 p-3 rounded-lg">
                                             <p className="text-sm text-gray-600">Notice Period</p>
                                             <p className="text-lg font-semibold">
-                                                {selectedCandidate.basic_information.notice_period || 'Not specified'}
+                                                {selectedCandidate?.basic_information?.notice_period || 'Not specified'}
                                             </p>
                                         </div>
                                     </div>
@@ -368,7 +368,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 <div className="mb-6">
                                     <h4 className="text-lg font-semibold text-gray-900 mb-3">Company History</h4>
                                     <div className="space-y-3">
-                                        {selectedCandidate.career_overview.company_history.map((company, index: number) => (
+                                        {selectedCandidate?.career_overview?.company_history?.map((company, index: number) => (
                                             <div key={index} className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg">
                                                 <div className="flex-1">
                                                     <h5 className="font-medium text-gray-900">{company.position}</h5>
@@ -376,7 +376,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-sm text-gray-600">
-                                                        {new Date(company.start_date).toLocaleDateString()} - {company.is_current ? 'Present' : (company.end_date ? new Date(company.end_date).toLocaleDateString() : 'Not specified')}
+                                                        {company.start_date ? new Date(company.start_date).toLocaleDateString() : ''} - {company.is_current ? 'Present' : (company.end_date ? new Date(company.end_date).toLocaleDateString() : 'Not specified')}
                                                     </p>
                                                     <p className="text-sm text-gray-500">{company.duration_months} months</p>
                                                 </div>
@@ -391,17 +391,17 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-sm text-gray-600">Email</p>
-                                            <p className="font-medium">{selectedCandidate.basic_information.email}</p>
+                                            <p className="font-medium">{selectedCandidate?.basic_information?.email}</p>
                                         </div>
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-sm text-gray-600">Phone</p>
-                                            <p className="font-medium">{selectedCandidate.basic_information.phone_number}</p>
+                                            <p className="font-medium">{selectedCandidate?.basic_information?.phone_number}</p>
                                         </div>
-                                        {selectedCandidate.basic_information.linkedin_url && (
+                                        {selectedCandidate?.basic_information?.linkedin_url && (
                                             <div className="bg-gray-50 p-4 rounded-lg">
                                                 <p className="text-sm text-gray-600">LinkedIn</p>
                                                 <a
-                                                    href={selectedCandidate.basic_information.linkedin_url}
+                                                    href={selectedCandidate?.basic_information?.linkedin_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-2"
@@ -415,13 +415,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-4">
-                                    {selectedCandidate.interview_status.video_interview_url && (
+                                    {selectedCandidate?.interview_status?.video_interview_url && (
                                         <Button
                                             variant="default"
                                             className="flex-1"
                                             onClick={() => {
-                                                if (selectedCandidate.interview_status.video_interview_url) {
-                                                    window.open(selectedCandidate.interview_status.video_interview_url, '_blank');
+                                                if (selectedCandidate?.interview_status?.video_interview_url) {
+                                                    window.open(selectedCandidate?.interview_status?.video_interview_url, '_blank');
                                                 }
                                             }}
                                         >
@@ -429,13 +429,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             Watch Video Interview
                                         </Button>
                                     )}
-                                    {selectedCandidate.interview_status.audio_interview_url && (
+                                    {selectedCandidate?.interview_status?.audio_interview_url && (
                                         <Button
                                             variant="default"
                                             className="flex-1"
                                             onClick={() => {
-                                                if (selectedCandidate.interview_status.audio_interview_url) {
-                                                    window.open(selectedCandidate.interview_status.audio_interview_url, '_blank');
+                                                if (selectedCandidate?.interview_status?.audio_interview_url) {
+                                                    window.open(selectedCandidate?.interview_status?.audio_interview_url, '_blank');
                                                 }
                                             }}
                                         >
@@ -443,13 +443,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             Listen to Audio Interview
                                         </Button>
                                     )}
-                                    {selectedCandidate.interview_status.resume_url && (
+                                    {selectedCandidate?.interview_status?.resume_url && (
                                         <Button
                                             variant="outline"
                                             className="flex-1"
                                             onClick={() => {
-                                                if (selectedCandidate.interview_status.resume_url) {
-                                                    window.open(selectedCandidate.interview_status.resume_url, '_blank');
+                                                if (selectedCandidate?.interview_status?.resume_url) {
+                                                    window.open(selectedCandidate?.interview_status?.resume_url, '_blank');
                                                 }
                                             }}
                                         >
@@ -459,7 +459,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 </div>
 
                                 {/* Audio Interview Q&A */}
-                                {selectedCandidate.audio_interview_details && (
+                                {selectedCandidate?.audio_interview_details && (
                                     <div className="mt-8">
                                         <h4 className="text-lg font-semibold text-gray-900 mb-4">Audio Interview Evaluation</h4>
 
@@ -468,28 +468,28 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Average Score</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate.audio_interview_details.audio_interview_summary.average_score.toFixed(1)}/5</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate?.audio_interview_details?.audio_interview_summary?.average_score?.toFixed(1)}/5</p>
                                                 </div>
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Credibility</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate.audio_interview_details.audio_interview_summary.dimension_averages.credibility.toFixed(1)}/5</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate?.audio_interview_details?.audio_interview_summary?.dimension_averages?.credibility?.toFixed(1)}/5</p>
                                                 </div>
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Ownership</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate.audio_interview_details.audio_interview_summary.dimension_averages.ownership_depth.toFixed(1)}/5</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate?.audio_interview_details?.audio_interview_summary?.dimension_averages?.ownership_depth?.toFixed(1)}/5</p>
                                                 </div>
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Communication</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate.audio_interview_details.audio_interview_summary.dimension_averages.communication.toFixed(1)}/5</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate?.audio_interview_details?.audio_interview_summary?.dimension_averages?.communication?.toFixed(1)}/5</p>
                                                 </div>
                                             </div>
 
                                             {/* Areas for Improvement */}
-                                            {selectedCandidate.audio_interview_details.audio_interview_summary.areas_for_improvement.length > 0 && (
+                                            {selectedCandidate?.audio_interview_details?.audio_interview_summary?.areas_for_improvement?.length > 0 && (
                                                 <div className="bg-red-50 p-4 rounded-lg">
                                                     <h5 className="font-medium text-red-900 mb-2">Areas for Improvement</h5>
                                                     <ul className="list-disc list-inside space-y-1">
-                                                        {selectedCandidate.audio_interview_details.audio_interview_summary.areas_for_improvement.map((area, index) => (
+                                                        {selectedCandidate?.audio_interview_details?.audio_interview_summary?.areas_for_improvement?.map((area, index) => (
                                                             <li key={index} className="text-sm text-red-700">{area}</li>
                                                         ))}
                                                     </ul>
@@ -499,13 +499,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                                         {/* Q&A Evaluations */}
                                         <Accordion type="single" collapsible className="space-y-4">
-                                            {selectedCandidate.audio_interview_details.qa_evaluations.map((qa, index) => (
+                                            {selectedCandidate?.audio_interview_details?.qa_evaluations?.map((qa, index) => (
                                                 <AccordionItem key={index} value={`audio-qa-${index}`} className="bg-gray-50 rounded-lg px-4">
                                                     <AccordionTrigger className="hover:no-underline">
                                                         <div className="flex items-center gap-4">
                                                             <span className="font-medium text-gray-900">Question {index + 1}</span>
                                                             <span className="text-sm text-gray-500">
-                                                                Score: {qa.evaluation.overall_score}/5
+                                                                Score: {qa.evaluation?.overall_score}/5
                                                             </span>
                                                         </div>
                                                     </AccordionTrigger>
@@ -522,28 +522,28 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                                 <div>
                                                                     <p className="text-sm text-gray-600">Credibility</p>
-                                                                    <p className="font-medium">{qa.evaluation.credibility.score}/5</p>
-                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation.credibility.feedback}</p>
+                                                                    <p className="font-medium">{qa.evaluation?.credibility?.score}/5</p>
+                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.credibility?.feedback}</p>
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-sm text-gray-600">Ownership</p>
-                                                                    <p className="font-medium">{qa.evaluation.ownership_depth.score}/5</p>
-                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation.ownership_depth.feedback}</p>
+                                                                    <p className="font-medium">{qa.evaluation?.ownership_depth?.score}/5</p>
+                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.ownership_depth?.feedback}</p>
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-sm text-gray-600">Communication</p>
-                                                                    <p className="font-medium">{qa.evaluation.communication.score}/5</p>
-                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation.communication.feedback}</p>
+                                                                    <p className="font-medium">{qa.evaluation?.communication?.score}/5</p>
+                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.communication?.feedback}</p>
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-sm text-gray-600">Confidence</p>
-                                                                    <p className="font-medium">{qa.evaluation.confidence.score}/5</p>
-                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation.confidence.feedback}</p>
+                                                                    <p className="font-medium">{qa.evaluation?.confidence?.score}/5</p>
+                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.confidence?.feedback}</p>
                                                                 </div>
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm text-gray-600">Summary</p>
-                                                                <p className="text-sm text-gray-500 mt-1">{qa.evaluation.summary}</p>
+                                                                <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.summary}</p>
                                                             </div>
                                                         </div>
                                                     </AccordionContent>
@@ -554,7 +554,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 )}
 
                                 {/* Video Interview Q&A */}
-                                {selectedCandidate.interview_details && (
+                                {selectedCandidate?.interview_details && (
                                     <div className="mt-8">
                                         <h4 className="text-lg font-semibold text-gray-900 mb-4">Video Interview Evaluation</h4>
 
@@ -563,40 +563,40 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Overall Score</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate.interview_details.communication_evaluation.overall_score.toFixed(1)}/5</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.overall_score?.toFixed(1)}/5</p>
                                                 </div>
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Content & Thought</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate.interview_details.communication_evaluation.content_and_thought.score}/5</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.content_and_thought?.score}/5</p>
                                                 </div>
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Verbal Delivery</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate.interview_details.communication_evaluation.verbal_delivery.score}/5</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.verbal_delivery?.score}/5</p>
                                                 </div>
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Non-Verbal</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate.interview_details.communication_evaluation.non_verbal.score}/5</p>
+                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.non_verbal?.score}/5</p>
                                                 </div>
                                             </div>
 
                                             <div className="bg-gray-50 p-4 rounded-lg">
                                                 <h5 className="font-medium text-gray-900 mb-2">Summary</h5>
-                                                <p className="text-gray-700">{selectedCandidate.interview_details.communication_evaluation.summary}</p>
+                                                <p className="text-gray-700">{selectedCandidate?.interview_details?.communication_evaluation?.summary}</p>
                                             </div>
                                         </div>
 
                                         {/* Q&A Evaluations */}
                                         <Accordion type="single" collapsible className="space-y-4">
-                                            {selectedCandidate.interview_details.qa_evaluations.map((qa, index) => (
+                                            {selectedCandidate?.interview_details?.qa_evaluations?.map((qa, index) => (
                                                 <AccordionItem key={index} value={`video-qa-${index}`} className="bg-gray-50 rounded-lg px-4">
                                                     <AccordionTrigger className="hover:no-underline">
                                                         <div className="flex items-center justify-between w-full pr-4">
                                                             <div className="flex items-center gap-4">
-                                                                <span className="font-medium text-gray-900">{qa.trait}</span>
-                                                                <span className="text-sm text-gray-500 capitalize">{qa.step}</span>
+                                                                <span className="font-medium text-gray-900">{qa?.trait}</span>
+                                                                <span className="text-sm text-gray-500 capitalize">{qa?.step}</span>
                                                             </div>
                                                             <span className="text-sm text-gray-500">
-                                                                {new Date(qa.timestamp).toLocaleString()}
+                                                                {qa?.timestamp ? new Date(qa?.timestamp).toLocaleString() : ''}
                                                             </span>
                                                         </div>
                                                     </AccordionTrigger>
@@ -604,11 +604,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                         <div className="space-y-4 pt-2">
                                                             <div>
                                                                 <h5 className="font-medium text-gray-900 mb-2">Question</h5>
-                                                                <p className="text-gray-700">{qa.question}</p>
+                                                                <p className="text-gray-700">{qa?.question}</p>
                                                             </div>
                                                             <div>
                                                                 <h5 className="font-medium text-gray-900 mb-2">Answer</h5>
-                                                                <p className="text-gray-700">{qa.answer}</p>
+                                                                <p className="text-gray-700">{qa?.answer}</p>
                                                             </div>
                                                         </div>
                                                     </AccordionContent>

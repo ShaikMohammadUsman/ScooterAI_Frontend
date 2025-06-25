@@ -12,6 +12,7 @@ import { searchProfiles, SearchProfilesResponse, Profile } from '@/lib/adminServ
 import { toast } from 'sonner';
 import { FaSearch, FaVideo, FaMicrophone, FaExternalLinkAlt, FaCheck } from 'react-icons/fa';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const salesTypes = [
     "Consultative Sales",
@@ -117,23 +118,23 @@ export default function CandidateSearch() {
         }
     };
 
-    const handleCheckboxChange = (category: string, value: string) => {
+    const handleCheckboxChange = (category: string, value: string, checked: boolean) => {
         setSearchParams(prev => {
             const newParams = { ...prev };
             if (category === 'sales_context.sales_type') {
-                newParams.sales_context.sales_type = prev.sales_context.sales_type === value ? '' : value;
+                newParams.sales_context.sales_type = checked ? value : '';
             } else if (category === 'sales_context.industries_sold_into') {
-                newParams.sales_context.industries_sold_into = prev.sales_context.industries_sold_into.includes(value)
-                    ? prev.sales_context.industries_sold_into.filter(v => v !== value)
-                    : [...prev.sales_context.industries_sold_into, value];
+                newParams.sales_context.industries_sold_into = checked
+                    ? [...prev.sales_context.industries_sold_into, value]
+                    : prev.sales_context.industries_sold_into.filter(v => v !== value);
             } else if (category === 'sales_context.regions_sold_into') {
-                newParams.sales_context.regions_sold_into = prev.sales_context.regions_sold_into.includes(value)
-                    ? prev.sales_context.regions_sold_into.filter(v => v !== value)
-                    : [...prev.sales_context.regions_sold_into, value];
+                newParams.sales_context.regions_sold_into = checked
+                    ? [...prev.sales_context.regions_sold_into, value]
+                    : prev.sales_context.regions_sold_into.filter(v => v !== value);
             } else if (category === 'tools_platforms.crm_used') {
-                newParams.tools_platforms.crm_used = prev.tools_platforms.crm_used.includes(value)
-                    ? prev.tools_platforms.crm_used.filter(v => v !== value)
-                    : [...prev.tools_platforms.crm_used, value];
+                newParams.tools_platforms.crm_used = checked
+                    ? [...prev.tools_platforms.crm_used, value]
+                    : prev.tools_platforms.crm_used.filter(v => v !== value);
             }
             return newParams;
         });
@@ -172,7 +173,7 @@ export default function CandidateSearch() {
                                 <Label htmlFor="location">Current Location</Label>
                                 <Input
                                     id="location"
-                                    value={searchParams.basic_information.current_location}
+                                    value={searchParams?.basic_information?.current_location}
                                     onChange={(e) => setSearchParams(prev => ({
                                         ...prev,
                                         basic_information: {
@@ -185,7 +186,7 @@ export default function CandidateSearch() {
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="relocation"
-                                    checked={searchParams.basic_information.open_to_relocation}
+                                    checked={searchParams?.basic_information?.open_to_relocation}
                                     onCheckedChange={(checked) => setSearchParams(prev => ({
                                         ...prev,
                                         basic_information: {
@@ -206,7 +207,7 @@ export default function CandidateSearch() {
                                 <Input
                                     id="totalExperience"
                                     type="number"
-                                    value={searchParams.career_overview.total_years_experience}
+                                    value={searchParams?.career_overview?.total_years_experience}
                                     onChange={(e) => setSearchParams(prev => ({
                                         ...prev,
                                         career_overview: {
@@ -221,7 +222,7 @@ export default function CandidateSearch() {
                                 <Input
                                     id="salesExperience"
                                     type="number"
-                                    value={searchParams.career_overview.years_sales_experience}
+                                    value={searchParams?.career_overview?.years_sales_experience}
                                     onChange={(e) => setSearchParams(prev => ({
                                         ...prev,
                                         career_overview: {
@@ -237,19 +238,28 @@ export default function CandidateSearch() {
                         <div className="space-y-4 mb-6">
                             <h3 className="font-medium">Sales Context</h3>
                             <div>
-                                <Label>Sales Type</Label>
-                                <div className="space-y-2 mt-2">
-                                    {salesTypes.map(type => (
-                                        <div key={type} className="flex items-center space-x-2">
-                                            <Checkbox
-                                                id={type}
-                                                checked={searchParams.sales_context.sales_type === type}
-                                                onCheckedChange={() => handleCheckboxChange('sales_context.sales_type', type)}
-                                            />
-                                            <Label htmlFor={type}>{type}</Label>
-                                        </div>
-                                    ))}
-                                </div>
+                                <Label htmlFor="salesType">Sales Type</Label>
+                                <Select
+                                    value={searchParams?.sales_context?.sales_type}
+                                    onValueChange={(value) => setSearchParams(prev => ({
+                                        ...prev,
+                                        sales_context: {
+                                            ...prev.sales_context,
+                                            sales_type: value
+                                        }
+                                    }))}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Sales Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {salesTypes?.map(type => (
+                                            <SelectItem key={type} value={type}>
+                                                {type}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div>
                                 <Label>Industries</Label>
@@ -258,8 +268,8 @@ export default function CandidateSearch() {
                                         <div key={industry} className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={industry}
-                                                checked={searchParams.sales_context.industries_sold_into.includes(industry)}
-                                                onCheckedChange={() => handleCheckboxChange('sales_context.industries_sold_into', industry)}
+                                                checked={searchParams?.sales_context?.industries_sold_into?.includes(industry)}
+                                                onCheckedChange={(checked) => handleCheckboxChange('sales_context.industries_sold_into', industry, checked as boolean)}
                                             />
                                             <Label htmlFor={industry}>{industry}</Label>
                                         </div>
@@ -273,8 +283,8 @@ export default function CandidateSearch() {
                                         <div key={region} className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={region}
-                                                checked={searchParams.sales_context.regions_sold_into.includes(region)}
-                                                onCheckedChange={() => handleCheckboxChange('sales_context.regions_sold_into', region)}
+                                                checked={searchParams?.sales_context?.regions_sold_into?.includes(region)}
+                                                onCheckedChange={(checked) => handleCheckboxChange('sales_context.regions_sold_into', region, checked as boolean)}
                                             />
                                             <Label htmlFor={region}>{region}</Label>
                                         </div>
@@ -291,7 +301,7 @@ export default function CandidateSearch() {
                                 <select
                                     id="roleType"
                                     className="w-full p-2 border rounded-md"
-                                    value={searchParams.role_process_exposure.sales_role_type}
+                                    value={searchParams?.role_process_exposure?.sales_role_type}
                                     onChange={(e) => setSearchParams(prev => ({
                                         ...prev,
                                         role_process_exposure: {
@@ -301,7 +311,7 @@ export default function CandidateSearch() {
                                     }))}
                                 >
                                     <option value="">Select Role Type</option>
-                                    {salesRoleTypes.map(type => (
+                                    {salesRoleTypes?.map(type => (
                                         <option key={type} value={type}>{type}</option>
                                     ))}
                                 </select>
@@ -311,7 +321,7 @@ export default function CandidateSearch() {
                                 <select
                                     id="positionLevel"
                                     className="w-full p-2 border rounded-md"
-                                    value={searchParams.role_process_exposure.position_level}
+                                    value={searchParams?.role_process_exposure?.position_level}
                                     onChange={(e) => setSearchParams(prev => ({
                                         ...prev,
                                         role_process_exposure: {
@@ -321,7 +331,7 @@ export default function CandidateSearch() {
                                     }))}
                                 >
                                     <option value="">Select Position Level</option>
-                                    {positionLevels.map(level => (
+                                    {positionLevels?.map(level => (
                                         <option key={level} value={level}>{level}</option>
                                     ))}
                                 </select>
@@ -338,8 +348,8 @@ export default function CandidateSearch() {
                                         <div key={tool} className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={tool}
-                                                checked={searchParams.tools_platforms.crm_used.includes(tool)}
-                                                onCheckedChange={() => handleCheckboxChange('tools_platforms.crm_used', tool)}
+                                                checked={searchParams?.tools_platforms?.crm_used?.includes(tool)}
+                                                onCheckedChange={(checked) => handleCheckboxChange('tools_platforms.crm_used', tool, checked as boolean)}
                                             />
                                             <Label htmlFor={tool}>{tool}</Label>
                                         </div>
@@ -373,40 +383,40 @@ export default function CandidateSearch() {
                     <div className="lg:col-span-3">
                         <div className="mb-4">
                             <h2 className="text-lg font-semibold text-gray-900">
-                                Search Results ({searchResponse.total_matches} matches)
+                                Search Results ({searchResponse?.total_matches} matches)
                             </h2>
                         </div>
                         <div className="space-y-4">
-                            {searchResponse.profiles.map((candidate: Profile) => (
-                                <Card key={candidate._id} className="p-4 hover:shadow-md transition-shadow">
+                            {searchResponse?.profiles.map((candidate: Profile) => (
+                                <Card key={candidate?._id} className="p-4 hover:shadow-md transition-shadow">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
                                             <h3 className="text-lg font-semibold text-gray-900">
-                                                {candidate.basic_information.full_name}
+                                                {candidate?.basic_information?.full_name}
                                             </h3>
                                             <p className="text-gray-600">
-                                                {candidate.basic_information.current_location}
+                                                {candidate?.basic_information?.current_location}
                                             </p>
                                             <div className="mt-2 flex items-center gap-2">
                                                 <span className="text-sm text-gray-500">
-                                                    {candidate.career_overview.total_years_experience} years exp
+                                                    {candidate?.career_overview.total_years_experience} years exp
                                                 </span>
                                                 <span className="text-gray-300">•</span>
                                                 <span className="text-sm text-gray-500">
-                                                    {candidate.career_overview.years_sales_experience} years sales
+                                                    {candidate?.career_overview.years_sales_experience} years sales
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            {candidate.audio_interview && (
+                                            {candidate?.audio_interview && (
                                                 <span className="flex items-center gap-2 p-2 text-green-600 bg-green-50 rounded-full">
                                                     <FaMicrophone /> <FaCheck />
                                                 </span>
                                             )}
-                                            {candidate.video_url && (
+                                            {candidate?.video_url && (
                                                 <span
                                                     className="flex items-center gap-2 p-2 text-blue-600 bg-blue-50 rounded-full cursor-pointer"
-                                                    onClick={() => window.open(candidate.video_url || undefined, '_blank')}
+                                                    onClick={() => window.open(candidate?.video_url || undefined, '_blank')}
                                                 >
                                                     <FaVideo /> <FaExternalLinkAlt className="ml-1" />
                                                 </span>
@@ -441,14 +451,14 @@ export default function CandidateSearch() {
                             <div className="flex items-start justify-between mb-6">
                                 <div>
                                     <h3 className="text-2xl font-semibold text-gray-900">
-                                        {selectedProfile.basic_information.full_name}
+                                        {selectedProfile?.basic_information?.full_name}
                                     </h3>
                                     <p className="text-gray-600 mt-1">
-                                        {selectedProfile.basic_information.current_location}
+                                        {selectedProfile?.basic_information?.current_location}
                                     </p>
-                                    {selectedProfile.basic_information.languages_spoken && selectedProfile.basic_information.languages_spoken.length > 0 && (
+                                    {selectedProfile?.basic_information?.languages_spoken && selectedProfile?.basic_information?.languages_spoken?.length > 0 && (
                                         <div className="flex gap-2 mt-2">
-                                            {selectedProfile.basic_information.languages_spoken.map((lang: string, index: number) => (
+                                            {selectedProfile?.basic_information?.languages_spoken?.map((lang: string, index: number) => (
                                                 <span key={index} className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
                                                     {lang}
                                                 </span>
@@ -460,13 +470,13 @@ export default function CandidateSearch() {
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium">Match Score:</span>
                                         <span className="px-2 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                                            {selectedProfile.match_score}/10
+                                            {selectedProfile?.match_score}/10
                                         </span>
                                     </div>
                                     <Button
                                         variant="ghost"
                                         onClick={() => setSelectedProfile(null)}
-                                        className="text-gray-500 hover:text-gray-700"
+                                        className="text-gray-50 hover:text-white hover:bg-red-700 bg-red-500"
                                     >
                                         Close
                                     </Button>
@@ -479,20 +489,20 @@ export default function CandidateSearch() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-gray-50 p-3 rounded-lg">
                                         <p className="text-sm text-gray-600">Total Experience</p>
-                                        <p className="text-lg font-semibold">{selectedProfile.career_overview.total_years_experience} years</p>
+                                        <p className="text-lg font-semibold">{selectedProfile?.career_overview.total_years_experience} years</p>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg">
                                         <p className="text-sm text-gray-600">Sales Experience</p>
-                                        <p className="text-lg font-semibold">{selectedProfile.career_overview.years_sales_experience} years</p>
+                                        <p className="text-lg font-semibold">{selectedProfile?.career_overview.years_sales_experience} years</p>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg">
                                         <p className="text-sm text-gray-600">Avg. Tenure</p>
-                                        <p className="text-lg font-semibold">{selectedProfile.career_overview.average_tenure_per_role} years</p>
+                                        <p className="text-lg font-semibold">{selectedProfile?.career_overview.average_tenure_per_role} years</p>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-lg">
                                         <p className="text-sm text-gray-600">Notice Period</p>
                                         <p className="text-lg font-semibold">
-                                            {selectedProfile.basic_information.notice_period_days || selectedProfile.basic_information.notice_period || 'Not specified'}
+                                            {selectedProfile?.basic_information?.notice_period_days || selectedProfile?.basic_information?.notice_period || 'Not specified'}
                                         </p>
                                     </div>
                                 </div>
@@ -502,17 +512,17 @@ export default function CandidateSearch() {
                             <div className="mb-6">
                                 <h4 className="text-lg font-semibold text-gray-900 mb-3">Company History</h4>
                                 <div className="space-y-3">
-                                    {selectedProfile.career_overview.company_history.map((company, index: number) => (
+                                    {selectedProfile?.career_overview.company_history.map((company, index: number) => (
                                         <div key={index} className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg">
                                             <div className="flex-1">
-                                                <h5 className="font-medium text-gray-900">{company.position}</h5>
-                                                <p className="text-gray-600">{company.company_name}</p>
+                                                <h5 className="font-medium text-gray-900">{company?.position}</h5>
+                                                <p className="text-gray-600">{company?.company_name}</p>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm text-gray-600">
-                                                    {new Date(company.start_date).toLocaleDateString()} - {company.is_current ? 'Present' : (company.end_date ? new Date(company.end_date).toLocaleDateString() : 'Not specified')}
+                                                    {new Date(company?.start_date).toLocaleDateString()} - {company?.is_current ? 'Present' : (company?.end_date ? new Date(company?.end_date).toLocaleDateString() : 'Not specified')}
                                                 </p>
-                                                <p className="text-sm text-gray-500">{company.duration_months} months</p>
+                                                <p className="text-sm text-gray-500">{company?.duration_months} months</p>
                                             </div>
                                         </div>
                                     ))}
@@ -520,14 +530,14 @@ export default function CandidateSearch() {
                             </div>
 
                             {/* Communication Assessment */}
-                            {selectedProfile.communication_scores && (
+                            {selectedProfile?.communication_scores && (
                                 <div className="mb-6">
                                     <h4 className="text-lg font-semibold text-gray-900 mb-3">Communication Assessment</h4>
 
                                     {/* Radar Chart */}
                                     <div className="h-80 mb-6">
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <RadarChart data={getCommunicationChartData(selectedProfile.communication_scores)}>
+                                            <RadarChart data={getCommunicationChartData(selectedProfile?.communication_scores)}>
                                                 <PolarGrid />
                                                 <PolarAngleAxis dataKey="subject" />
                                                 <PolarRadiusAxis angle={30} domain={[0, 5]} />
@@ -544,7 +554,7 @@ export default function CandidateSearch() {
 
                                     {/* Detailed Scores */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {Object.entries(selectedProfile.communication_scores).map(([key, value]) => {
+                                        {Object.entries(selectedProfile?.communication_scores).map(([key, value]) => {
                                             if (key === 'overall_score') return null;
                                             const score = value as { score: number; feedback: string };
                                             return (
@@ -554,10 +564,10 @@ export default function CandidateSearch() {
                                                             {key.replace(/_/g, ' ')}
                                                         </h5>
                                                         <span className="px-2 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                                                            {score.score}/5
+                                                            {score?.score}/5
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600">{score.feedback}</p>
+                                                    <p className="text-sm text-gray-600">{score?.feedback}</p>
                                                 </div>
                                             );
                                         })}
@@ -566,7 +576,7 @@ export default function CandidateSearch() {
                                         <div className="flex justify-between items-center">
                                             <h5 className="font-medium text-indigo-900">Overall Score</h5>
                                             <span className="px-3 py-1 text-lg font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                                                {selectedProfile.communication_scores.overall_score}/5
+                                                {selectedProfile?.communication_scores?.overall_score}/5
                                             </span>
                                         </div>
                                     </div>
@@ -575,11 +585,11 @@ export default function CandidateSearch() {
 
                             {/* Action Buttons */}
                             <div className="flex gap-4">
-                                {selectedProfile.video_url && (
+                                {selectedProfile?.video_url && (
                                     <Button
                                         variant="default"
                                         className="flex-1"
-                                        onClick={() => window.open(selectedProfile.video_url || undefined, '_blank')}
+                                        onClick={() => window.open(selectedProfile?.video_url || undefined, '_blank')}
                                     >
                                         <FaExternalLinkAlt className="mr-2" />
                                         Watch Video Interview

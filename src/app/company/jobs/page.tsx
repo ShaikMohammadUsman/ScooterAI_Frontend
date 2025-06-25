@@ -93,8 +93,8 @@ export default function JobsPage() {
 
 
     const filteredJobs = jobRoles.filter(job =>
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.description.toLowerCase().includes(searchTerm.toLowerCase())
+        job.title?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+        job.description?.toLowerCase().includes(searchTerm?.toLowerCase())
     );
 
     if (loading) {
@@ -148,7 +148,7 @@ export default function JobsPage() {
                                 </div>
                                 <div className="ml-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Total Jobs</h2>
-                                    <p className="text-3xl font-bold text-indigo-600">{jobRoles.length}</p>
+                                    <p className="text-3xl font-bold text-indigo-600">{jobRoles?.length}</p>
                                 </div>
                             </div>
                         </Card>
@@ -160,7 +160,7 @@ export default function JobsPage() {
                                 <div className="ml-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Active Jobs</h2>
                                     <p className="text-3xl font-bold text-green-600">
-                                        {jobRoles.filter(job => job.is_active).length}
+                                        {jobRoles?.filter(job => job.is_active)?.length}
                                     </p>
                                 </div>
                             </div>
@@ -173,7 +173,7 @@ export default function JobsPage() {
                                 <div className="ml-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Total Applications</h2>
                                     <p className="text-3xl font-bold text-blue-600">
-                                        {jobRoles.reduce((acc, job) => acc + (job.total_applications || 0), 0)}
+                                        {jobRoles?.reduce((acc, job) => acc + (job.total_applications || 0), 0)}
                                     </p>
                                 </div>
                             </div>
@@ -198,7 +198,7 @@ export default function JobsPage() {
                                 </span>
                             </div>
                             <div className="mt-4 flex flex-wrap gap-2">
-                                {job.badges.map((badge: string, index: number) => (
+                                {job.badges?.map((badge: string, index: number) => (
                                     <span
                                         key={index}
                                         className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
@@ -209,7 +209,7 @@ export default function JobsPage() {
                             </div>
                             <div className="mt-4 flex items-center justify-between">
                                 <span className="text-sm text-gray-500">
-                                    Posted {new Date(job.created_at).toLocaleDateString()}
+                                    Posted {job.created_at ? new Date(job.created_at).toLocaleDateString() : ''}
                                 </span>
                                 <Button
                                     variant="outline"

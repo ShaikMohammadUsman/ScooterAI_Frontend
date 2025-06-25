@@ -137,7 +137,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="ml-4">
                                 <h2 className="text-lg font-semibold text-gray-900">Total Jobs</h2>
-                                <p className="text-3xl font-bold text-indigo-600">{jobRoles.length}</p>
+                                <p className="text-3xl font-bold text-indigo-600">{jobRoles?.length}</p>
                             </div>
                         </div>
                     </Card>
@@ -149,7 +149,7 @@ export default function DashboardPage() {
                             <div className="ml-4">
                                 <h2 className="text-lg font-semibold text-gray-900">Active Jobs</h2>
                                 <p className="text-3xl font-bold text-green-600">
-                                    {jobRoles.filter(job => job.is_active).length}
+                                    {jobRoles.filter(job => job.is_active)?.length}
                                 </p>
                             </div>
                         </div>
@@ -162,7 +162,7 @@ export default function DashboardPage() {
                             <div className="ml-4">
                                 <h2 className="text-lg font-semibold text-gray-900">Total Applications</h2>
                                 <p className="text-3xl font-bold text-blue-600">
-                                    {jobRoles.reduce((acc, job) => acc + (job.total_applications || 0), 0)}
+                                    {jobRoles.reduce((acc, job) => acc + (job?.total_applications || 0), 0)}
                                 </p>
                             </div>
                         </div>
@@ -227,7 +227,7 @@ export default function DashboardPage() {
                                         dataKey="value"
                                     >
                                         {prepareStatusDistribution().map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS?.length || 0]} />
                                         ))}
                                     </Pie>
                                     <Tooltip />
