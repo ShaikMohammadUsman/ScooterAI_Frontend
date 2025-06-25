@@ -42,13 +42,18 @@ export function MultiSelect({
             classNamePrefix="select"
             menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
             styles={{
-                control: (base) => ({
+                control: (base, state) => ({
                     ...base,
                     backgroundColor: 'white',
-                    borderColor: 'hsl(var(--input))',
+                    borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
+                    borderWidth: '2px',
+                    borderRadius: '8px',
+                    minHeight: '44px',
+                    boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.1)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
                     '&:hover': {
-                        borderColor: 'hsl(var(--input))'
-                    }
+                        borderColor: '#d1d5db'
+                    },
+                    transition: 'all 0.2s ease-in-out'
                 }),
                 menuPortal: (base) => ({
                     ...base,
@@ -57,36 +62,58 @@ export function MultiSelect({
                 menu: (base) => ({
                     ...base,
                     backgroundColor: 'white',
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
                     zIndex: 9999
                 }),
                 option: (base, state) => ({
                     ...base,
                     backgroundColor: state.isSelected
-                        ? 'hsl(var(--secondary))'
+                        ? '#3b82f6'
                         : state.isFocused
-                            ? 'hsl(var(--secondary)/0.5)'
+                            ? '#eff6ff'
                             : 'white',
-                    color: state.isSelected ? 'hsl(var(--secondary-foreground))' : 'hsl(var(--foreground))',
+                    color: state.isSelected ? 'white' : '#374151',
+                    padding: '12px 16px',
+                    borderRadius: '6px',
+                    margin: '2px 4px',
                     '&:hover': {
-                        backgroundColor: 'hsl(var(--secondary)/0.5)'
-                    }
+                        backgroundColor: state.isSelected ? '#2563eb' : '#f3f4f6'
+                    },
+                    transition: 'all 0.2s ease-in-out'
                 }),
                 multiValue: (base) => ({
                     ...base,
-                    backgroundColor: 'hsl(var(--secondary))',
-                    color: 'hsl(var(--secondary-foreground))'
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    borderRadius: '6px',
+                    padding: '2px 8px',
+                    margin: '2px',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
                 }),
                 multiValueLabel: (base) => ({
                     ...base,
-                    color: 'hsl(var(--secondary-foreground))'
+                    color: 'white',
+                    fontWeight: '500'
                 }),
                 multiValueRemove: (base) => ({
                     ...base,
-                    color: 'hsl(var(--secondary-foreground))',
+                    color: 'white',
                     '&:hover': {
-                        backgroundColor: 'hsl(var(--secondary)/0.8)',
-                        color: 'hsl(var(--secondary-foreground))'
-                    }
+                        backgroundColor: '#2563eb',
+                        color: 'white'
+                    },
+                    borderRadius: '4px',
+                    transition: 'all 0.2s ease-in-out'
+                }),
+                placeholder: (base) => ({
+                    ...base,
+                    color: '#9ca3af'
+                }),
+                input: (base) => ({
+                    ...base,
+                    color: '#374151'
                 })
             }}
         />
