@@ -34,3 +34,19 @@ body {
     color: var(--foreground);
     font-family: var(--font-sans);
 }
+
+@layer utilities {
+    @keyframes road-move {
+        0% {
+            transform: translateX(0);
+        }
+
+        100% {
+            transform: translateX(-2.5rem);
+        }
+    }
+
+    .animate-road-move {
+        animation: road-move 1s linear infinite;
+    }
+}

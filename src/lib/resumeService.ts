@@ -75,11 +75,15 @@ export interface ToolsPlatforms {
 
 // This interface represents the raw data from the server
 export interface ParseResumeResponse {
-  basic_information: BasicInformation;
-  career_overview: CareerOverview;
-  sales_context: SalesContext;
-  role_process_exposure: RoleProcessExposure;
-  tools_platforms: ToolsPlatforms;
+  status: boolean;
+  message?: string;
+  data: {
+    basic_information: BasicInformation;
+    career_overview: CareerOverview;
+    sales_context: SalesContext;
+    role_process_exposure: RoleProcessExposure;
+    tools_platforms: ToolsPlatforms;
+  };
 }
 
 // This interface represents our transformed data structure used in the UI

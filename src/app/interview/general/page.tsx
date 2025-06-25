@@ -403,8 +403,8 @@ export default function VoiceInterviewPage() {
                     className="h-12 w-12 rounded-full border-2 border-indigo-200 shadow-sm"
                 />
                 <div>
-                    <div className="font-bold text-lg text-indigo-600 tracking-tight">AI Interviewer</div>
-                    <div className="text-xs text-muted-foreground">Voice Interview Simulation</div>
+                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Voice Assistant</div>
+                    <div className="text-xs text-muted-foreground">Voice Conversation Simulation</div>
                 </div>
 
                 {started && (
@@ -467,9 +467,9 @@ export default function VoiceInterviewPage() {
                                 <div className="flex justify-center items-center h-full">
                                     <AnimatedPlaceholder
                                         onStart={handleStart}
-                                        title="Ready for Your Interview?"
-                                        description="Click the button below to begin your interview."
-                                        buttonText="Start Interview"
+                                        title="Ready to Say Hello?"
+                                        description="Click the button below to share a little about yourself"
+                                        buttonText="Let's Go"
                                     />
                                 </div>
                             )}

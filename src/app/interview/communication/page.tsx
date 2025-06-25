@@ -561,8 +561,8 @@ function CommunicationInterview() {
                     </svg>
                 </div>
                 <div>
-                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Communication Skills Interview</div>
-                    <div className="text-xs text-muted-foreground">Video Interview Simulation</div>
+                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Communication Skills Assessment</div>
+                    <div className="text-xs text-muted-foreground">Video Assessment Simulation</div>
                 </div>
             </div>
 

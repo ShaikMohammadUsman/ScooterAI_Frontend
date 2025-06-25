@@ -43,7 +43,9 @@ import { ParsingMessage } from "@/components/ui/parsing-message";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoIcon, MapPin, Linkedin, X, CheckCircle, Clock, Headphones, RotateCcw, Mic } from "lucide-react";
-import { Combobox } from "@/components/ui/combobox";
+import { SingleSelect } from "@/components/ui/single-select";
+import ResumeSuggestionBox from "@/components/interview/ResumeSuggestionBox";
+import ProfileSuccessScreen from "@/components/interview/ProfileSuccessScreen";
 
 interface CompanyHistory {
     company_name: string;
@@ -125,6 +127,68 @@ const NOTICE_PERIOD_OPTIONS = [
     "90 days"
 ];
 
+// Add LinkedIn URL validation function
+const isValidLinkedInUrl = (url: string): boolean => {
+    if (!url || url.trim() === '') return false;
+
+    // LinkedIn URL patterns
+    const linkedInPatterns = [
+        /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_]+\/?$/,
+        /^https?:\/\/(www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_]+\/?$/,
+        /^https?:\/\/(www\.)?linkedin\.com\/pub\/[a-zA-Z0-9\-_]+\/?$/,
+        /^linkedin\.com\/in\/[a-zA-Z0-9\-_]+\/?$/,
+        /^linkedin\.com\/company\/[a-zA-Z0-9\-_]+\/?$/,
+        /^linkedin\.com\/pub\/[a-zA-Z0-9\-_]+\/?$/
+    ];
+
+    return linkedInPatterns.some(pattern => pattern.test(url.trim()));
+};
+
+// Add this near the top or with other constants
+const INDIAN_CITIES = [
+    "Mumbai, Maharashtra",
+    "Delhi, Delhi",
+    "Bengaluru, Karnataka",
+    "Hyderabad, Telangana",
+    "Ahmedabad, Gujarat",
+    "Chennai, Tamil Nadu",
+    "Kolkata, West Bengal",
+    "Pune, Maharashtra",
+    "Jaipur, Rajasthan",
+    "Lucknow, Uttar Pradesh",
+    "Kanpur, Uttar Pradesh",
+    "Nagpur, Maharashtra",
+    "Indore, Madhya Pradesh",
+    "Thane, Maharashtra",
+    "Bhopal, Madhya Pradesh",
+    "Visakhapatnam, Andhra Pradesh",
+    "Pimpri-Chinchwad, Maharashtra",
+    "Patna, Bihar",
+    "Vadodara, Gujarat",
+    "Ghaziabad, Uttar Pradesh",
+    "Ludhiana, Punjab",
+    "Agra, Uttar Pradesh",
+    "Nashik, Maharashtra",
+    "Faridabad, Haryana",
+    "Meerut, Uttar Pradesh",
+    "Rajkot, Gujarat",
+    "Kalyan-Dombivli, Maharashtra",
+    "Vasai-Virar, Maharashtra",
+    "Varanasi, Uttar Pradesh",
+    "Srinagar, Jammu and Kashmir",
+    "Aurangabad, Maharashtra",
+    "Dhanbad, Jharkhand",
+    "Amritsar, Punjab",
+    "Navi Mumbai, Maharashtra",
+    "Allahabad, Uttar Pradesh",
+    "Ranchi, Jharkhand",
+    "Howrah, West Bengal",
+    "Coimbatore, Tamil Nadu",
+    "Jabalpur, Madhya Pradesh",
+    "Gwalior, Madhya Pradesh",
+    "Vijayawada, Andhra Pradesh"
+];
+
 export default function ResumePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -137,19 +201,84 @@ export default function ResumePage() {
     const [showSuccessScreen, setShowSuccessScreen] = useState(false);
     const [consentToUpdates, setConsentToUpdates] = useState<boolean>(false);
     const [linkedInUrl, setLinkedInUrl] = useState<string>("");
+    // Add local state for custom tool options and input for each tools field
+    const [crmOptions, setCrmOptions] = useState([
+        "Salesforce",
+        "HubSpot",
+        "Zoho",
+        "Pipedrive",
+        "Outreach",
+        "Apollo",
+        "Salesloft",
+        "Sales Nav",
+        "Gong",
+        "Chorus",
+        "ZoomInfo",
+        "Slack",
+        "Notion",
+        "Excel",
+        "Google Sheets",
+        "Other"
+    ]);
+    const [salesToolOptions, setSalesToolOptions] = useState([
+        "LinkedIn Sales Navigator",
+        "WhatsApp Business",
+        "Gong",
+        "Outreach",
+        "Apollo",
+        "ZoomInfo",
+        "SalesLoft",
+        "HubSpot Sales",
+        "Pipedrive",
+        "Salesforce",
+        "Chorus",
+        "Calendly",
+        "Loom",
+        "Zoom",
+        "Microsoft Teams",
+        "Slack",
+        "Notion",
+        "Excel",
+        "Google Sheets",
+        "Other"
+    ]);
+    const [commToolOptions, setCommToolOptions] = useState([
+        "Slack",
+        "Microsoft Teams",
+        "Zoom",
+        "Google Meet",
+        "WhatsApp Business",
+        "LinkedIn",
+        "Email",
+        "Phone",
+        "SMS",
+        "Other"
+    ]);
+    const [customCrm, setCustomCrm] = useState("");
+    const [customSalesTool, setCustomSalesTool] = useState("");
+    const [customCommTool, setCustomCommTool] = useState("");
+    const [showSuggestion, setShowSuggestion] = useState(false);
 
     // Handle file upload and parse
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
+        setShowSuggestion(false);
         setFile(e.target.files[0]);
         setProfile(null);
         setError(null);
         setSuccess(null);
         setLoading(true);
         try {
-            const parsed: ParseResumeResponse = await parseResume(e.target.files[0]);
-            console.log('Raw parsed data:', parsed);
+            const parsedResponse: ParseResumeResponse = await parseResume(e.target.files[0]);
+            // console.log('Raw parsed data:', parsedResponse);
 
+            if (!parsedResponse.status) {
+                toast({ title: "Error", description: parsedResponse?.message, variant: "destructive" });
+                setShowSuggestion(true);
+                // setError(parsedResponse?.message || "Failed to parse resume");
+                return;
+            }
+            const parsed = parsedResponse.data;
             // Transform the data to match our expected structure
             const transformedProfile: ResumeProfile = {
                 basic_information: {
@@ -157,7 +286,7 @@ export default function ResumePage() {
                     current_location: parsed.basic_information.current_location || "",
                     open_to_relocation: parsed.basic_information.open_to_relocation || false,
                     phone_number: parsed.basic_information.phone_number || "",
-                    linkedin_url: parsed.basic_information.linkedin_url || "",
+                    linkedin_url: parsed.basic_information.linkedin_url || (isValidLinkedInUrl(linkedInUrl) ? linkedInUrl : ""),
                     email: parsed.basic_information.email || "",
                     specific_phone_number: parsed.basic_information.specific_phone_number || "",
                     notice_period: parsed.basic_information.notice_period || "",
@@ -203,7 +332,7 @@ export default function ResumePage() {
                 },
             };
 
-            console.log('Transformed profile:', transformedProfile);
+            // console.log('Transformed profile:', transformedProfile);
             setProfile(transformedProfile);
             toast({ title: "Resume parsed!", description: "Edit and submit your profile." });
         } catch (err: any) {
@@ -359,66 +488,11 @@ export default function ResumePage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
-            <div className="container mx-auto py-8 px-4">
+            <div className="container mx-auto py-8 px-2 sm:px-4">
                 {/* Success Screen */}
                 {showSuccessScreen ? (
-                    <div className="text-center py-12">
-                        <div className="max-w-2xl mx-auto">
-                            {/* Success Icon */}
-                            <div className="mb-8">
-                                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
-                                    <CheckCircle className="w-12 h-12 text-green-600" />
-                                </div>
-                                <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                                    Congrats! You've made it to the next step
-                                </h1>
-                            </div>
-
-                            {/* Main Content */}
-                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8">
-                                <p className="text-xl text-gray-700 leading-relaxed mb-6">
-                                    Your profile looks strong!
-                                </p>
-                                <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                                    Now you have to answer 2–3 short questions in your own voice so hiring teams can hear how you think, speak, and sell.
-                                </p>
-                                <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                                    This helps you stand out early and get a response quicker.
-                                </p>
-
-                                {/* Features Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-blue-50">
-                                        <Clock className="w-6 h-6 text-blue-600 mb-2" />
-                                        <span className="text-sm font-medium text-blue-700">Takes 3-5 minutes</span>
-                                    </div>
-                                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-purple-50">
-                                        <Headphones className="w-6 h-6 text-purple-600 mb-2" />
-                                        <span className="text-sm font-medium text-purple-700">Headphones recommended</span>
-                                    </div>
-                                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-orange-50">
-                                        <RotateCcw className="w-6 h-6 text-orange-600 mb-2" />
-                                        <span className="text-sm font-medium text-orange-700">You can re-record</span>
-                                    </div>
-                                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-green-50">
-                                        <Mic className="w-6 h-6 text-green-600 mb-2" />
-                                        <span className="text-sm font-medium text-green-700">No video required, only voice</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* CTA Button */}
-                            <Button
-                                onClick={handleStartInterview}
-                                className="h-14 px-12 text-xl font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                            >
-                                Start Now
-                            </Button>
-                        </div>
-                    </div>
+                    <ProfileSuccessScreen handleStartInterview={handleStartInterview} />
                 ) : (
-
-
                     <Card className="w-full lg:w-2/3 mx-auto shadow-lg border-0 rounded-3xl bg-white/95 backdrop-blur-sm">
                         <CardHeader className="flex flex-col items-center gap-3  bg-white/80 px-8 py-6 rounded-3xl">
                             <FiUploadCloud className="text-primary w-8 h-8" />
@@ -429,7 +503,7 @@ export default function ResumePage() {
                             <CardDescription>This won't take long. Less than 10 mins to capture your sales superpowers.</CardDescription>
 
                         </CardHeader>
-                        <CardContent className="p-8">
+                        <CardContent className="p-2 sm:p-4">
 
                             {/* LinkedIn URL Input (optional) */}
                             <div className="mb-6 w-full max-w-md mx-auto">
@@ -447,22 +521,39 @@ export default function ResumePage() {
                                             </Tooltip>
                                         </TooltipProvider>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <form className="flex gap-2">
                                         <Input
                                             value={linkedInUrl}
                                             onChange={e => setLinkedInUrl(e.target.value)}
                                             placeholder="https://linkedin.com/in/your-profile"
                                             className="flex-1"
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => window.open(`${linkedInUrl}`, "_blank")}
-                                        >
-                                            <Linkedin className="h-4 w-4 mr-2" />
-                                            Find URL
-                                        </Button>
-                                    </div>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        disabled={!linkedInUrl || linkedInUrl.length === 0 || !isValidLinkedInUrl(linkedInUrl)}
+                                                        onClick={() => window.open(`${linkedInUrl}`, "_blank")}
+                                                    >
+                                                        <Linkedin className="h-4 w-4 mr-2" />
+                                                        See Profile
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>
+                                                        {!linkedInUrl || linkedInUrl.length === 0
+                                                            ? "Enter a LinkedIn profile URL"
+                                                            : !isValidLinkedInUrl(linkedInUrl)
+                                                                ? "Enter a valid LinkedIn profile URL"
+                                                                : "Open LinkedIn profile"
+                                                        }
+                                                    </p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </form>
                                 </FormControl>
                             </div>
 
@@ -543,6 +634,8 @@ export default function ResumePage() {
                             {/* Error State */}
                             {error && <ErrorBox message={error} />}
 
+                            {showSuggestion && <ResumeSuggestionBox />}
+
                             {/* Editable Form */}
                             {profile && !loading && (
                                 <form onSubmit={handleSubmit} className="space-y-8">
@@ -599,13 +692,14 @@ export default function ResumePage() {
                                                             </TooltipProvider>
                                                         </div>
                                                         <div className="flex gap-2">
-                                                            <Combobox
-                                                                value={profile?.basic_information.current_location || ""}
+                                                            <SingleSelect
+                                                                options={INDIAN_CITIES}
+                                                                selected={profile?.basic_information.current_location || ""}
                                                                 onChange={(value: string) => handleFieldChange("basic_information", "current_location", value)}
                                                                 placeholder="Search for your city..."
-                                                                className="flex-1"
+                                                                className="flex-1 bg-white"
                                                             />
-                                                            <Button
+                                                            {/* <Button
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="icon"
@@ -644,7 +738,7 @@ export default function ResumePage() {
                                                                 }}
                                                             >
                                                                 <MapPin className="h-4 w-4" />
-                                                            </Button>
+                                                            </Button> */}
                                                         </div>
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             Your current city helps us show location-relevant roles.
@@ -697,7 +791,11 @@ export default function ResumePage() {
                                                             <Input
                                                                 type="tel"
                                                                 value={profile?.basic_information.phone_number || ""}
-                                                                onChange={e => handleFieldChange("basic_information", "phone_number", e.target.value)}
+                                                                onChange={e => {
+                                                                    // Only allow digits, +, -, and spaces
+                                                                    const cleaned = e.target.value.replace(/[^\d+\-\s]/g, "");
+                                                                    handleFieldChange("basic_information", "phone_number", cleaned);
+                                                                }}
                                                                 placeholder="+1 (555) 555-5555"
                                                                 required
                                                                 className="flex-1"
@@ -723,21 +821,37 @@ export default function ResumePage() {
                                                                 </Tooltip>
                                                             </TooltipProvider>
                                                         </div>
-                                                        <div className="flex gap-2">
+                                                        <div className="flex gap-2 flex-col lg:flex-row ">
                                                             <Input
                                                                 value={profile?.basic_information.linkedin_url || ""}
                                                                 onChange={e => handleFieldChange("basic_information", "linkedin_url", e.target.value)}
                                                                 placeholder="https://linkedin.com/in/your-profile"
-                                                                className="flex-1"
                                                             />
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                onClick={() => window.open("https://linkedin.com/in/", "_blank")}
-                                                            >
-                                                                <Linkedin className="h-4 w-4 mr-2" />
-                                                                Find URL
-                                                            </Button>
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            disabled={!profile?.basic_information.linkedin_url || profile.basic_information.linkedin_url.length === 0 || !isValidLinkedInUrl(profile.basic_information.linkedin_url)}
+                                                                            onClick={() => window.open(profile?.basic_information.linkedin_url || "", "_blank")}
+                                                                        >
+                                                                            <Linkedin className="h-4 w-4 mr-2" />
+                                                                            See Profile
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>
+                                                                            {!profile?.basic_information.linkedin_url || profile.basic_information.linkedin_url.length === 0
+                                                                                ? "Enter a LinkedIn profile URL"
+                                                                                : !isValidLinkedInUrl(profile.basic_information.linkedin_url)
+                                                                                    ? "Enter a valid LinkedIn profile URL"
+                                                                                    : "Open LinkedIn profile"
+                                                                            }
+                                                                        </p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
                                                         </div>
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             Used to match and enrich your resume data — optional.
@@ -771,7 +885,7 @@ export default function ResumePage() {
                                                         </p>
                                                     </FormControl>
 
-                                                    {/* Specific Phone Number */}
+                                                    {/* Specific Phone Number
                                                     <FormControl>
                                                         <div className="flex items-center gap-2">
                                                             <FormLabel>Specific Phone Number</FormLabel>
@@ -795,7 +909,7 @@ export default function ResumePage() {
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             For urgent updates — we won't spam.
                                                         </p>
-                                                    </FormControl>
+                                                    </FormControl> */}
 
                                                     {/* Notice Period */}
                                                     <FormControl>
@@ -862,40 +976,42 @@ export default function ResumePage() {
                                                                 </Tooltip>
                                                             </TooltipProvider>
                                                         </div>
-                                                        <div className="flex gap-2">
-                                                            <Select
-                                                                value={profile?.basic_information.current_ctc.currencyType || ""}
-                                                                onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, currencyType: value })}
-                                                            >
-                                                                <SelectTrigger className="w-[100px]">
-                                                                    <SelectValue placeholder="₹" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="INR">₹ (INR)</SelectItem>
-                                                                    <SelectItem value="USD">$ (USD)</SelectItem>
-                                                                    <SelectItem value="EUR">€ (EUR)</SelectItem>
-                                                                    <SelectItem value="GBP">£ (GBP)</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="flex gap-2">
+                                                                <Select
+                                                                    value={profile?.basic_information.current_ctc.cadence || "annual"}
+                                                                    onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, cadence: value })}
+                                                                >
+                                                                    <SelectTrigger className="w-24 flex-1/2">
+                                                                        <SelectValue placeholder="Annual" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="annual">Annual</SelectItem>
+                                                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                <Select
+                                                                    value={profile?.basic_information.current_ctc.currencyType || ""}
+                                                                    onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, currencyType: value })}
+                                                                >
+                                                                    <SelectTrigger className="w-24 flex-1/2">
+                                                                        <SelectValue placeholder="₹" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="INR">₹ (INR)</SelectItem>
+                                                                        <SelectItem value="USD">$ (USD)</SelectItem>
+                                                                        <SelectItem value="EUR">€ (EUR)</SelectItem>
+                                                                        <SelectItem value="GBP">£ (GBP)</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
                                                             <Input
                                                                 type="number"
                                                                 value={profile?.basic_information.current_ctc.value || ""}
                                                                 onChange={e => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, value: Number(e.target.value) })}
                                                                 placeholder="Enter amount"
-                                                                className="flex-1"
                                                             />
-                                                            <Select
-                                                                value={profile?.basic_information.current_ctc.cadence || "annual"}
-                                                                onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, cadence: value })}
-                                                            >
-                                                                <SelectTrigger className="w-[120px]">
-                                                                    <SelectValue placeholder="Annual" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="annual">Annual</SelectItem>
-                                                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
+
                                                         </div>
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             Optional - Helps us match you with better-paying opportunities.
@@ -917,40 +1033,42 @@ export default function ResumePage() {
                                                                 </Tooltip>
                                                             </TooltipProvider>
                                                         </div>
-                                                        <div className="flex gap-2">
-                                                            <Select
-                                                                value={profile?.basic_information.expected_ctc.currencyType || ""}
-                                                                onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, currencyType: value })}
-                                                            >
-                                                                <SelectTrigger className="w-[100px]">
-                                                                    <SelectValue placeholder="₹" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="INR">₹ (INR)</SelectItem>
-                                                                    <SelectItem value="USD">$ (USD)</SelectItem>
-                                                                    <SelectItem value="EUR">€ (EUR)</SelectItem>
-                                                                    <SelectItem value="GBP">£ (GBP)</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="flex gap-2">
+                                                                <Select
+                                                                    value={profile?.basic_information.expected_ctc.cadence || "annual"}
+                                                                    onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, cadence: value })}
+                                                                >
+                                                                    <SelectTrigger className="w-24 flex-1/2">
+                                                                        <SelectValue placeholder="Annual" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="annual">Annual</SelectItem>
+                                                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                <Select
+                                                                    value={profile?.basic_information.expected_ctc.currencyType || ""}
+                                                                    onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, currencyType: value })}
+                                                                >
+                                                                    <SelectTrigger className="w-24 flex-1/2">
+                                                                        <SelectValue placeholder="₹" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="INR">₹ (INR)</SelectItem>
+                                                                        <SelectItem value="USD">$ (USD)</SelectItem>
+                                                                        <SelectItem value="EUR">€ (EUR)</SelectItem>
+                                                                        <SelectItem value="GBP">£ (GBP)</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
                                                             <Input
                                                                 type="number"
                                                                 value={profile?.basic_information.expected_ctc.value || ""}
                                                                 onChange={e => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, value: Number(e.target.value) })}
                                                                 placeholder="Enter amount"
-                                                                className="flex-1"
                                                             />
-                                                            <Select
-                                                                value={profile?.basic_information.expected_ctc.cadence || "annual"}
-                                                                onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, cadence: value })}
-                                                            >
-                                                                <SelectTrigger className="w-[120px]">
-                                                                    <SelectValue placeholder="Annual" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="annual">Annual</SelectItem>
-                                                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
+
                                                         </div>
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             Optional - Your expected total compensation including incentives.
@@ -1154,7 +1272,7 @@ export default function ResumePage() {
                                                                         <CardContent className="p-6">
                                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                                                 {/* Company Name */}
-                                                                                <FormControl>
+                                                                                <div className="col-span-2 md:col-span-1">
                                                                                     <div className="flex items-center gap-2">
                                                                                         <FormLabel>Company</FormLabel>
                                                                                         <TooltipProvider>
@@ -1175,10 +1293,10 @@ export default function ResumePage() {
                                                                                         required
                                                                                         className="font-medium"
                                                                                     />
-                                                                                </FormControl>
+                                                                                </div>
 
                                                                                 {/* Position */}
-                                                                                <FormControl>
+                                                                                <div className="col-span-2 md:col-span-1">
                                                                                     <div className="flex items-center gap-2">
                                                                                         <FormLabel>Position</FormLabel>
                                                                                         <TooltipProvider>
@@ -1199,7 +1317,7 @@ export default function ResumePage() {
                                                                                         required
                                                                                         className="font-medium"
                                                                                     />
-                                                                                </FormControl>
+                                                                                </div>
 
                                                                                 {/* Duration */}
                                                                                 <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1811,28 +1929,44 @@ export default function ResumePage() {
                                                             </TooltipProvider>
                                                         </div>
                                                         <MultiSelect
-                                                            options={[
-                                                                "Salesforce",
-                                                                "HubSpot",
-                                                                "Zoho",
-                                                                "Pipedrive",
-                                                                "Outreach",
-                                                                "Apollo",
-                                                                "Salesloft",
-                                                                "Sales Nav",
-                                                                "Gong",
-                                                                "Chorus",
-                                                                "ZoomInfo",
-                                                                "Slack",
-                                                                "Notion",
-                                                                "Excel",
-                                                                "Google Sheets",
-                                                                "Other"
-                                                            ]}
+                                                            options={crmOptions}
                                                             selected={profile.tools_platforms.crm_used}
                                                             onChange={(values) => handleArrayChange("tools_platforms", "crm_used", values)}
                                                             placeholder="Select CRM tools..."
                                                         />
+                                                        {profile.tools_platforms.crm_used.includes("Other") && (
+                                                            <div className="flex gap-2 mt-2">
+                                                                <Input
+                                                                    value={customCrm}
+                                                                    onChange={e => setCustomCrm(e.target.value)}
+                                                                    placeholder="Add a new CRM tool..."
+                                                                    className="flex-1"
+                                                                    onKeyDown={e => {
+                                                                        if (e.key === "Enter" && customCrm.trim()) {
+                                                                            if (!crmOptions.includes(customCrm.trim())) {
+                                                                                setCrmOptions([...crmOptions.slice(0, -1), customCrm.trim(), "Other"]);
+                                                                            }
+                                                                            handleArrayChange("tools_platforms", "crm_used", [...profile.tools_platforms.crm_used.filter(t => t !== "Other"), customCrm.trim()]);
+                                                                            setCustomCrm("");
+                                                                            e.preventDefault();
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (customCrm.trim() && !crmOptions.includes(customCrm.trim())) {
+                                                                            setCrmOptions([...crmOptions.slice(0, -1), customCrm.trim(), "Other"]);
+                                                                        }
+                                                                        handleArrayChange("tools_platforms", "crm_used", [...profile.tools_platforms.crm_used.filter(t => t !== "Other"), customCrm.trim()]);
+                                                                        setCustomCrm("");
+                                                                    }}
+                                                                    disabled={!customCrm.trim()}
+                                                                >
+                                                                    Add
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             E.g. Salesforce, Zoho, HubSpot — searchable dropdown
                                                         </p>
@@ -1854,32 +1988,44 @@ export default function ResumePage() {
                                                             </TooltipProvider>
                                                         </div>
                                                         <MultiSelect
-                                                            options={[
-                                                                "LinkedIn Sales Navigator",
-                                                                "WhatsApp Business",
-                                                                "Gong",
-                                                                "Outreach",
-                                                                "Apollo",
-                                                                "ZoomInfo",
-                                                                "SalesLoft",
-                                                                "HubSpot Sales",
-                                                                "Pipedrive",
-                                                                "Salesforce",
-                                                                "Chorus",
-                                                                "Calendly",
-                                                                "Loom",
-                                                                "Zoom",
-                                                                "Microsoft Teams",
-                                                                "Slack",
-                                                                "Notion",
-                                                                "Excel",
-                                                                "Google Sheets",
-                                                                "Other"
-                                                            ]}
+                                                            options={salesToolOptions}
                                                             selected={profile.tools_platforms.sales_tools}
                                                             onChange={(values) => handleArrayChange("tools_platforms", "sales_tools", values)}
                                                             placeholder="Select sales tools..."
                                                         />
+                                                        {profile.tools_platforms.sales_tools.includes("Other") && (
+                                                            <div className="flex gap-2 mt-2">
+                                                                <Input
+                                                                    value={customSalesTool}
+                                                                    onChange={e => setCustomSalesTool(e.target.value)}
+                                                                    placeholder="Add a new sales tool..."
+                                                                    className="flex-1"
+                                                                    onKeyDown={e => {
+                                                                        if (e.key === "Enter" && customSalesTool.trim()) {
+                                                                            if (!salesToolOptions.includes(customSalesTool.trim())) {
+                                                                                setSalesToolOptions([...salesToolOptions.slice(0, -1), customSalesTool.trim(), "Other"]);
+                                                                            }
+                                                                            handleArrayChange("tools_platforms", "sales_tools", [...profile.tools_platforms.sales_tools.filter(t => t !== "Other"), customSalesTool.trim()]);
+                                                                            setCustomSalesTool("");
+                                                                            e.preventDefault();
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (customSalesTool.trim() && !salesToolOptions.includes(customSalesTool.trim())) {
+                                                                            setSalesToolOptions([...salesToolOptions.slice(0, -1), customSalesTool.trim(), "Other"]);
+                                                                        }
+                                                                        handleArrayChange("tools_platforms", "sales_tools", [...profile.tools_platforms.sales_tools.filter(t => t !== "Other"), customSalesTool.trim()]);
+                                                                        setCustomSalesTool("");
+                                                                    }}
+                                                                    disabled={!customSalesTool.trim()}
+                                                                >
+                                                                    Add
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             E.g. LinkedIn Sales Nav, Gong, WhatsApp Business
                                                         </p>
@@ -1901,22 +2047,44 @@ export default function ResumePage() {
                                                             </TooltipProvider>
                                                         </div>
                                                         <MultiSelect
-                                                            options={[
-                                                                "Slack",
-                                                                "Microsoft Teams",
-                                                                "Zoom",
-                                                                "Google Meet",
-                                                                "WhatsApp Business",
-                                                                "LinkedIn",
-                                                                "Email",
-                                                                "Phone",
-                                                                "SMS",
-                                                                "Other"
-                                                            ]}
+                                                            options={commToolOptions}
                                                             selected={profile.tools_platforms.communication_tools}
                                                             onChange={(values) => handleArrayChange("tools_platforms", "communication_tools", values)}
                                                             placeholder="Select communication tools..."
                                                         />
+                                                        {profile.tools_platforms.communication_tools.includes("Other") && (
+                                                            <div className="flex gap-2 mt-2">
+                                                                <Input
+                                                                    value={customCommTool}
+                                                                    onChange={e => setCustomCommTool(e.target.value)}
+                                                                    placeholder="Add a new communication tool..."
+                                                                    className="flex-1"
+                                                                    onKeyDown={e => {
+                                                                        if (e.key === "Enter" && customCommTool.trim()) {
+                                                                            if (!commToolOptions.includes(customCommTool.trim())) {
+                                                                                setCommToolOptions([...commToolOptions.slice(0, -1), customCommTool.trim(), "Other"]);
+                                                                            }
+                                                                            handleArrayChange("tools_platforms", "communication_tools", [...profile.tools_platforms.communication_tools.filter(t => t !== "Other"), customCommTool.trim()]);
+                                                                            setCustomCommTool("");
+                                                                            e.preventDefault();
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (customCommTool.trim() && !commToolOptions.includes(customCommTool.trim())) {
+                                                                            setCommToolOptions([...commToolOptions.slice(0, -1), customCommTool.trim(), "Other"]);
+                                                                        }
+                                                                        handleArrayChange("tools_platforms", "communication_tools", [...profile.tools_platforms.communication_tools.filter(t => t !== "Other"), customCommTool.trim()]);
+                                                                        setCustomCommTool("");
+                                                                    }}
+                                                                    disabled={!customCommTool.trim()}
+                                                                >
+                                                                    Add
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             Tools used for customer and team communication
                                                         </p>

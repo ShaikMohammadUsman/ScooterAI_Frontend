@@ -113,9 +113,9 @@ function CareersPage() {
                                         </Badge>
                                     ))}
                                 </div>
-                                <div className="flex justify-between items-center">
+                                <div className="flex flex-col-reverse md:flex-row justify-between items-center">
                                     <Button
-                                        className="px-8 py-2 text-base font-semibold"
+                                        className="my-2 px-8 py-2 text-base font-semibold"
                                         onClick={() => router.push(`/resume?role=${encodeURIComponent(job.title)}&job_id=${job.job_id}`)}
                                     >
                                         Apply Now
