@@ -15,7 +15,7 @@ const scooterVariants: Variants = {
 
 const roadVariants: Variants = {
     move: {
-        x: [0, -80],
+        x: [0, -70],
         transition: {
             repeat: Infinity,
             duration: 1.2,
@@ -52,13 +52,13 @@ const LoadingSpinner: React.FC<{ text?: string }> = ({ text }) => {
                     </svg>
                     {/* Animated dashed line */}
                     <motion.svg
-                        width="320" height="40" viewBox="0 0 320 40"
+                        width="360" height="40" viewBox="0 0 360 40"
                         className="absolute top-0 left-0 z-10"
                         variants={roadVariants}
                         animate="move"
                     >
                         <g>
-                            {Array.from({ length: 12 }).map((_, i) => (
+                            {Array.from({ length: 20 }).map((_, i) => (
                                 <rect
                                     key={i}
                                     x={i * 32}
