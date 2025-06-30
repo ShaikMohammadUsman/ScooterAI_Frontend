@@ -1,12 +1,13 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react";
-import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight } from "react-icons/fa";
+import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight, FaUpload } from "react-icons/fa";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingDots } from "@/components/ui/loadingDots";
-import { generateInterviewQuestions, evaluateInterview, QAPair } from "@/lib/interviewService";
+import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio } from "@/lib/interviewService";
 import { textInAudioOut } from "@/lib/voiceBot";
+import { InterviewAudioRecorder } from "@/lib/audioRecorder";
 import Penguine from "@/../public/assets/icons/penguin_2273664.png";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -44,6 +45,12 @@ export default function VoiceInterviewPage() {
     const [passed, setPassed] = useState(false);
     const [recognizing, setRecognizing] = useState(false);
 
+    // Audio recording states
+    const audioRecorderRef = useRef<InterviewAudioRecorder | null>(null);
+    const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+
     // Scroll to bottom on new message
     useEffect(() => {
         scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,6 +61,9 @@ export default function VoiceInterviewPage() {
         return () => {
             if (recognizerRef.current) {
                 recognizerRef.current.stopContinuousRecognitionAsync();
+            }
+            if (audioRecorderRef.current) {
+                audioRecorderRef.current.cleanup();
             }
         };
     }, []);
@@ -79,6 +89,9 @@ export default function VoiceInterviewPage() {
             if (!res.questions || res.questions.length === 0) {
                 throw new Error("No questions were generated");
             }
+
+            // Initialize audio recorder
+            audioRecorderRef.current = new InterviewAudioRecorder();
 
             // Reset all states
             setStarted(false);
@@ -122,6 +135,11 @@ export default function VoiceInterviewPage() {
                 text: question,
                 icon: <FaUserTie className="text-primary w-6 h-6" />
             }]);
+
+            // Add TTS segment to audio recorder
+            if (audioRecorderRef.current) {
+                audioRecorderRef.current.addTTSSegment(question);
+            }
 
             // Speak the question
             await textInAudioOut(
@@ -184,6 +202,16 @@ export default function VoiceInterviewPage() {
         // Remove loading state when starting recording
         setLoading(false);
 
+        // Start audio recording for user response
+        if (audioRecorderRef.current) {
+            try {
+                await audioRecorderRef.current.startUserRecording();
+            } catch (error) {
+                console.error("Error starting audio recording:", error);
+                // Continue with speech recognition even if audio recording fails
+            }
+        }
+
         try {
             const speechConfig = speechsdk.SpeechConfig.fromSubscription(SPEECH_KEY, SPEECH_REGION);
             speechConfig.speechRecognitionLanguage = "en-US";
@@ -232,6 +260,11 @@ export default function VoiceInterviewPage() {
         const isLastQuestion = currentQ === questionsRef.current.length - 1;
         setIsSubmitting(true);
 
+        // Stop audio recording for user response
+        if (audioRecorderRef.current) {
+            audioRecorderRef.current.stopUserRecording();
+        }
+
         // Create the new QA pair
         const newQAPair = {
             question: questionsRef.current[currentQ],
@@ -271,12 +304,12 @@ export default function VoiceInterviewPage() {
             // The loading state will be shown during askQuestion
             askQuestion(nextQ);
         } else {
-            // For last question, proceed to evaluation
+            // For last question, proceed to evaluation and audio upload
             setSubmissionSuccess(false);
             setIsSubmitting(false);
             // Get the latest qaPairs before evaluation
             const currentQAPairs = [...qaPairs, newQAPair];
-            evaluateInterviewResults(currentQAPairs);
+            await evaluateInterviewResults(currentQAPairs);
         }
     };
 
@@ -294,7 +327,7 @@ export default function VoiceInterviewPage() {
         setMicEnabled(true);
     };
 
-    // Evaluate interview results
+    // Evaluate interview results and upload audio
     const evaluateInterviewResults = async (qaPairsToEvaluate: QAPair[] = qaPairs) => {
         const profile_id = localStorage.getItem('profile_id');
         if (!profile_id) {
@@ -312,6 +345,10 @@ export default function VoiceInterviewPage() {
             if (res && res.status) {
                 setIsSubmitting(false);
                 setSubmissionSuccess(true);
+
+                // Upload audio file
+                await uploadAudioFile(profile_id);
+
                 setShowResults(true);
                 if (res.qualified_for_video_round) {
                     setPassed(res.qualified_for_video_round);
@@ -326,11 +363,75 @@ export default function VoiceInterviewPage() {
         }
     };
 
+    // Upload audio file
+    const uploadAudioFile = async (profile_id: string) => {
+        if (!audioRecorderRef.current) {
+            console.warn("No audio recorder available");
+            return;
+        }
+
+        try {
+            setIsUploadingAudio(true);
+            setShowUploadModal(true);
+            setUploadProgress(0);
+
+            // Combine audio segments
+            const audioFile = await audioRecorderRef.current.combineAudioSegments();
+
+            // Upload the audio file
+            await uploadInterviewAudio({
+                file: audioFile,
+                user_id: profile_id,
+                onProgress: (progress) => {
+                    setUploadProgress(Math.round(progress * 100));
+                }
+            });
+
+            console.log("Audio file uploaded successfully");
+        } catch (error) {
+            console.error("Error uploading audio file:", error);
+            setError("Failed to upload audio file");
+        } finally {
+            setIsUploadingAudio(false);
+            setShowUploadModal(false);
+            setUploadProgress(0);
+        }
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-background">
+            {/* Audio Upload Modal */}
+            <AnimatePresence>
+                {showUploadModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl"
+                        >
+                            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                            <h3 className="text-xl font-semibold text-primary">Uploading Interview Audio...</h3>
+                            <p className="text-muted-foreground">Please wait while we upload your interview recording</p>
+                            <div className="w-full max-w-xs">
+                                <Progress value={uploadProgress} className="h-2" />
+                                <p className="text-sm text-gray-500 mt-2 text-center">
+                                    {uploadProgress}% uploaded
+                                </p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Submission State Modal */}
             <AnimatePresence>
-                {((isSubmitting || submissionSuccess || loading) && !isListening) && (
+                {((isSubmitting || submissionSuccess || loading) && !isListening && !showUploadModal) && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}

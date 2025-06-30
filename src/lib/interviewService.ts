@@ -242,6 +242,34 @@ export async function uploadInterviewVideo({ file, user_id, onProgress }: Upload
     }
 }
 
+// UPLOAD INTERVIEW AUDIO
+interface UploadAudioRequest {
+    file: File;
+    user_id: string;
+    onProgress?: (progress: number) => void;
+}
+
+export async function uploadInterviewAudio({ file, user_id, onProgress }: UploadAudioRequest): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('user_id', user_id);
+
+    try {
+        await axios.post(`${API_BASE}/upload-audio/`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (progressEvent) => {
+                if (progressEvent.total && onProgress) {
+                    const progress = progressEvent.loaded / progressEvent.total;
+                    onProgress(progress);
+                }
+            },
+        });
+    } catch (error) {
+        console.error('Error uploading audio:', error);
+        throw error;
+    }
+}
+
 // -------------------------------------------------------------------------------------------------------------------
 
 // VIDEO INTERVIEW LOGIN
