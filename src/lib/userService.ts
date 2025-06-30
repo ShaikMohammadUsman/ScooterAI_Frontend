@@ -35,8 +35,41 @@ export interface JobsResponse {
     jobs: Job[];
 }
 
+// User account types
+export interface CreateUserAccountRequest {
+    email: string;
+    number: string;
+    name: string;
+}
+
+export interface CreateUserAccountResponse {
+    status: boolean;
+    message: string;
+    user_id: string;
+}
+
+export interface UserLoginRequest {
+    email: string;
+    number: string;
+}
+
+export interface UserData {
+    email: string;
+    name: string;
+    phone: string;
+    application_ids: string[];
+}
+
+export interface UserLoginResponse {
+    status: boolean;
+    message: string;
+    user_id: string;
+    data: UserData;
+}
+
 // API base URL
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+// const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
 /**
  * Fetches a paginated list of jobs
@@ -130,5 +163,41 @@ export async function getRecommendedJobs(
         return response.data;
     } catch (err: any) {
         throw new Error(err.response?.data?.message || "Failed to fetch recommended jobs");
+    }
+}
+
+/**
+ * Creates a new user account
+ * @param userData - Object containing user account details
+ * @returns Promise with the account creation response
+ */
+export async function createUserAccount(userData: CreateUserAccountRequest): Promise<CreateUserAccountResponse> {
+    try {
+        const response = await axios.post(`${API_BASE}/create-user-account/`, userData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (err: any) {
+        throw new Error(err.response?.data?.message || "Failed to create user account");
+    }
+}
+
+/**
+ * Logs in a user with email and phone number
+ * @param loginData - Object containing login credentials
+ * @returns Promise with the login response including user data
+ */
+export async function userLogin(loginData: UserLoginRequest): Promise<UserLoginResponse> {
+    try {
+        const response = await axios.post(`${API_BASE}/user-login/`, loginData, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (err: any) {
+        throw new Error(err.response?.data?.message || "Failed to login user");
     }
 } 

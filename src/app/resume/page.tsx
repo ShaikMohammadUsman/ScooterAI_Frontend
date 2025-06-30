@@ -193,7 +193,7 @@ export default function ResumePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [file, setFile] = useState<File | null>(null);
-    const [profile, setProfile] = useState<ResumeProfile | null>(null);
+    const [profile, setProfile] = useState<ResumeProfile>(defaultProfile);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -201,6 +201,7 @@ export default function ResumePage() {
     const [showSuccessScreen, setShowSuccessScreen] = useState(false);
     const [consentToUpdates, setConsentToUpdates] = useState<boolean>(false);
     const [linkedInUrl, setLinkedInUrl] = useState<string>("");
+    const [resumeParsed, setResumeParsed] = useState<boolean>(false);
     // Add local state for custom tool options and input for each tools field
     const [crmOptions, setCrmOptions] = useState([
         "Salesforce",
@@ -264,12 +265,21 @@ export default function ResumePage() {
         if (!e.target.files || e.target.files.length === 0) return;
         setShowSuggestion(false);
         setFile(e.target.files[0]);
-        setProfile(null);
+        setProfile(defaultProfile);
         setError(null);
         setSuccess(null);
+        setResumeParsed(false);
         setLoading(true);
         try {
-            const parsedResponse: ParseResumeResponse = await parseResume(e.target.files[0]);
+            // Get user details from form or use defaults
+            const userDetails = {
+                file: e.target.files[0],
+                name: profile?.basic_information?.full_name || "User",
+                email: profile?.basic_information?.email || "",
+                phone: profile?.basic_information?.phone_number || ""
+            };
+
+            const parsedResponse: ParseResumeResponse = await parseResume(userDetails);
             // console.log('Raw parsed data:', parsedResponse);
 
             if (!parsedResponse.status) {
@@ -335,6 +345,7 @@ export default function ResumePage() {
             // console.log('Transformed profile:', transformedProfile);
             setProfile(transformedProfile);
             toast({ title: "Resume parsed!", description: "Edit and submit your profile." });
+            setResumeParsed(true);
         } catch (err: any) {
             setError(err.message || "Failed to parse resume");
             toast({ title: "Error", description: err.message || "Failed to parse resume", variant: "destructive" });
@@ -436,43 +447,71 @@ export default function ResumePage() {
         setError(null);
         setSuccess(null);
         try {
+            // Get user_id from localStorage
+            const userId = localStorage.getItem('scooterUserId');
+            if (!userId) {
+                throw new Error("User ID not found. Please try uploading your resume again.");
+            }
+
             // Transform the data to match the backend's expected format
             const transformedProfile = {
-                ...profile,
+                job_id: searchParams.get('job_id') || "",
+                user_id: userId,
+                basic_information: {
+                    full_name: profile.basic_information.full_name,
+                    current_location: profile.basic_information.current_location,
+                    open_to_relocation: profile.basic_information.open_to_relocation,
+                    phone_number: profile.basic_information.phone_number,
+                    linkedin_url: profile.basic_information.linkedin_url,
+                    email: profile.basic_information.email,
+                    specific_phone_number: profile.basic_information.specific_phone_number,
+                    notice_period: profile.basic_information.notice_period,
+                    current_ctc: {
+                        currencyType: profile.basic_information.current_ctc.currencyType,
+                        value: profile.basic_information.current_ctc.value
+                    },
+                    expected_ctc: {
+                        currencyType: profile.basic_information.expected_ctc.currencyType,
+                        value: profile.basic_information.expected_ctc.value
+                    }
+                },
+                career_overview: {
+                    total_years_experience: profile.career_overview.total_years_experience,
+                    years_sales_experience: profile.career_overview.years_sales_experience,
+                    average_tenure_per_role: profile.career_overview.average_tenure_per_role,
+                    employment_gaps: profile.career_overview.employment_gaps,
+                    promotion_history: profile.career_overview.promotion_history,
+                    company_history: profile.career_overview.company_history
+                },
                 sales_context: {
-                    ...profile.sales_context,
-                    // Convert arrays to single strings for sales_type and sales_motion
                     sales_type: profile.sales_context.sales_type[0] || "",
                     sales_motion: profile.sales_context.sales_motion[0] || "",
+                    industries_sold_into: profile.sales_context.industries_sold_into,
+                    regions_sold_into: profile.sales_context.regions_sold_into,
+                    buyer_personas: profile.sales_context.buyer_personas
                 },
                 role_process_exposure: {
-                    ...profile.role_process_exposure,
-                    // Add required fields for backend
+                    sales_role_type: profile.role_process_exposure.sales_role_type,
+                    position_level: profile.role_process_exposure.position_level,
+                    sales_stages_owned: profile.role_process_exposure.sales_stages_owned,
                     average_deal_size: profile.role_process_exposure.average_deal_size_range || "",
+                    sales_cycle_length: profile.role_process_exposure.sales_cycle_length,
                     own_quota: profile.role_process_exposure.quota_ownership?.has_quota || false,
-                    quota_attainment: profile.role_process_exposure.quota_ownership?.attainment_history || "",
-                    // Convert quota_ownership to array of strings
                     quota_ownership: profile.role_process_exposure.quota_ownership?.has_quota ? [
                         `Has Quota: ${profile.role_process_exposure.quota_ownership.has_quota}`,
                         `Amount: ${profile.role_process_exposure.quota_ownership.amount}`,
                         `Cadence: ${profile.role_process_exposure.quota_ownership.cadence}`,
                         `Attainment: ${profile.role_process_exposure.quota_ownership.attainment_history}`
-                    ].filter(str => str.split(': ')[1]) : [], // Only include non-empty values
+                    ].filter(str => str.split(': ')[1]) : [],
+                    quota_attainment: profile.role_process_exposure.quota_ownership?.attainment_history || ""
                 },
                 tools_platforms: {
-                    ...profile.tools_platforms,
                     crm_tools: profile.tools_platforms.crm_used || [],
+                    sales_tools: profile.tools_platforms.sales_tools || []
                 }
             };
 
-            // Remove undefined fields and fields not expected by backend
-            const cleanedProfile = JSON.parse(JSON.stringify(transformedProfile));
-            delete cleanedProfile.role_process_exposure.monthly_deal_volume;
-            delete cleanedProfile.role_process_exposure.average_deal_size_range;
-            delete cleanedProfile.tools_platforms.communication_tools;
-            delete cleanedProfile.tools_platforms.crm_used;
-
-            const res = await addResumeProfile(cleanedProfile, searchParams.get('job_id') || "");
+            const res = await addResumeProfile(transformedProfile);
             console.log(res);
             localStorage.setItem('profile_id', res.profile_id);
             setSuccess("Profile saved! ID: " + res.profile_id);
@@ -504,6 +543,53 @@ export default function ResumePage() {
 
                         </CardHeader>
                         <CardContent className="p-2 sm:p-4">
+
+
+
+                            {/* User Details Form - Required for Resume Parsing */}
+                            <div className="mb-8 w-full max-w-md mx-auto space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Your Details</h3>
+                                <p className="text-sm text-gray-600">Please provide your basic information for resume processing.</p>
+
+                                {/* Full Name */}
+                                <FormControl>
+                                    <FormLabel>Full Name *</FormLabel>
+                                    <Input
+                                        value={profile?.basic_information?.full_name || ""}
+                                        onChange={e => handleFieldChange("basic_information", "full_name", e.target.value)}
+                                        placeholder="Enter your full name"
+                                        required
+                                    />
+                                </FormControl>
+
+                                {/* Email Address */}
+                                <FormControl>
+                                    <FormLabel>Email Address *</FormLabel>
+                                    <Input
+                                        type="email"
+                                        value={profile?.basic_information?.email || ""}
+                                        onChange={e => handleFieldChange("basic_information", "email", e.target.value)}
+                                        placeholder="your.email@example.com"
+                                        required
+                                    />
+                                </FormControl>
+
+                                {/* Phone Number */}
+                                <FormControl>
+                                    <FormLabel>Phone Number *</FormLabel>
+                                    <Input
+                                        type="tel"
+                                        value={profile?.basic_information?.phone_number || ""}
+                                        onChange={e => {
+                                            // Only allow digits, +, -, and spaces
+                                            const cleaned = e.target.value.replace(/[^\d+\-\s]/g, "");
+                                            handleFieldChange("basic_information", "phone_number", cleaned);
+                                        }}
+                                        placeholder="+1 (555) 555-5555"
+                                        required
+                                    />
+                                </FormControl>
+                            </div>
 
                             {/* LinkedIn URL Input (optional) */}
                             <div className="mb-6 w-full max-w-md mx-auto">
@@ -574,21 +660,20 @@ export default function ResumePage() {
                                     <span className="block text-xs text-muted-foreground mt-1">This lets us update you via email or SMS on interview status.</span>
                                 </label>
                             </div>
-
                             {/* Resume Upload Section */}
                             <div className="mb-8 flex flex-col items-center gap-4">
                                 <div className="flex flex-col items-center gap-2 w-full max-w-md">
                                     <div className="flex items-center gap-2 w-full">
                                         <label
                                             htmlFor="upload-resume"
-                                            className={`cursor-pointer w-full ${!consentToUpdates ? 'cursor-not-allowed opacity-50' : ''}`}
+                                            className={`cursor-pointer w-full ${!consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number ? 'cursor-not-allowed opacity-50' : ''}`}
                                         >
                                             <Button
                                                 variant="outline"
                                                 type="button"
-                                                disabled={loading || submitting || !consentToUpdates}
+                                                disabled={loading || submitting || !consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number}
                                                 onClick={() => {
-                                                    if (consentToUpdates && !loading && !submitting) {
+                                                    if (consentToUpdates && !loading && !submitting && profile?.basic_information?.full_name && profile?.basic_information?.email && profile?.basic_information?.phone_number) {
                                                         document.getElementById('upload-resume')?.click();
                                                     }
                                                 }}
@@ -618,18 +703,49 @@ export default function ResumePage() {
                                         accept="application/pdf"
                                         className="hidden"
                                         onChange={handleFileChange}
-                                        disabled={loading || submitting || !consentToUpdates}
+                                        disabled={loading || submitting || !consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number}
                                         aria-label="Select resume PDF file"
                                     />
                                     {file && <span className="text-muted-foreground text-sm">{file.name}</span>}
+                                    {(!profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number) && (
+                                        <p className="text-sm text-orange-600">Please fill in your name, email, and phone number above to upload your resume.</p>
+                                    )}
                                 </div>
                                 {loading && (
                                     <>
                                         <ParsingMessage />
-                                        <LoadingSpinner />
+                                        {/* <LoadingSpinner /> */}
                                     </>
                                 )}
                             </div>
+
+                            {/* Message when resume hasn't been parsed yet */}
+                            {!resumeParsed && loading && file && (
+                                <div className="mb-8 text-center">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                            <span className="text-blue-800 font-medium">Processing your resume...</span>
+                                        </div>
+                                        <p className="text-sm text-blue-700">
+                                            We're extracting your information. This may take a few moments.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Message when no resume has been uploaded */}
+                            {!resumeParsed && !loading && !file && (
+                                <div className="mb-8 text-center">
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 max-w-md mx-auto">
+                                        <FiUploadCloud className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                        <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Your Resume First</h3>
+                                        <p className="text-sm text-gray-600">
+                                            Please upload your resume above to extract your information and start building your profile.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Error State */}
                             {error && <ErrorBox message={error} />}
@@ -637,7 +753,7 @@ export default function ResumePage() {
                             {showSuggestion && <ResumeSuggestionBox />}
 
                             {/* Editable Form */}
-                            {profile && !loading && (
+                            {resumeParsed && !loading && (
                                 <form onSubmit={handleSubmit} className="space-y-8">
                                     <Accordion type="multiple" className="mb-4">
                                         {/* Contact Information */}

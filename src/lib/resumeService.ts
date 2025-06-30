@@ -73,9 +73,18 @@ export interface ToolsPlatforms {
   sales_tools: string[];
 }
 
-// This interface represents the raw data from the server
+// Parse Resume Request
+export interface ParseResumeRequest {
+  file: File;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+// Parse Resume Response
 export interface ParseResumeResponse {
   status: boolean;
+  user_id: string;
   message?: string;
   data: {
     basic_information: BasicInformation;
@@ -84,6 +93,24 @@ export interface ParseResumeResponse {
     role_process_exposure: RoleProcessExposure;
     tools_platforms: ToolsPlatforms;
   };
+}
+
+// Add Resume Profile Request
+export interface AddResumeProfileRequest {
+  job_id: string;
+  user_id: string;
+  basic_information: BasicInformation;
+  career_overview: CareerOverview;
+  sales_context: SalesContext;
+  role_process_exposure: RoleProcessExposure;
+  tools_platforms: ToolsPlatforms;
+}
+
+// Add Resume Profile Response
+export interface AddResumeProfileResponse {
+  status: boolean;
+  message: string;
+  profile_id: string;
 }
 
 // This interface represents our transformed data structure used in the UI
@@ -137,11 +164,76 @@ export interface ResumeProfile {
   };
 }
 
-export interface AddResumeProfileResponse { profile_id: string; }
-
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+// const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
-export async function parseResume(file: File): Promise<ParseResumeResponse> {
+/**
+ * Parses a resume file with user details and saves user_id to localStorage
+ * @param parseData - Object containing file and user details
+ * @returns Promise with parsed resume data and user_id
+ */
+export async function parseResume(parseData: ParseResumeRequest): Promise<ParseResumeResponse> {
+  const formData = new FormData();
+  formData.append("file", parseData.file);
+  formData.append("name", parseData.name);
+  formData.append("email", parseData.email);
+  formData.append("phone", parseData.phone);
+  
+  try {
+    const res = await axios.post(`${API_BASE}/parse-resume/`, formData, {
+      headers: { 
+        "accept": "application/json",
+        "Content-Type": "multipart/form-data" 
+      },
+    });
+    
+    // Save user_id to localStorage
+    if (res.data.status && res.data.user_id) {
+      localStorage.setItem('scooterUserId', res.data.user_id);
+    }
+    
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to parse resume");
+  }
+}
+
+/**
+ * Adds a resume profile with user_id and job_id
+ * @param profileData - Object containing profile data, user_id, and job_id
+ * @returns Promise with profile creation response
+ */
+export async function addResumeProfile(profileData: AddResumeProfileRequest): Promise<AddResumeProfileResponse> {
+  try {
+    const res = await axios.post(`${API_BASE}/add-resume-profile/`, profileData, {
+      headers: { 
+        "accept": "application/json",
+        "Content-Type": "application/json" 
+      },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to add resume profile");
+  }
+}
+
+/**
+ * Gets the stored user_id from localStorage
+ * @returns The stored user_id or null if not found
+ */
+export function getStoredUserId(): string | null {
+  return localStorage.getItem('scooterUserId');
+}
+
+/**
+ * Removes the stored user_id from localStorage
+ */
+export function removeStoredUserId(): void {
+  localStorage.removeItem('scooterUserId');
+}
+
+// Legacy function for backward compatibility
+export async function parseResumeLegacy(file: File): Promise<ParseResumeResponse> {
   const formData = new FormData();
   formData.append("file", file);
   try {
@@ -154,7 +246,8 @@ export async function parseResume(file: File): Promise<ParseResumeResponse> {
   }
 }
 
-export async function addResumeProfile(profile: ResumeProfile, job_id: string): Promise<AddResumeProfileResponse> {
+// Legacy function for backward compatibility
+export async function addResumeProfileLegacy(profile: ResumeProfile, job_id: string): Promise<AddResumeProfileResponse> {
   try {
     const res = await axios.post(`${API_BASE}/add-resume-profile/`, { ...profile, job_id }, {
       headers: { "Content-Type": "application/json" },
