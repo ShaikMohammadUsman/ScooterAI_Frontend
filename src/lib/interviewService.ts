@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+// const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -84,9 +85,9 @@ export async function evaluateInterview(
 
 // CONVERSATIONAL INTERVIEW
 export interface ConversationalInterviewInitRequest {
-  file: File;
   role: string;
   user_id: string;
+  flag: string;
 }
 export interface ConversationalInterviewContinueRequest {
   session_id: string;
@@ -105,9 +106,9 @@ export async function startConversationalInterview(
   data: ConversationalInterviewInitRequest
 ): Promise<ConversationalInterviewResponse> {
   const formData = new FormData();
-  formData.append("file", data.file);
   formData.append("role", data.role);
   formData.append("user_id", data.user_id);
+  formData.append("flag", data.flag);
   try {
     const res = await axios.post(`${API_BASE}/conversational-interview/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },

@@ -59,9 +59,6 @@ function CommunicationInterview() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const videoStreamRef = useRef<MediaStream | null>(null);
-    const [resumeFile, setResumeFile] = useState<File | null>(null);
-    const [resumeError, setResumeError] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Verification states
     const [showVerification, setShowVerification] = useState(false);
@@ -75,6 +72,7 @@ function CommunicationInterview() {
     // Check for verification parameter on mount
     useEffect(() => {
         const verifyCode = searchParams.get('verify');
+
         if (!verifyCode) {
             setShowUnauthorized(true);
         } else if (!/^[A-Z0-9]{5}$/.test(verifyCode)) {
@@ -150,7 +148,7 @@ function CommunicationInterview() {
 
         try {
             // Start with a test question for camera check
-            const testQuestion = "Hi, how are you? Please upload your resume to continue.";
+            const testQuestion = "Hi, how are you? Please click 'Start Interview' to begin.";
             setCurrentQuestion(testQuestion);
             setMessages([{
                 own: false,
@@ -237,31 +235,8 @@ function CommunicationInterview() {
         setIsRecording(false);
     };
 
-    // Handle resume file selection
-    const handleResumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        setResumeError(null);
-
-        if (file) {
-            if (file.type !== 'application/pdf') {
-                setResumeError("Please upload a PDF file");
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                setResumeError("File size should be less than 5MB");
-                return;
-            }
-            setResumeFile(file);
-        }
-    };
-
     // Start actual interview after camera check
     const startActualInterview = async () => {
-        if (!resumeFile) {
-            setResumeError("Please upload your resume to continue");
-            return;
-        }
-
         setLoading(true);
         setIsProcessingResponse(true);
         setError(null);
@@ -278,9 +253,9 @@ function CommunicationInterview() {
             await startRecording();
 
             const res = await startConversationalInterview({
-                file: resumeFile,
                 role: "communication",
-                user_id: userId
+                user_id: userId,
+                flag: "start"
             });
 
             if (res.status === "failed") {
@@ -785,51 +760,15 @@ function CommunicationInterview() {
                             </div>
                         ) : !sessionId ? (
                             <div className="flex flex-col items-center gap-6 w-full">
-                                <div className="w-full max-w-md space-y-4">
-                                    <Label htmlFor="resume" className="text-lg font-semibold">
-                                        Upload Your Resume (PDF)
-                                    </Label>
-                                    <div className="flex items-center gap-4">
-                                        <Input
-                                            id="resume"
-                                            type="file"
-                                            accept=".pdf"
-                                            onChange={handleResumeChange}
-                                            ref={fileInputRef}
-                                            className="flex-1"
-                                        />
-                                        {resumeFile && (
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => {
-                                                    setResumeFile(null);
-                                                    if (fileInputRef.current) {
-                                                        fileInputRef.current.value = '';
-                                                    }
-                                                }}
-                                            >
-                                                Clear
-                                            </Button>
-                                        )}
-                                    </div>
-                                    {resumeError && (
-                                        <p className="text-red-500 text-sm">{resumeError}</p>
-                                    )}
-                                    {resumeFile && (
-                                        <p className="text-green-500 text-sm">
-                                            Resume uploaded: {resumeFile.name}
-                                        </p>
-                                    )}
-                                </div>
                                 <Button
                                     onClick={startActualInterview}
                                     className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md"
-                                    disabled={!resumeFile || loading || isProcessingResponse}
+                                    disabled={loading || isProcessingResponse}
                                 >
                                     {isProcessingResponse ? (
                                         <div className="flex items-center gap-2">
                                             <LoadingDots bg="slate-300" />
-                                            <span>Processing...</span>
+                                            <span>Starting Interview...</span>
                                         </div>
                                     ) : (
                                         "Start Interview"
@@ -845,7 +784,10 @@ function CommunicationInterview() {
                                                 <TooltipTrigger asChild>
                                                     <Button
                                                         onClick={handleMic}
-                                                        className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-colors shadow-sm ${isListening ? "bg-red-500 hover:bg-red-600 text-white" : "bg-primary text-white hover:bg-primary/90"}`}
+                                                        className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-all duration-300 shadow-sm relative ${isListening
+                                                            ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105"
+                                                            : "bg-primary text-white hover:bg-primary/90"
+                                                            }`}
                                                         disabled={isSpeaking || (!micEnabled && !isListening) || isProcessingResponse}
                                                     >
                                                         <FaMicrophone className="mr-2" />
