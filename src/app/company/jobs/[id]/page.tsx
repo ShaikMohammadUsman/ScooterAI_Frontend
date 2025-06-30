@@ -12,6 +12,7 @@ import { FaArrowLeft, FaFilter, FaCheckCircle, FaTimesCircle, FaMicrophone, FaVi
 import { use } from 'react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -33,27 +34,36 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize] = useState(10);
+    const [pagination, setPagination] = useState<CandidatesResponse['pagination'] | null>(null);
+    const [pageLoading, setPageLoading] = useState(false);
+
     useEffect(() => {
         fetchCandidates();
-    }, [jobId, filters]);
+    }, [jobId, filters, currentPage]);
 
     const fetchCandidates = async () => {
         try {
+            setPageLoading(true);
             const response = await getJobCandidates(
                 jobId,
-                1, // page
-                20, // pageSize
+                currentPage, // Use current page
+                pageSize,
                 filters.audioPassed || undefined,
                 filters.videoAttended || undefined,
                 filters.audioUploaded || undefined
             );
             setCandidates(response.candidates);
             setJobDetails(response.job_details);
+            setPagination(response.pagination);
         } catch (error) {
             console.error('Error fetching candidates:', error);
             toast.error('Failed to fetch candidates');
         } finally {
             setLoading(false);
+            setPageLoading(false);
         }
     };
 
@@ -96,6 +106,53 @@ export default function JobCandidatesPage({ params }: PageProps) {
         }
     };
 
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        setSelectedCandidate(null); // Close modal when changing pages
+        setPageLoading(true); // Show loading for page change
+    };
+
+    const renderPaginationNumbers = () => {
+        if (!pagination) return null;
+
+        const { current_page, total_pages } = pagination;
+        const pages = [];
+
+        // Always show first page
+        pages.push(1);
+
+        if (total_pages <= 7) {
+            // Show all pages if total is 7 or less
+            for (let i = 2; i <= total_pages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Show ellipsis and selected pages
+            if (current_page > 3) {
+                pages.push('ellipsis1');
+            }
+
+            const start = Math.max(2, current_page - 1);
+            const end = Math.min(total_pages - 1, current_page + 1);
+
+            for (let i = start; i <= end; i++) {
+                if (!pages.includes(i)) {
+                    pages.push(i);
+                }
+            }
+
+            if (current_page < total_pages - 2) {
+                pages.push('ellipsis2');
+            }
+
+            if (total_pages > 1) {
+                pages.push(total_pages);
+            }
+        }
+
+        return pages;
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -121,8 +178,16 @@ export default function JobCandidatesPage({ params }: PageProps) {
                         <Button
                             variant="outline"
                             onClick={() => router.back()}
+                            disabled={pageLoading}
                         >
-                            Back to Jobs
+                            {pageLoading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                    Loading...
+                                </div>
+                            ) : (
+                                'Back to Jobs'
+                            )}
                         </Button>
                     </div>
                 </div>
@@ -132,12 +197,18 @@ export default function JobCandidatesPage({ params }: PageProps) {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Card className="p-6 mb-8">
                     <div className="flex flex-col md:flex-row gap-4 items-center">
-                        <div className="flex-1 w-full">
+                        <div className="flex-1 w-full relative">
                             <Input
                                 placeholder="Search candidates..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                disabled={pageLoading}
                             />
+                            {pageLoading && (
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                </div>
+                            )}
                         </div>
                         <div className="flex gap-4">
                             <Button
@@ -146,8 +217,16 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                     ...prev,
                                     audioPassed: !prev.audioPassed
                                 }))}
+                                disabled={pageLoading}
                             >
-                                Audio Passed
+                                {pageLoading ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                        Loading...
+                                    </div>
+                                ) : (
+                                    'Audio Passed'
+                                )}
                             </Button>
                             {/* <Button
                                 variant={filters.videoAttended ? "default" : "outline"}
@@ -155,6 +234,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                     ...prev,
                                     videoAttended: !prev.videoAttended
                                 }))}
+                                disabled={pageLoading}
                             >
                                 Video Attended
                             </Button>
@@ -164,6 +244,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                     ...prev,
                                     audioUploaded: !prev.audioUploaded
                                 }))}
+                                disabled={pageLoading}
                             >
                                 Audio Uploaded
                             </Button> */}
@@ -173,128 +254,212 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                 {/* Candidates List */}
                 <div className="grid grid-cols-1 gap-6">
-                    {filteredCandidates.map((candidate) => (
-                        <Card key={candidate?.profile_id} className="p-6">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">
-                                        {candidate?.basic_information?.full_name}
-                                    </h3>
-                                    {/* <p className="text-gray-600 mt-2">
-                                        {candidate?.basic_information?.email}
-                                    </p> */}
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <span className="text-sm text-gray-500">
-                                            {candidate?.career_overview?.total_years_experience} years exp
-                                        </span>
-                                        <span className="text-gray-300">•</span>
-                                        <span className="text-sm text-gray-500">
-                                            {candidate?.career_overview?.years_sales_experience} years sales
-                                        </span>
+                    {pageLoading ? (
+                        // Loading skeleton for candidates
+                        Array.from({ length: pageSize }).map((_, index) => (
+                            <Card key={`loading-${index}`} className="p-6">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="h-6 bg-gray-200 rounded animate-pulse mb-2"></div>
+                                        <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-8 w-24 bg-gray-200 rounded animate-pulse"></div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col md:flex-row items-center gap-2">
-                                    {candidate?.interview_status?.audio_interview_passed && (
-                                        <span className="flex items-center gap-2 p-2 text-green-600 bg-green-50 rounded-full">
-                                            <FaMicrophone /> <FaCheck />
-                                        </span>
-                                    )}
-                                    {candidate?.interview_status?.video_interview_attended && (
-                                        <span className="flex items-center gap-2 p-2 text-blue-600 bg-blue-50 rounded-full">
-                                            <FaVideo /> <FaCheck />
-                                        </span>
-                                    )}
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setSelectedCandidate(candidate)}
-                                    >
-                                        View Details
-                                    </Button>
+                                <div className="mt-4 flex items-center justify-between">
+                                    <div className="flex gap-2">
+                                        <div className="h-6 w-16 bg-gray-200 rounded-full animate-pulse"></div>
+                                        <div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse"></div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <div className="h-8 w-24 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="mt-4 flex items-center justify-between">
-                                <div className="flex gap-2">
-                                    {candidate?.basic_information?.languages_spoken?.map((lang, index) => (
-                                        <span
-                                            key={index}
-                                            className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
-                                        >
-                                            {lang}
-                                        </span>
-                                    ))}
-                                </div>
-                                <div className="flex flex-col md:flex-row gap-2">
-                                    {candidate?.interview_status?.resume_url && (
+                            </Card>
+                        ))
+                    ) : (
+                        filteredCandidates.map((candidate) => (
+                            <Card key={candidate?.profile_id} className="p-6">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            {candidate?.basic_information?.full_name}
+                                        </h3>
+                                        {/* <p className="text-gray-600 mt-2">
+                                            {candidate?.basic_information?.email}
+                                        </p> */}
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <span className="text-sm text-gray-500">
+                                                {candidate?.career_overview?.total_years_experience} years exp
+                                            </span>
+                                            <span className="text-gray-300">•</span>
+                                            <span className="text-sm text-gray-500">
+                                                {candidate?.career_overview?.years_sales_experience} years sales
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col md:flex-row items-center gap-2">
+                                        {candidate?.interview_status?.audio_interview_passed && (
+                                            <span className="flex items-center gap-2 p-2 text-green-600 bg-green-50 rounded-full">
+                                                <FaMicrophone /> <FaCheck />
+                                            </span>
+                                        )}
+                                        {candidate?.interview_status?.video_interview_attended && (
+                                            <span className="flex items-center gap-2 p-2 text-blue-600 bg-blue-50 rounded-full">
+                                                <FaVideo /> <FaCheck />
+                                            </span>
+                                        )}
                                         <Button
                                             variant="outline"
-                                            className="flex items-center gap-2"
-                                            onClick={() => {
-                                                if (candidate?.interview_status?.resume_url) {
-                                                    window.open(candidate?.interview_status?.resume_url, '_blank');
-                                                }
-                                            }}
+                                            onClick={() => setSelectedCandidate(candidate)}
                                         >
-                                            View Resume
+                                            View Details
                                         </Button>
-                                    )}
-                                    {typeof candidate?.application_status === 'string' ? (
-                                        <>
-                                            <Button
-                                                className="flex items-center gap-2"
-                                                onClick={() => handleApplicationStatus(
-                                                    candidate?.profile_id,
-                                                    true,
-                                                    'Candidate passed all interview rounds'
-                                                )}
-                                                disabled={updatingStatus === candidate?.profile_id}
-                                            >
-                                                <FaCheckCircle />
-                                                {updatingStatus === candidate?.profile_id ? 'Updating...' : 'Approve'}
-                                            </Button>
-                                            <Button
-                                                variant="destructive"
-                                                className="flex items-center gap-2"
-                                                onClick={() => handleApplicationStatus(
-                                                    candidate?.profile_id,
-                                                    false,
-                                                    'Candidate did not meet requirements'
-                                                )}
-                                                disabled={updatingStatus === candidate?.profile_id}
-                                            >
-                                                <FaTimesCircle />
-                                                {updatingStatus === candidate?.profile_id ? 'Updating...' : 'Reject'}
-                                            </Button>
-                                        </>
-                                    ) : candidate?.application_status ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-md">
-                                                <FaCheckCircle />
-                                                <span>Accepted</span>
-                                            </div>
-
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 text-sm rounded-md">
-                                                <FaCheckCircle />
-                                                <span>{candidate?.application_status_reason || ''}</span>
-                                            </div>
-                                        </div>
-
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-md">
-                                                <FaTimesCircle />
-                                                <span>Rejected</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 text-sm rounded-md">
-                                                <FaTimesCircle />
-                                                <span>{candidate?.application_status_reason || ''}</span>
-                                            </div>
-                                        </div>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
-                        </Card>
-                    ))}
+                                <div className="mt-4 flex items-center justify-between">
+                                    <div className="flex gap-2">
+                                        {candidate?.basic_information?.languages_spoken?.map((lang, index) => (
+                                            <span
+                                                key={index}
+                                                className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
+                                            >
+                                                {lang}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-col md:flex-row gap-2">
+                                        {candidate?.interview_status?.resume_url && (
+                                            <Button
+                                                variant="outline"
+                                                className="flex items-center gap-2"
+                                                onClick={() => {
+                                                    if (candidate?.interview_status?.resume_url) {
+                                                        window.open(candidate?.interview_status?.resume_url, '_blank');
+                                                    }
+                                                }}
+                                            >
+                                                View Resume
+                                            </Button>
+                                        )}
+                                        {typeof candidate?.application_status === 'string' ? (
+                                            <>
+                                                <Button
+                                                    className="flex items-center gap-2"
+                                                    onClick={() => handleApplicationStatus(
+                                                        candidate?.profile_id,
+                                                        true,
+                                                        'Candidate passed all interview rounds'
+                                                    )}
+                                                    disabled={updatingStatus === candidate?.profile_id}
+                                                >
+                                                    <FaCheckCircle />
+                                                    {updatingStatus === candidate?.profile_id ? 'Updating...' : 'Approve'}
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    className="flex items-center gap-2"
+                                                    onClick={() => handleApplicationStatus(
+                                                        candidate?.profile_id,
+                                                        false,
+                                                        'Candidate did not meet requirements'
+                                                    )}
+                                                    disabled={updatingStatus === candidate?.profile_id}
+                                                >
+                                                    <FaTimesCircle />
+                                                    {updatingStatus === candidate?.profile_id ? 'Updating...' : 'Reject'}
+                                                </Button>
+                                            </>
+                                        ) : candidate?.application_status ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-md">
+                                                    <FaCheckCircle />
+                                                    <span>Accepted</span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 text-sm rounded-md">
+                                                    <FaCheckCircle />
+                                                    <span>{candidate?.application_status_reason || ''}</span>
+                                                </div>
+                                            </div>
+
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-md">
+                                                    <FaTimesCircle />
+                                                    <span>Rejected</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 text-sm rounded-md">
+                                                    <FaTimesCircle />
+                                                    <span>{candidate?.application_status_reason || ''}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </Card>
+                        ))
+                    )}
                 </div>
+
+                {/* Pagination */}
+                {pagination && pagination.total_pages > 1 && (
+                    <div className="mt-8 flex justify-center">
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        className={!pagination.has_previous || pageLoading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                        disabled={pageLoading}
+                                    />
+                                </PaginationItem>
+
+                                {renderPaginationNumbers()?.map((page, index) => (
+                                    <PaginationItem key={index}>
+                                        {page === 'ellipsis1' || page === 'ellipsis2' ? (
+                                            <PaginationEllipsis />
+                                        ) : (
+                                            <PaginationLink
+                                                isActive={page === currentPage}
+                                                onClick={() => handlePageChange(page as number)}
+                                                className={pageLoading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                disabled={pageLoading}
+                                            >
+                                                {page}
+                                            </PaginationLink>
+                                        )}
+                                    </PaginationItem>
+                                ))}
+
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        className={!pagination.has_next || pageLoading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                        disabled={pageLoading}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    </div>
+                )}
+
+                {/* Pagination Info */}
+                {pagination && (
+                    <div className="mt-4 text-center text-sm text-gray-600">
+                        {pageLoading ? (
+                            <div className="flex items-center justify-center gap-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                <span>Loading candidates...</span>
+                            </div>
+                        ) : (
+                            `Showing ${((currentPage - 1) * pageSize) + 1} to ${Math.min(currentPage * pageSize, pagination.total_candidates)} of ${pagination.total_candidates} candidates`
+                        )}
+                    </div>
+                )}
 
                 {/* Candidate Details Modal */}
                 {selectedCandidate && (
@@ -622,7 +787,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     </div>
                 )}
 
-                {filteredCandidates.length === 0 && (
+                {filteredCandidates.length === 0 && !pageLoading && (
                     <div className="text-center py-12">
                         <p className="text-gray-500">No candidates found</p>
                     </div>
