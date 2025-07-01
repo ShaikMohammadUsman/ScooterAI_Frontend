@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { companyLogin, companySignup } from '@/lib/adminService';
-import { toast } from 'sonner';
+import { toast } from "@/hooks/use-toast";
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
@@ -120,15 +120,27 @@ export default function CompanyAuth() {
                             address: response?.address
                         }
                         localStorage.setItem('company_details', JSON.stringify(companyDetails));
-                        toast.success('Login successful!');
+                        toast({
+                            title: "Success",
+                            description: "Login successful!",
+                            variant: "success"
+                        });
                         router.push('/company/dashboard');
                     } else {
                         setError(prev => ({ ...prev, other: response.message }))
-                        toast.error('Invalid response from server');
+                        toast({
+                            title: "Error",
+                            description: "Invalid response from server",
+                            variant: "destructive"
+                        });
                     }
                 } else {
                     setError(prev => ({ ...prev, other: response.message }));
-                    toast.error(response.message || 'Login failed');
+                    toast({
+                        title: "Error",
+                        description: response.message || 'Login failed',
+                        variant: "destructive"
+                    });
                 }
             } else {
                 const response = await companySignup({
@@ -140,15 +152,27 @@ export default function CompanyAuth() {
                     password: formData.password
                 });
                 if (response.status) {
-                    toast.success('Signup successful! Please login.');
+                    toast({
+                        title: "Success",
+                        description: "Signup successful! Please login.",
+                        variant: "success"
+                    });
                     setIsLogin(true);
                 } else {
-                    toast.error('Signup Failed!');
+                    toast({
+                        title: "Error",
+                        description: "Signup Failed!",
+                        variant: "destructive"
+                    });
                     setError(prev => ({ ...prev, other: response.message }))
                 }
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'An error occurred');
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || 'An error occurred',
+                variant: "destructive"
+            });
         } finally {
             setLoading(false);
         }

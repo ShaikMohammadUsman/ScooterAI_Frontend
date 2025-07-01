@@ -133,12 +133,13 @@ function CommunicationInterview() {
                     toast({
                         title: "Resume Update Required",
                         description: "Please upload your latest resume to continue with the interview.",
-                        variant: "destructive"
+                        variant: "warning"
                     });
                 } else {
                     toast({
                         title: "Verification successful!",
-                        description: `Welcome, ${response.full_name}! You can now proceed with the interview.`
+                        description: `Welcome, ${response.full_name}! You can now proceed with the interview.`,
+                        variant: "success"
                     });
                 }
             } else {

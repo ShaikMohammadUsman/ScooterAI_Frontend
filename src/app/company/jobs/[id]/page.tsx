@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus } from '@/lib/adminService';
-import { toast } from 'sonner';
+import { toast } from "@/hooks/use-toast";
 import { FaArrowLeft, FaFilter, FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt } from 'react-icons/fa';
 import { use } from 'react';
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
+// import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 
@@ -60,7 +60,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
             setPagination(response.pagination);
         } catch (error) {
             console.error('Error fetching candidates:', error);
-            toast.error('Failed to fetch candidates');
+            toast({
+                title: "Error",
+                description: "Failed to fetch candidates",
+                variant: "destructive"
+            });
         } finally {
             setLoading(false);
             setPageLoading(false);
@@ -92,15 +96,26 @@ export default function JobCandidatesPage({ params }: PageProps) {
             });
 
             if (response.status || response?.user_id) {
-                toast.success(status ? 'Candidate approved successfully' : 'Candidate rejected successfully');
+                toast({
+                    title: "Success",
+                    description: status ? 'Candidate approved successfully' : 'Candidate rejected successfully'
+                });
                 // Refresh the candidates list
                 fetchCandidates();
             } else {
-                toast.error(response.message || 'Failed to update application status');
+                toast({
+                    title: "Error",
+                    description: response.message || 'Failed to update application status',
+                    variant: "destructive"
+                });
             }
         } catch (error) {
             console.error('Error updating application status:', error);
-            toast.error('Failed to update application status');
+            toast({
+                title: "Error",
+                description: "Failed to update application status",
+                variant: "destructive"
+            });
         } finally {
             setUpdatingStatus(null);
         }

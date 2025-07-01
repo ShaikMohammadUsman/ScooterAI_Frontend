@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { searchProfiles, SearchProfilesResponse, Profile } from '@/lib/adminService';
-import { toast } from 'sonner';
+import { toast } from "@/hooks/use-toast";
 import { FaSearch, FaVideo, FaMicrophone, FaExternalLinkAlt, FaCheck } from 'react-icons/fa';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -112,7 +112,11 @@ export default function CandidateSearch() {
             setSearchResponse(response);
         } catch (error) {
             console.error('Error searching candidates:', error);
-            toast.error('Failed to search candidates');
+            toast({
+                title: "Error",
+                description: "Failed to search candidates",
+                variant: "destructive"
+            });
         } finally {
             setLoading(false);
         }

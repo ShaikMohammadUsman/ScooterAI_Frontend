@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getCompanyJobRoles } from '@/lib/adminService';
-import { toast } from 'sonner';
+import { toast } from "@/hooks/use-toast";
 import { FaPlus, FaBriefcase, FaUsers, FaCheckCircle, FaChartLine } from 'react-icons/fa';
 import AddJobModal from '@/components/AddJobModal';
 import {
@@ -47,7 +47,11 @@ export default function DashboardPage() {
             setJobRoles(response.roles);
         } catch (error) {
             console.error('Error fetching jobs:', error);
-            toast.error('Failed to fetch jobs');
+            toast({
+                title: "Error",
+                description: "Failed to fetch jobs",
+                variant: "destructive"
+            });
         } finally {
             setLoading(false);
         }

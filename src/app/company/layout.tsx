@@ -7,6 +7,7 @@ import { FaHome, FaBriefcase, FaSearch, FaSignOutAlt, FaBars } from 'react-icons
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 export default function CompanyLayout({
     children,
@@ -40,6 +41,11 @@ export default function CompanyLayout({
     const handleLogout = () => {
         localStorage.removeItem('company_id');
         localStorage.removeItem('company_details');
+        toast({
+            title: "Success",
+            description: "Logout successful!",
+            variant: "default"
+        });
         router.push('/company');
     };
 

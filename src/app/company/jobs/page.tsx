@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getCompanyJobRoles, addJobRole, JobRole } from '@/lib/adminService';
-import { toast } from 'sonner';
+import { toast } from "@/hooks/use-toast";
 import { FaPlus, FaBriefcase, FaUsers, FaCheckCircle, FaSearch } from 'react-icons/fa';
 import AddJobModal from '@/components/AddJobModal';
 
@@ -85,7 +85,11 @@ export default function JobsPage() {
             setJobRoles(response.roles);
         } catch (error) {
             console.error('Error fetching jobs:', error);
-            toast.error('Failed to fetch jobs');
+            toast({
+                title: "Error",
+                description: "Failed to fetch jobs",
+                variant: "destructive"
+            });
         } finally {
             setLoading(false);
         }

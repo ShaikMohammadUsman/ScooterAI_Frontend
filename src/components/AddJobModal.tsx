@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { addJobRole } from '@/lib/adminService';
-import { toast } from 'sonner';
+import { toast } from "@/hooks/use-toast";
 import { MultiSelect } from "@/components/ui/multi-select";
 
 const salesTypes = [
@@ -181,7 +181,11 @@ export default function AddJobModal({ isOpen, onClose, onSuccess }: AddJobModalP
         try {
             const companyId = localStorage.getItem('company_id');
             if (!companyId) {
-                toast.error('Company ID not found');
+                toast({
+                    title: "Error",
+                    description: "Company ID not found",
+                    variant: "destructive"
+                });
                 return;
             }
 
@@ -207,7 +211,11 @@ export default function AddJobModal({ isOpen, onClose, onSuccess }: AddJobModalP
             });
 
             if (response.status) {
-                toast.success('Job role added successfully');
+                toast({
+                    title: "Success",
+                    description: "Job role added successfully",
+                    variant: "success"
+                });
                 onClose();
                 setNewJob({
                     title: '',
@@ -234,7 +242,11 @@ export default function AddJobModal({ isOpen, onClose, onSuccess }: AddJobModalP
             }
         } catch (error) {
             console.error('Error adding job:', error);
-            toast.error('Failed to add job role');
+            toast({
+                title: "Error",
+                description: "Failed to add job role",
+                variant: "destructive"
+            });
         } finally {
             setIsSubmitting(false);
         }
