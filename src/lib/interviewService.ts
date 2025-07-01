@@ -283,6 +283,7 @@ export interface VideoInterviewLoginResponse {
   message: string;
   user_id: string | null;
   full_name: string | null;
+  resume_status:boolean;
 }
 
 export async function videoInterviewLogin(

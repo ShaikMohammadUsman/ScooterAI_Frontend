@@ -113,6 +113,19 @@ export interface AddResumeProfileResponse {
   profile_id: string;
 }
 
+// Update Resume Request
+export interface UpdateResumeRequest {
+  user_id: string;
+  file: File;
+}
+
+// Update Resume Response
+export interface UpdateResumeResponse {
+  status: boolean;
+  message: string;
+  user_id?: string;
+}
+
 // This interface represents our transformed data structure used in the UI
 export interface ResumeProfile {
   basic_information: {
@@ -255,5 +268,28 @@ export async function addResumeProfileLegacy(profile: ResumeProfile, job_id: str
     return res.data;
   } catch (err: any) {
     throw new Error(err.response?.data?.message || "Failed to add resume profile");
+  }
+}
+
+/**
+ * Updates a user's resume file
+ * @param updateData - Object containing user_id and new resume file
+ * @returns Promise with update response
+ */
+export async function updateResume(updateData: UpdateResumeRequest): Promise<UpdateResumeResponse> {
+  const formData = new FormData();
+  formData.append("user_id", updateData.user_id);
+  formData.append("file", updateData.file);
+  
+  try {
+    const res = await axios.post(`${API_BASE}/update-resume/`, formData, {
+      headers: { 
+        "accept": "application/json",
+        "Content-Type": "multipart/form-data" 
+      },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to update resume");
   }
 } 

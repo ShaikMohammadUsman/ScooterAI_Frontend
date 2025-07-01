@@ -8,7 +8,7 @@ import { UserVideo } from './components/UserVideo';
 import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, evaluateCommunication, videoInterviewLogin } from '@/lib/interviewService';
 import { textInAudioOut } from '@/lib/voiceBot';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaShieldAlt, FaEnvelope, FaKey } from "react-icons/fa";
+import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaShieldAlt, FaEnvelope, FaKey, FaFileAlt } from "react-icons/fa";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingDots } from "@/components/ui/loadingDots";
 import { SubmissionModal } from "./components/SubmissionModal";
+import { ResumeUploadModal } from "./components/ResumeUploadModal";
 import { toast } from "@/hooks/use-toast";
 
 // Azure Speech Services configuration
@@ -67,7 +68,10 @@ function CommunicationInterview() {
     const [email, setEmail] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
     const [verificationError, setVerificationError] = useState<string | null>(null);
-    const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string } | null>(null);
+    const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string; resume_status: boolean } | null>(null);
+
+    // Resume upload states
+    const [showResumeUploadModal, setShowResumeUploadModal] = useState(false);
 
     // Check for verification parameter on mount
     useEffect(() => {
@@ -118,13 +122,25 @@ function CommunicationInterview() {
             if (response.status) {
                 setVerifiedUser({
                     user_id: response.user_id!,
-                    full_name: response.full_name!
+                    full_name: response.full_name!,
+                    resume_status: response.resume_status || false
                 });
                 setShowVerification(false);
-                toast({
-                    title: "Verification successful!",
-                    description: `Welcome, ${response.full_name}! You can now proceed with the interview.`
-                });
+
+                // Check if resume needs to be updated
+                if (!response.resume_status) {
+                    setShowResumeUploadModal(true);
+                    toast({
+                        title: "Resume Update Required",
+                        description: "Please upload your latest resume to continue with the interview.",
+                        variant: "destructive"
+                    });
+                } else {
+                    toast({
+                        title: "Verification successful!",
+                        description: `Welcome, ${response.full_name}! You can now proceed with the interview.`
+                    });
+                }
             } else {
                 setVerificationError(response.message);
             }
@@ -526,6 +542,16 @@ function CommunicationInterview() {
         }
     };
 
+    // Handle resume upload success
+    const handleResumeUploaded = () => {
+        if (verifiedUser) {
+            setVerifiedUser({
+                ...verifiedUser,
+                resume_status: true
+            });
+        }
+    };
+
     return (
         <div className="h-screen flex flex-col bg-background">
             {/* Header */}
@@ -702,8 +728,8 @@ function CommunicationInterview() {
                 </div>
             )}
 
-            {/* Main Interview Content - Only show if verified */}
-            {verifiedUser && (
+            {/* Main Interview Content - Only show if verified and resume is up to date */}
+            {verifiedUser && verifiedUser.resume_status && (
                 <>
                     {/* Main Content */}
                     <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
@@ -865,6 +891,46 @@ function CommunicationInterview() {
                     />
                 </>
             )}
+
+            {/* Resume Upload Required Screen */}
+            {verifiedUser && !verifiedUser.resume_status && (
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-white via-slate-50 to-white">
+                    <Card className="w-full max-w-md shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+                        <CardHeader className="text-center pb-6">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-6">
+                                <FaFileAlt className="w-8 h-8 text-amber-600" />
+                            </div>
+                            <CardTitle className="text-2xl font-bold text-gray-900">
+                                Resume Update Required
+                            </CardTitle>
+                            <p className="text-gray-600">
+                                Please upload your latest resume to continue with the interview
+                            </p>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600">
+                                    Your resume information needs to be updated to ensure we have the most current details for your interview evaluation.
+                                </p>
+                                <Button
+                                    onClick={() => setShowResumeUploadModal(true)}
+                                    className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90"
+                                >
+                                    Upload Resume
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Resume Upload Modal */}
+            <ResumeUploadModal
+                open={showResumeUploadModal}
+                onOpenChange={setShowResumeUploadModal}
+                userId={verifiedUser?.user_id || ""}
+                onResumeUploaded={handleResumeUploaded}
+            />
         </div>
     );
 }
