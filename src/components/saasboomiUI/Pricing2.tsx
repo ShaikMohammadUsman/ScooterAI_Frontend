@@ -185,9 +185,15 @@ const Sales = () => {
               className="md:block hidden"
             >
               <div className="flex flex-col gap-2 justify-between w-full pt-4">
-                <Button className="bg-neutral-800 px-6 rounded-full py-2 z-50 hover:cursor-pointer">
-                  Yes, I want it <ArrowRight className="size-5" />
-                </Button>
+                <a
+                  href="https://thescooterai.typeform.com/salesrolexray"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button className="bg-neutral-800 px-6 rounded-full py-2 z-50 hover:cursor-pointer">
+                    Yes, I want it <ArrowRight className="size-5" />
+                  </Button>
+                </a>
               </div>
             </motion.div>
           </div>
@@ -231,9 +237,15 @@ const Sales = () => {
               className="md:hidden block"
             >
               <div className="flex flex-col gap-2 justify-between w-full pt-4">
-                <Button className="bg-neutral-800 px-6 rounded-full py-2 z-50 hover:cursor-pointer">
-                  Yes, I want it <ArrowRight className="size-5" />
-                </Button>
+                <a
+                  href="https://thescooterai.typeform.com/salesrolexray"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button className="bg-neutral-800 px-6 rounded-full py-2 z-50 hover:cursor-pointer">
+                    Yes, I want it <ArrowRight className="size-5" />
+                  </Button>
+                </a>
               </div>
             </motion.div>
           </motion.div>

@@ -78,7 +78,9 @@ const Navbar1 = () => {
           whileHover={{ scale: 1.05 }}
         >
           <a
-            href="#"
+            href="https://thescooterai.typeform.com/salesrolexray"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center px-5 py-2 text-sm text-black bg-[#cfff92] rounded-full transition-colors"
           >
             Get Started
@@ -134,7 +136,9 @@ const Navbar1 = () => {
                 className="pt-6"
               >
                 <a
-                  href="#"
+                  href="https://thescooterai.typeform.com/salesrolexray"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center justify-center w-full px-5 py-3 text-base text-white bg-black rounded-full hover:bg-gray-800 transition-colors "
                   onClick={toggleMenu}
                 >

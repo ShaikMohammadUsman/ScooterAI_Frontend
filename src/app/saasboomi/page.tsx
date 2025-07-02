@@ -101,9 +101,15 @@ const Page = () => {
           variants={fadeInUpWithDelay(0.5)}
           className="flex flex-col gap-2 justify-between items-center"
         >
-          <Button className="bg-neutral-800 px-6 rounded-full py-6 z-50 hover:cursor-pointer">
-            Apply for early access <ArrowRight className="size-5" />
-          </Button>
+          <a
+            href="https://thescooterai.typeform.com/salesrolexray"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button className="bg-neutral-800 px-6 rounded-full py-6 z-50 hover:cursor-pointer">
+              Apply for early access <ArrowRight className="size-5" />
+            </Button>
+          </a>
           <p className="text-xs max-w-lg font-medium z-50">
             Onboarding starts in July. Apply now for early access and a
             1-hour strategy session with our founding team.

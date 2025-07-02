@@ -67,9 +67,15 @@ const Pricing = () => {
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
           >
-            <Button className="bg-neutral-800 px-6 w-fit rounded-full py-6 z-50 hover:cursor-pointer">
-              Get started <ArrowRight className="size-5" />
-            </Button>
+            <a
+              href="https://thescooterai.typeform.com/salesrolexray"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="bg-neutral-800 px-6 w-fit rounded-full py-6 z-50 hover:cursor-pointer">
+                Get started <ArrowRight className="size-5" />
+              </Button>
+            </a>
           </motion.div>
         </motion.div>
 
@@ -128,9 +134,15 @@ const Pricing = () => {
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
           >
-            <Button className="bg-neutral-800 rounded-full w-full font-medium py-4">
-              Get started
-            </Button>
+            <a
+              href="https://thescooterai.typeform.com/salesrolexray"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="bg-neutral-800 rounded-full w-full font-medium py-4">
+                Get started
+              </Button>
+            </a>
           </motion.div>
 
           <motion.div
