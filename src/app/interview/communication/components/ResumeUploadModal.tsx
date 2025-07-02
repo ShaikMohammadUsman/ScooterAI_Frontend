@@ -64,6 +64,7 @@ export function ResumeUploadModal({
     };
 
     const handleUpload = async () => {
+        console.log("userId:\n", userId);
         if (!selectedFile || !userId) return;
 
         setIsUploading(true);

@@ -18,18 +18,13 @@ import { LoadingDots } from "@/components/ui/loadingDots";
 import { SubmissionModal } from "./components/SubmissionModal";
 import { ResumeUploadModal } from "./components/ResumeUploadModal";
 import { toast } from "@/hooks/use-toast";
+import WelcomeScreen from "@/components/interview/WelcomeScreen";
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
 const SPEECH_REGION = process.env.NEXT_PUBLIC_AZURE_REGION;
 
-// Update the interface to match the API response
-interface ConversationalInterviewResponse {
-    session_id: string;
-    question?: string;
-    step: string;
-    message?: string;
-}
+
 
 function CommunicationInterview() {
     const router = useRouter();
@@ -74,6 +69,9 @@ function CommunicationInterview() {
 
     // Resume upload states
     const [showResumeUploadModal, setShowResumeUploadModal] = useState(false);
+
+    // Welcome screen state
+    const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
 
     // Check for verification parameter on mount
     useEffect(() => {
@@ -156,6 +154,7 @@ function CommunicationInterview() {
 
     // Start interview with camera check
     const handleStart = async () => {
+        setShowWelcomeScreen(false);
         setLoading(true);
         setError(null);
         const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
@@ -838,196 +837,206 @@ function CommunicationInterview() {
             {/* Main Interview Content - Only show if verified and resume is up to date */}
             {verifiedUser && verifiedUser.resume_status && !showCompletionScreen && (
                 <>
-                    {/* Main Content */}
-                    <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
-                        <div className="h-full flex flex-col sm:flex-row ">
-                            {/* Video Area */}
-                            <div className="w-full h-full sm:w-1/3 p-2 rounded-lg">
-                                <UserVideo />
-                            </div>
-
-                            {/* Chat Area */}
-                            <div className="flex-1 h-full overflow-y-auto p-6 space-y-2">
-                                <AnimatePresence>
-                                    {messages.map((msg, i) => (
-                                        <motion.div
-                                            key={i}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -20 }}
-                                            className={`flex items-start gap-3 mb-3 justify-start`}
-                                        >
-                                            {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
-                                            <div
-                                                className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900" ${msg.own ? "" : "px-4 py-2"}`}
-                                            >
-                                                {msg.loading ? (
-                                                    <div className="min-w-[100px]">
-                                                        <LoadingDots bg="slate-300" />
-                                                    </div>
-                                                ) : (
-                                                    !msg.own && (msg.text)
-                                                )}
-                                                {msg.status && (
-                                                    <div className="float-right flex flex-row items-center gap-2 p-1 bg-green-800 rounded-md">
-                                                        <FaCheck className="text-green-500" size={10} />
-                                                        <span className="text-slate-100 text-[10px]">Answered</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                                <div ref={scrollRef} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Controls */}
-                    <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
-                        {!started ? (
-                            <div className="flex justify-center">
-                                <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
-                                    Start Camera Check
-                                </Button>
-                            </div>
-                        ) : !sessionId ? (
-                            <div className="flex flex-col items-center gap-6 w-full">
-                                <Button
-                                    onClick={startActualInterview}
-                                    className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md"
-                                    disabled={loading || isProcessingResponse}
-                                >
-                                    {isProcessingResponse ? (
-                                        <div className="flex items-center gap-2">
-                                            <LoadingDots bg="slate-300" />
-                                            <span>Starting Interview...</span>
-                                        </div>
-                                    ) : (
-                                        "Start Interview"
-                                    )}
-                                </Button>
-                            </div>
-                        ) : !showCompletionScreen && (
-                            <div className="flex flex-col items-center gap-6 w-full">
-                                {isProcessingFinalResponse && (
-                                    <div className="w-full max-w-md bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                        <div className="flex items-center justify-center gap-3">
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                            <span className="text-blue-800 font-medium">
-                                                Processing your final response...
-                                            </span>
-                                        </div>
+                    {/* Welcome Screen */}
+                    {showWelcomeScreen ? (
+                        <WelcomeScreen
+                            onStart={handleStart}
+                            loading={loading}
+                        />
+                    ) : (
+                        <>
+                            {/* Main Content */}
+                            <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
+                                <div className="h-full flex flex-col sm:flex-row ">
+                                    {/* Video Area */}
+                                    <div className="w-full h-full sm:w-1/3 p-2 rounded-lg">
+                                        <UserVideo />
                                     </div>
-                                )}
-                                <div className="flex flex-wrap justify-center gap-4">
-                                    {(!recognizedText || isListening) && (
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        onClick={handleMic}
-                                                        className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-all duration-300 shadow-sm relative ${isListening
-                                                            ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105"
-                                                            : "bg-primary text-white hover:bg-primary/90"
-                                                            }`}
-                                                        disabled={isSpeaking || (!micEnabled && !isListening) || isProcessingResponse || isProcessingFinalResponse}
-                                                    >
-                                                        <FaMicrophone className="mr-2" />
-                                                        {(loading || isListening) && <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-gray-100" />}
-                                                        {isListening ? "Stop" : "Answer"}
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    {isListening ? "Click to stop recording" : "Click to start recording"}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    )}
 
-                                    {recognizedText && !isListening && (
+                                    {/* Chat Area */}
+                                    <div className="flex-1 h-full overflow-y-auto p-6 space-y-2">
+                                        <AnimatePresence>
+                                            {messages.map((msg, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -20 }}
+                                                    className={`flex items-start gap-3 mb-3 justify-start`}
+                                                >
+                                                    {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
+                                                    <div
+                                                        className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900" ${msg.own ? "" : "px-4 py-2"}`}
+                                                    >
+                                                        {msg.loading ? (
+                                                            <div className="min-w-[100px]">
+                                                                <LoadingDots bg="slate-300" />
+                                                            </div>
+                                                        ) : (
+                                                            !msg.own && (msg.text)
+                                                        )}
+                                                        {msg.status && (
+                                                            <div className="float-right flex flex-row items-center gap-2 p-1 bg-green-800 rounded-md">
+                                                                <FaCheck className="text-green-500" size={10} />
+                                                                <span className="text-slate-100 text-[10px]">Answered</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                        <div ref={scrollRef} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Controls */}
+                            <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
+                                {!started ? (
+                                    <div className="flex justify-center">
+                                        <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
+                                            Start Camera Check
+                                        </Button>
+                                    </div>
+                                ) : !sessionId ? (
+                                    <div className="flex flex-col items-center gap-6 w-full">
                                         <Button
-                                            onClick={submitAnswer}
-                                            className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                            disabled={loading || isSpeaking || isProcessingResponse || isProcessingFinalResponse}
+                                            onClick={startActualInterview}
+                                            className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md"
+                                            disabled={loading || isProcessingResponse}
                                         >
-                                            {isProcessingResponse || loading ? (
+                                            {isProcessingResponse ? (
                                                 <div className="flex items-center gap-2">
                                                     <LoadingDots bg="slate-300" />
+                                                    <span>Starting Interview...</span>
                                                 </div>
                                             ) : (
-                                                "Submit"
+                                                "Start Interview"
                                             )}
                                         </Button>
-                                    )}
+                                    </div>
+                                ) : !showCompletionScreen && (
+                                    <div className="flex flex-col items-center gap-6 w-full">
+                                        {isProcessingFinalResponse && (
+                                            <div className="w-full max-w-md bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                                <div className="flex items-center justify-center gap-3">
+                                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                                    <span className="text-blue-800 font-medium">
+                                                        Processing your final response...
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex flex-wrap justify-center gap-4">
+                                            {(!recognizedText || isListening) && (
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                onClick={handleMic}
+                                                                className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-all duration-300 shadow-sm relative ${isListening
+                                                                    ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105"
+                                                                    : "bg-primary text-white hover:bg-primary/90"
+                                                                    }`}
+                                                                disabled={isSpeaking || (!micEnabled && !isListening) || isProcessingResponse || isProcessingFinalResponse}
+                                                            >
+                                                                <FaMicrophone className="mr-2" />
+                                                                {(loading || isListening) && <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-gray-100" />}
+                                                                {isListening ? "Stop" : "Answer"}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {isListening ? "Click to stop recording" : "Click to start recording"}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            )}
 
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                                disabled={loading || isSpeaking || isEndingInterview || isProcessingResponse || isProcessingFinalResponse}
-                                            >
-                                                End Interview
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>End Interview Early?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Are you sure you want to end the interview now? Your responses will be evaluated based on the questions you've answered so far.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction
-                                                    onClick={endInterviewEarly}
-                                                    className="bg-red-500 hover:bg-red-600"
+                                            {recognizedText && !isListening && (
+                                                <Button
+                                                    onClick={submitAnswer}
+                                                    className="w-36 h-12 text-base rounded-xl shadow-sm"
+                                                    disabled={loading || isSpeaking || isProcessingResponse || isProcessingFinalResponse}
                                                 >
-                                                    End Interview
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </div>
-                        )}
+                                                    {isProcessingResponse || loading ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <LoadingDots bg="slate-300" />
+                                                        </div>
+                                                    ) : (
+                                                        "Submit"
+                                                    )}
+                                                </Button>
+                                            )}
 
-                        {error && (
-                            <div className="text-center mt-4">
-                                <div className="text-red-600 font-medium mb-3">
-                                    {error}
-                                </div>
-                                {showCameraRetry && (
-                                    <div className="space-y-3">
-                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                            <h4 className="font-semibold text-amber-900 mb-2">How to enable camera access:</h4>
-                                            <ul className="text-sm text-amber-800 space-y-1">
-                                                <li>• Click the camera icon in your browser's address bar</li>
-                                                <li>• Select "Allow" for camera and microphone access</li>
-                                                <li>• Refresh the page or click "Retry Camera Access" below</li>
-                                            </ul>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-36 h-12 text-base rounded-xl shadow-sm"
+                                                        disabled={loading || isSpeaking || isEndingInterview || isProcessingResponse || isProcessingFinalResponse}
+                                                    >
+                                                        End Interview
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>End Interview Early?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Are you sure you want to end the interview now? Your responses will be evaluated based on the questions you've answered so far.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={endInterviewEarly}
+                                                            className="bg-red-500 hover:bg-red-600"
+                                                        >
+                                                            End Interview
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </div>
-                                        <Button
-                                            onClick={retryCameraAccess}
-                                            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                                        >
-                                            Retry Camera Access
-                                        </Button>
+                                    </div>
+                                )}
+
+                                {error && (
+                                    <div className="text-center mt-4">
+                                        <div className="text-red-600 font-medium mb-3">
+                                            {error}
+                                        </div>
+                                        {showCameraRetry && (
+                                            <div className="space-y-3">
+                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                    <h4 className="font-semibold text-amber-900 mb-2">How to enable camera access:</h4>
+                                                    <ul className="text-sm text-amber-800 space-y-1">
+                                                        <li>• Click the camera icon in your browser's address bar</li>
+                                                        <li>• Select "Allow" for camera and microphone access</li>
+                                                        <li>• Refresh the page or click "Retry Camera Access" below</li>
+                                                    </ul>
+                                                </div>
+                                                <Button
+                                                    onClick={retryCameraAccess}
+                                                    className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                                                >
+                                                    Retry Camera Access
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
-                        )}
-                    </div>
 
-                    {/* Submission Modal */}
-                    <SubmissionModal
-                        open={showSubmissionModal}
-                        onOpenChange={setShowSubmissionModal}
-                        submissionStep={submissionStep}
-                        uploadProgress={uploadProgress}
-                        evaluationStatus={evaluationStatus}
-                    />
+                            {/* Submission Modal */}
+                            <SubmissionModal
+                                open={showSubmissionModal}
+                                onOpenChange={setShowSubmissionModal}
+                                submissionStep={submissionStep}
+                                uploadProgress={uploadProgress}
+                                evaluationStatus={evaluationStatus}
+                            />
+                        </>
+                    )}
                 </>
             )}
 
