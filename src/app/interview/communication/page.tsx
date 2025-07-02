@@ -26,10 +26,8 @@ const SPEECH_REGION = process.env.NEXT_PUBLIC_AZURE_REGION;
 // Update the interface to match the API response
 interface ConversationalInterviewResponse {
     session_id: string;
-    trait?: string;
     question?: string;
-    step?: string;
-    status?: string;
+    step: string;
     message?: string;
 }
 
@@ -46,7 +44,6 @@ function CommunicationInterview() {
     const [recognizedText, setRecognizedText] = useState("");
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
-    const [showResults, setShowResults] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [isEndingInterview, setIsEndingInterview] = useState(false);
     const [isProcessingResponse, setIsProcessingResponse] = useState(false);
@@ -55,6 +52,11 @@ function CommunicationInterview() {
     const [showSubmissionModal, setShowSubmissionModal] = useState(false);
     const [submissionStep, setSubmissionStep] = useState<'processing' | 'uploading' | 'evaluating'>('processing');
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [showCompletionScreen, setShowCompletionScreen] = useState(false);
+    const [evaluationStatus, setEvaluationStatus] = useState<string>('');
+    const [cameraAccessDenied, setCameraAccessDenied] = useState(false);
+    const [showCameraRetry, setShowCameraRetry] = useState(false);
+    const [isProcessingFinalResponse, setIsProcessingFinalResponse] = useState(false);
     const recognizerRef = useRef<any>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -164,6 +166,13 @@ function CommunicationInterview() {
         }
 
         try {
+            // Check camera access first
+            const hasCameraAccess = await checkCameraAccess();
+            if (!hasCameraAccess) {
+                setLoading(false);
+                return;
+            }
+
             // Start with a test question for camera check
             const testQuestion = "Hi, how are you? Please click 'Start Interview' to begin.";
             setCurrentQuestion(testQuestion);
@@ -196,6 +205,38 @@ function CommunicationInterview() {
             setError(err.message || "Failed to start interview");
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Check camera access
+    const checkCameraAccess = async (): Promise<boolean> => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+
+            // If we get here, access was granted
+            stream.getTracks().forEach(track => track.stop()); // Clean up test stream
+            setCameraAccessDenied(false);
+            setShowCameraRetry(false);
+            return true;
+        } catch (err: any) {
+            console.error("Camera access error:", err);
+
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                setCameraAccessDenied(true);
+                setShowCameraRetry(true);
+                setError("Camera access denied. Please allow camera and microphone access to continue with the interview.");
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                setError("No camera or microphone found. Please connect a camera and microphone to continue.");
+            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                setError("Camera or microphone is already in use by another application. Please close other applications using the camera.");
+            } else {
+                setError("Failed to access camera and microphone. Please check your device settings.");
+            }
+
+            return false;
         }
     };
 
@@ -252,6 +293,13 @@ function CommunicationInterview() {
         setIsRecording(false);
     };
 
+    // Reset camera access states
+    const resetCameraStates = () => {
+        setCameraAccessDenied(false);
+        setShowCameraRetry(false);
+        setError(null);
+    };
+
     // Start actual interview after camera check
     const startActualInterview = async () => {
         setLoading(true);
@@ -266,6 +314,14 @@ function CommunicationInterview() {
         }
 
         try {
+            // Check camera access first
+            const hasCameraAccess = await checkCameraAccess();
+            if (!hasCameraAccess) {
+                setLoading(false);
+                setIsProcessingResponse(false);
+                return;
+            }
+
             // Start video recording
             await startRecording();
 
@@ -275,14 +331,10 @@ function CommunicationInterview() {
                 flag: "start"
             });
 
-            if (res.status === "failed") {
-                setError(res?.message || "Failed to start interview");
-                setLoading(false);
-                setIsProcessingResponse(false);
-                return;
-            }
             setSessionId(res.session_id);
-            setCurrentQuestion(res.question);
+            if (res.question) {
+                setCurrentQuestion(res.question);
+            }
 
             // Add loading message
             setMessages((prev) => [...prev, {
@@ -293,21 +345,23 @@ function CommunicationInterview() {
             }]);
 
             // Speak the question
-            await textInAudioOut(
-                res.question,
-                (spokenText) => {
-                    setMessages((prev) => {
-                        const newMessages = [...prev];
-                        const lastMessage = newMessages[newMessages.length - 1];
-                        if (lastMessage && !lastMessage.own) {
-                            lastMessage.text = spokenText;
-                            lastMessage.loading = false;
-                        }
-                        return newMessages;
-                    });
-                },
-                setLoading
-            );
+            if (res.question) {
+                await textInAudioOut(
+                    res.question,
+                    (spokenText) => {
+                        setMessages((prev) => {
+                            const newMessages = [...prev];
+                            const lastMessage = newMessages[newMessages.length - 1];
+                            if (lastMessage && !lastMessage.own) {
+                                lastMessage.text = spokenText;
+                                lastMessage.loading = false;
+                            }
+                            return newMessages;
+                        });
+                    },
+                    setLoading
+                );
+            }
 
             setMicEnabled(true);
         } catch (err: any) {
@@ -404,12 +458,28 @@ function CommunicationInterview() {
                 user_answer: textToSend
             });
 
+
             // Check if interview is completed
-            if (res.status === "completed") {
+            if (res.step === "completed") {
+                // Immediately show processing indicator
+                setIsProcessingFinalResponse(true);
+
+                // Add processing message to chat
+                setMessages((prev) => [...prev, {
+                    own: false,
+                    text: "Processing your final response and preparing for evaluation...",
+                    icon: <FaUserTie className="text-primary w-6 h-6" />,
+                    loading: false
+                }]);
+
+                // Small delay to show the processing message
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
                 setIsSubmittingFinal(true);
                 setShowSubmissionModal(true);
                 setSubmissionStep('processing');
                 setUploadProgress(0);
+                setEvaluationStatus('Processing your final response...');
 
                 // Stop recording and get final video
                 const videoBlob = await stopRecording();
@@ -419,6 +489,7 @@ function CommunicationInterview() {
                     // Upload the complete video
                     setIsUploadingVideo(true);
                     setSubmissionStep('uploading');
+                    setEvaluationStatus('Uploading your interview video...');
 
                     await uploadInterviewVideo({
                         file: new File([videoBlob], `interview_${Date.now()}.webm`, {
@@ -432,6 +503,8 @@ function CommunicationInterview() {
 
                     // Evaluate communication
                     setSubmissionStep('evaluating');
+                    setEvaluationStatus('Evaluating your communication skills...');
+
                     await evaluateCommunication(sessionId);
                 }
 
@@ -443,12 +516,14 @@ function CommunicationInterview() {
                 }]);
 
                 cleanupRecording();
-                setShowResults(true);
+                setShowCompletionScreen(true);
                 return;
             }
 
             // If interview is not completed, continue with next question
-            setCurrentQuestion(res.question);
+            if (res.question) {
+                setCurrentQuestion(res.question);
+            }
             setRecognizedText("");
             setIsListening(false);
             if (recognizerRef.current) {
@@ -494,6 +569,7 @@ function CommunicationInterview() {
             setIsSubmittingFinal(false);
             setShowSubmissionModal(false);
             setUploadProgress(0);
+            setIsProcessingFinalResponse(false);
         }
     };
 
@@ -506,8 +582,18 @@ function CommunicationInterview() {
         setIsSubmittingFinal(true);
         setShowSubmissionModal(true);
         setSubmissionStep('processing');
+        setEvaluationStatus('Processing your interview...');
 
         try {
+            // Check if we still have camera access for recording
+            if (!videoStreamRef.current) {
+                const hasAccess = await checkCameraAccess();
+                if (!hasAccess) {
+                    setError("Camera access required to end interview. Please allow camera access and try again.");
+                    return;
+                }
+            }
+
             // Stop recording
             const videoBlob = await stopRecording();
             const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
@@ -516,6 +602,7 @@ function CommunicationInterview() {
                 // Upload the complete video
                 setIsUploadingVideo(true);
                 setSubmissionStep('uploading');
+                setEvaluationStatus('Uploading your interview video...');
 
                 await uploadInterviewVideo({
                     file: new File([videoBlob], `interview_${Date.now()}.webm`, {
@@ -526,10 +613,12 @@ function CommunicationInterview() {
 
                 // Evaluate communication
                 setSubmissionStep('evaluating');
+                setEvaluationStatus('Evaluating your communication skills...');
+
                 await evaluateCommunication(sessionId);
             }
 
-            setShowResults(true);
+            setShowCompletionScreen(true);
         } catch (err: any) {
             console.error("Error ending interview:", err);
             setError(err.message || "Failed to end interview");
@@ -540,6 +629,17 @@ function CommunicationInterview() {
             setIsSubmittingFinal(false);
             setShowSubmissionModal(false);
             cleanupRecording();
+        }
+    };
+
+    // Retry camera access
+    const retryCameraAccess = async () => {
+        resetCameraStates();
+
+        const hasAccess = await checkCameraAccess();
+        if (hasAccess) {
+            // If access is now granted, we can proceed
+            setError(null);
         }
     };
 
@@ -562,10 +662,16 @@ function CommunicationInterview() {
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                     </svg>
                 </div>
-                <div>
+                <div className="flex-1">
                     <div className="font-bold text-lg text-indigo-600 tracking-tight">Communication Skills Assessment</div>
                     <div className="text-xs text-muted-foreground">Video Assessment Simulation</div>
                 </div>
+                {isProcessingFinalResponse && (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 rounded-full">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span className="text-blue-800 text-sm font-medium">Processing...</span>
+                    </div>
+                )}
             </div>
 
             {/* Unauthorized Screen */}
@@ -730,7 +836,7 @@ function CommunicationInterview() {
             )}
 
             {/* Main Interview Content - Only show if verified and resume is up to date */}
-            {verifiedUser && verifiedUser.resume_status && (
+            {verifiedUser && verifiedUser.resume_status && !showCompletionScreen && (
                 <>
                     {/* Main Content */}
                     <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
@@ -802,8 +908,18 @@ function CommunicationInterview() {
                                     )}
                                 </Button>
                             </div>
-                        ) : !showResults && (
+                        ) : !showCompletionScreen && (
                             <div className="flex flex-col items-center gap-6 w-full">
+                                {isProcessingFinalResponse && (
+                                    <div className="w-full max-w-md bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                        <div className="flex items-center justify-center gap-3">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                            <span className="text-blue-800 font-medium">
+                                                Processing your final response...
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="flex flex-wrap justify-center gap-4">
                                     {(!recognizedText || isListening) && (
                                         <TooltipProvider>
@@ -815,9 +931,10 @@ function CommunicationInterview() {
                                                             ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105"
                                                             : "bg-primary text-white hover:bg-primary/90"
                                                             }`}
-                                                        disabled={isSpeaking || (!micEnabled && !isListening) || isProcessingResponse}
+                                                        disabled={isSpeaking || (!micEnabled && !isListening) || isProcessingResponse || isProcessingFinalResponse}
                                                     >
                                                         <FaMicrophone className="mr-2" />
+                                                        {(loading || isListening) && <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-gray-100" />}
                                                         {isListening ? "Stop" : "Answer"}
                                                     </Button>
                                                 </TooltipTrigger>
@@ -832,9 +949,9 @@ function CommunicationInterview() {
                                         <Button
                                             onClick={submitAnswer}
                                             className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                            disabled={loading || isSpeaking || isProcessingResponse}
+                                            disabled={loading || isSpeaking || isProcessingResponse || isProcessingFinalResponse}
                                         >
-                                            {isProcessingResponse ? (
+                                            {isProcessingResponse || loading ? (
                                                 <div className="flex items-center gap-2">
                                                     <LoadingDots bg="slate-300" />
                                                 </div>
@@ -849,7 +966,7 @@ function CommunicationInterview() {
                                             <Button
                                                 variant="outline"
                                                 className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                                disabled={loading || isSpeaking || isEndingInterview || isProcessingResponse}
+                                                disabled={loading || isSpeaking || isEndingInterview || isProcessingResponse || isProcessingFinalResponse}
                                             >
                                                 End Interview
                                             </Button>
@@ -877,8 +994,28 @@ function CommunicationInterview() {
                         )}
 
                         {error && (
-                            <div className="text-red-600 text-center mt-4 font-medium">
-                                {error}
+                            <div className="text-center mt-4">
+                                <div className="text-red-600 font-medium mb-3">
+                                    {error}
+                                </div>
+                                {showCameraRetry && (
+                                    <div className="space-y-3">
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                            <h4 className="font-semibold text-amber-900 mb-2">How to enable camera access:</h4>
+                                            <ul className="text-sm text-amber-800 space-y-1">
+                                                <li>• Click the camera icon in your browser's address bar</li>
+                                                <li>• Select "Allow" for camera and microphone access</li>
+                                                <li>• Refresh the page or click "Retry Camera Access" below</li>
+                                            </ul>
+                                        </div>
+                                        <Button
+                                            onClick={retryCameraAccess}
+                                            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                                        >
+                                            Retry Camera Access
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -889,8 +1026,110 @@ function CommunicationInterview() {
                         onOpenChange={setShowSubmissionModal}
                         submissionStep={submissionStep}
                         uploadProgress={uploadProgress}
+                        evaluationStatus={evaluationStatus}
                     />
                 </>
+            )}
+
+            {/* Completion Screen */}
+            {showCompletionScreen && (
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-white via-slate-50 to-white">
+                    <Card className="w-full max-w-2xl shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+                        <CardHeader className="text-center pb-6">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ duration: 0.5, type: "spring" }}
+                                className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6"
+                            >
+                                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                            >
+                                <CardTitle className="text-3xl font-bold text-gray-900 mb-4">
+                                    Interview Completed Successfully!
+                                </CardTitle>
+                                <p className="text-lg text-gray-600 leading-relaxed">
+                                    Thank you for completing your communication skills assessment. Your responses have been recorded and are being evaluated.
+                                </p>
+                            </motion.div>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4 }}
+                                className="space-y-6"
+                            >
+                                <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                                    <h3 className="font-semibold text-blue-900 mb-3 text-lg">What happens next?</h3>
+                                    <div className="space-y-3 text-left">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 mt-1">
+                                                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-sm font-bold">1</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-blue-800 font-medium">Evaluation in Progress</p>
+                                                <p className="text-blue-700 text-sm">Our team is analyzing your communication skills and responses.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 mt-1">
+                                                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-sm font-bold">2</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-blue-800 font-medium">Results Notification</p>
+                                                <p className="text-blue-700 text-sm">You'll receive an email with your evaluation results within 24-48 hours.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-shrink-0 mt-1">
+                                                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-sm font-bold">3</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-blue-800 font-medium">Next Steps</p>
+                                                <p className="text-blue-700 text-sm">If selected, you'll be contacted for the next stage of the hiring process.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+                                    <p className="text-green-800 font-medium">
+                                        💡 While you wait, feel free to explore other job opportunities or update your profile!
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    <Button
+                                        onClick={() => router.push('/')}
+                                        className="w-full sm:w-auto h-12 text-base font-semibold bg-primary hover:bg-primary/90"
+                                    >
+                                        Go to Home
+                                    </Button>
+                                    <Button
+                                        onClick={() => router.push('/home/careers')}
+                                        variant="outline"
+                                        className="w-full sm:w-auto h-12 text-base font-semibold"
+                                    >
+                                        Explore Jobs
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        </CardContent>
+                    </Card>
+                </div>
             )}
 
             {/* Resume Upload Required Screen */}

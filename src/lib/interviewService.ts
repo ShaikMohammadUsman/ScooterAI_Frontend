@@ -95,11 +95,9 @@ export interface ConversationalInterviewContinueRequest {
 }
 export interface ConversationalInterviewResponse {
   session_id: string;
-  trait: string;
-  question: string;
+  question?: string;
   step: string;
-  status?: string;
-    message?: string;
+  message?: string;
 }
 
 export async function startConversationalInterview(

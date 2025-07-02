@@ -13,13 +13,15 @@ interface SubmissionModalProps {
     onOpenChange: (open: boolean) => void;
     submissionStep: 'processing' | 'uploading' | 'evaluating';
     uploadProgress?: number;
+    evaluationStatus?: string;
 }
 
 export function SubmissionModal({
     open,
     onOpenChange,
     submissionStep,
-    uploadProgress = 0
+    uploadProgress = 0,
+    evaluationStatus
 }: SubmissionModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,9 +33,11 @@ export function SubmissionModal({
                         {submissionStep === 'evaluating' && "Evaluating Communication Skills"}
                     </DialogTitle>
                     <DialogDescription className="text-center">
-                        {submissionStep === 'processing' && "We're processing your final response..."}
-                        {submissionStep === 'uploading' && "Please wait while we upload your interview video..."}
-                        {submissionStep === 'evaluating' && "Analyzing your communication skills..."}
+                        {evaluationStatus || (
+                            submissionStep === 'processing' && "We're processing your final response..."
+                        )}
+                        {!evaluationStatus && submissionStep === 'uploading' && "Please wait while we upload your interview video..."}
+                        {!evaluationStatus && submissionStep === 'evaluating' && "Analyzing your communication skills..."}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center justify-center py-6">
@@ -81,9 +85,11 @@ export function SubmissionModal({
                         className="text-center w-full"
                     >
                         <p className="text-lg font-medium text-gray-700">
-                            {submissionStep === 'processing' && "Please wait while we process your response..."}
-                            {submissionStep === 'uploading' && "Uploading your interview video..."}
-                            {submissionStep === 'evaluating' && "Evaluating your communication skills..."}
+                            {evaluationStatus || (
+                                submissionStep === 'processing' && "Please wait while we process your response..."
+                            )}
+                            {!evaluationStatus && submissionStep === 'uploading' && "Uploading your interview video..."}
+                            {!evaluationStatus && submissionStep === 'evaluating' && "Evaluating your communication skills..."}
                         </p>
                         {submissionStep === 'uploading' && (
                             <div className="mt-4 space-y-2">
