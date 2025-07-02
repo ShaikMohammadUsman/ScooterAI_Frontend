@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus } from '@/lib/adminService';
+import formatText from '@/lib/formatText';
 import { toast } from "@/hooks/use-toast";
 import { FaArrowLeft, FaFilter, FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt } from 'react-icons/fa';
 import { use } from 'react';
@@ -594,7 +595,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 </div>
 
                                 {/* Action Buttons */}
-                                <div className="flex gap-4">
+                                <div className="flex flex-col md:flex-row gap-4">
                                     {selectedCandidate?.interview_status?.video_interview_url && (
                                         <Button
                                             variant="default"
@@ -723,7 +724,12 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm text-gray-600">Summary</p>
-                                                                <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.summary}</p>
+                                                                <div
+                                                                    className="text-sm text-gray-500 mt-1"
+                                                                    dangerouslySetInnerHTML={{
+                                                                        __html: formatText(qa.evaluation?.summary)
+                                                                    }}
+                                                                />
                                                             </div>
                                                         </div>
                                                     </AccordionContent>
@@ -739,62 +745,151 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         <h4 className="text-lg font-semibold text-gray-900 mb-4">Video Interview Evaluation</h4>
 
                                         {/* Communication Evaluation */}
-                                        <div className="mb-6">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                <div className="bg-gray-50 p-3 rounded-lg">
-                                                    <p className="text-sm text-gray-600">Overall Score</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.overall_score?.toFixed(1)}/5</p>
+                                        {selectedCandidate?.interview_details?.communication_evaluation && Object.keys(selectedCandidate?.interview_details?.communication_evaluation).length > 0 && (
+                                            <div className="mb-6">
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                    {selectedCandidate?.interview_details?.communication_evaluation?.overall_score && (
+                                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                                            <p className="text-sm text-gray-600">Overall Score</p>
+                                                            <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.overall_score?.toFixed(1)}/5</p>
+                                                        </div>
+                                                    )}
+                                                    {selectedCandidate?.interview_details?.communication_evaluation?.content_and_thought && (
+                                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                                            <p className="text-sm text-gray-600">Content & Thought</p>
+                                                            <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.content_and_thought?.score}/5</p>
+                                                        </div>
+                                                    )}
+                                                    {selectedCandidate?.interview_details?.communication_evaluation?.verbal_delivery && (
+                                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                                            <p className="text-sm text-gray-600">Verbal Delivery</p>
+                                                            <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.verbal_delivery?.score}/5</p>
+                                                        </div>
+                                                    )}
+                                                    {selectedCandidate?.interview_details?.communication_evaluation?.non_verbal && (
+                                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                                            <p className="text-sm text-gray-600">Non-Verbal</p>
+                                                            <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.non_verbal?.score}/5</p>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="bg-gray-50 p-3 rounded-lg">
-                                                    <p className="text-sm text-gray-600">Content & Thought</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.content_and_thought?.score}/5</p>
-                                                </div>
-                                                <div className="bg-gray-50 p-3 rounded-lg">
-                                                    <p className="text-sm text-gray-600">Verbal Delivery</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.verbal_delivery?.score}/5</p>
-                                                </div>
-                                                <div className="bg-gray-50 p-3 rounded-lg">
-                                                    <p className="text-sm text-gray-600">Non-Verbal</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.non_verbal?.score}/5</p>
-                                                </div>
-                                            </div>
 
-                                            <div className="bg-gray-50 p-4 rounded-lg">
-                                                <h5 className="font-medium text-gray-900 mb-2">Summary</h5>
-                                                <p className="text-gray-700">{selectedCandidate?.interview_details?.communication_evaluation?.summary}</p>
+                                                {selectedCandidate?.interview_details?.communication_evaluation?.summary && (
+                                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                                        <h5 className="font-medium text-gray-900 mb-2">Summary</h5>
+                                                        <div
+                                                            className="text-gray-700"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: formatText(selectedCandidate?.interview_details?.communication_evaluation?.summary)
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Q&A Evaluations */}
-                                        <Accordion type="single" collapsible className="space-y-4">
-                                            {selectedCandidate?.interview_details?.qa_evaluations?.map((qa, index) => (
-                                                <AccordionItem key={index} value={`video-qa-${index}`} className="bg-gray-50 rounded-lg px-4">
-                                                    <AccordionTrigger className="hover:no-underline">
-                                                        <div className="flex items-center justify-between w-full pr-4">
-                                                            <div className="flex items-center gap-4">
-                                                                <span className="font-medium text-gray-900">{qa?.trait}</span>
-                                                                <span className="text-sm text-gray-500 capitalize">{qa?.step}</span>
+                                        {selectedCandidate?.interview_details?.qa_evaluations && (
+                                            <div className="mb-6">
+                                                {/* Overall Scores */}
+                                                {selectedCandidate?.interview_details?.qa_evaluations?.overall_scores && (
+                                                    <div className="mb-6">
+                                                        <h5 className="font-medium text-gray-900 mb-3">Overall Scores</h5>
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                                <p className="text-sm text-gray-600">Average Skill Score</p>
+                                                                <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.qa_evaluations?.overall_scores?.average_skill_score?.toFixed(1)}/5</p>
                                                             </div>
-                                                            <span className="text-sm text-gray-500">
-                                                                {qa?.timestamp ? new Date(qa?.timestamp).toLocaleString() : ''}
-                                                            </span>
+                                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                                <p className="text-sm text-gray-600">Average Trait Score</p>
+                                                                <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.qa_evaluations?.overall_scores?.average_trait_score?.toFixed(1)}/5</p>
+                                                            </div>
+                                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                                <p className="text-sm text-gray-600">Total Questions</p>
+                                                                <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.qa_evaluations?.overall_scores?.total_questions}</p>
+                                                            </div>
+                                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                                <p className="text-sm text-gray-600">Questions with Signal</p>
+                                                                <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.qa_evaluations?.overall_scores?.questions_with_signal}</p>
+                                                            </div>
                                                         </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent>
-                                                        <div className="space-y-4 pt-2">
-                                                            <div>
-                                                                <h5 className="font-medium text-gray-900 mb-2">Question</h5>
-                                                                <p className="text-gray-700">{qa?.question}</p>
-                                                            </div>
-                                                            <div>
-                                                                <h5 className="font-medium text-gray-900 mb-2">Answer</h5>
-                                                                <p className="text-gray-700">{qa?.answer}</p>
-                                                            </div>
-                                                        </div>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            ))}
-                                        </Accordion>
+                                                    </div>
+                                                )}
+
+                                                {/* Summary */}
+                                                {selectedCandidate?.interview_details?.qa_evaluations?.summary && (
+                                                    <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                                                        <h5 className="font-medium text-blue-900 mb-2">Evaluation Summary</h5>
+                                                        <div
+                                                            className="text-sm text-blue-700"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: formatText(selectedCandidate?.interview_details?.qa_evaluations?.summary)
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {/* Question Evaluations */}
+                                                <Accordion type="single" collapsible className="space-y-4">
+                                                    {selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations?.map((qa, index) => (
+                                                        <AccordionItem key={index} value={`video-qa-${index}`} className="bg-gray-50 rounded-lg px-4">
+                                                            <AccordionTrigger className="hover:no-underline">
+                                                                <div className="flex items-center justify-between w-full pr-4">
+                                                                    <div className="flex items-center gap-4">
+                                                                        <span className="font-medium text-gray-900">Question {qa?.question_number}</span>
+                                                                        <div className="flex gap-2">
+                                                                            <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                                                                                Skill: {qa?.skill_score}/5
+                                                                            </span>
+                                                                            <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">
+                                                                                Trait: {qa?.trait_score}/5
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    {qa?.has_signal && (
+                                                                        <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">
+                                                                            Signal Detected
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </AccordionTrigger>
+                                                            <AccordionContent>
+                                                                <div className="space-y-4 pt-2">
+                                                                    <div>
+                                                                        <h5 className="font-medium text-gray-900 mb-2">Question</h5>
+                                                                        <p className="text-gray-700">{qa?.question}</p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <h5 className="font-medium text-gray-900 mb-2">Answer</h5>
+                                                                        <p className="text-gray-700">{qa?.answer}</p>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                        <div className="bg-blue-50 p-3 rounded-lg">
+                                                                            <h6 className="font-medium text-blue-900 mb-2">Skill Reasoning</h6>
+                                                                            <div
+                                                                                className="text-sm text-blue-700"
+                                                                                dangerouslySetInnerHTML={{
+                                                                                    __html: formatText(qa?.skill_reasoning)
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                        <div className="bg-green-50 p-3 rounded-lg">
+                                                                            <h6 className="font-medium text-green-900 mb-2">Trait Reasoning</h6>
+                                                                            <div
+                                                                                className="text-sm text-green-700"
+                                                                                dangerouslySetInnerHTML={{
+                                                                                    __html: formatText(qa?.trait_reasoning)
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                    ))}
+                                                </Accordion>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

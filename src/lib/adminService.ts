@@ -103,20 +103,32 @@ export interface Candidate {
         session_id: string;
         created_at: string;
         communication_evaluation: {
-            content_and_thought: { score: number; feedback: string };
-            verbal_delivery: { score: number; feedback: string };
-            non_verbal: { score: number; feedback: string };
-            presence_and_authenticity: { score: number; feedback: string };
-            overall_score: number;
+            content_and_thought?: { score: number; feedback: string };
+            verbal_delivery?: { score: number; feedback: string };
+            non_verbal?: { score: number; feedback: string };
+            presence_and_authenticity?: { score: number; feedback: string };
+            overall_score?: number;
+            summary?: string;
+        };
+        qa_evaluations: {
+            question_evaluations: Array<{
+                question_number: number;
+                question: string;
+                answer: string;
+                skill_score: number;
+                trait_score: number;
+                skill_reasoning: string;
+                trait_reasoning: string;
+                has_signal: boolean;
+            }>;
+            overall_scores: {
+                average_skill_score: number;
+                average_trait_score: number;
+                total_questions: number;
+                questions_with_signal: number;
+            };
             summary: string;
         };
-        qa_evaluations: Array<{
-            trait: string;
-            step: string;
-            question: string;
-            answer: string;
-            timestamp: string;
-        }>;
     };
 }
 
