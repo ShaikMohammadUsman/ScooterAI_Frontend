@@ -11,6 +11,8 @@ import { getCompanyJobRoles, addJobRole, JobRole } from '@/lib/adminService';
 import { toast } from "@/hooks/use-toast";
 import { FaPlus, FaBriefcase, FaUsers, FaCheckCircle, FaSearch } from 'react-icons/fa';
 import AddJobModal from '@/components/AddJobModal';
+import { Badge } from "@/components/ui/badge";
+import { FaMicrophone, FaVideo, FaArrowUp } from 'react-icons/fa';
 
 const salesTypes = [
     "Consultative Sales",
@@ -101,6 +103,15 @@ export default function JobsPage() {
         job.description?.toLowerCase().includes(searchTerm?.toLowerCase())
     );
 
+    // Analytics calculations
+    const totalCandidates = jobRoles.reduce((acc, job) => acc + (job.total_candidates || 0), 0);
+    const totalAudioAttended = jobRoles.reduce((acc, job) => acc + (job.audio_attended_count || 0), 0);
+    const totalVideoAttended = jobRoles.reduce((acc, job) => acc + (job.video_attended_count || 0), 0);
+    const totalMovedToVideo = jobRoles.reduce((acc, job) => acc + (job.moved_to_video_round_count || 0), 0);
+    const audioConversionRate = totalCandidates > 0 ? ((totalAudioAttended / totalCandidates) * 100).toFixed(1) : '0';
+    const videoConversionRate = totalAudioAttended > 0 ? ((totalVideoAttended / totalAudioAttended) * 100).toFixed(1) : '0';
+    const overallConversionRate = totalCandidates > 0 ? ((totalMovedToVideo / totalCandidates) * 100).toFixed(1) : '0';
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -130,100 +141,132 @@ export default function JobsPage() {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Search and Stats */}
-                <div className="mb-8">
-                    {/* <div className="flex items-center gap-4 mb-6">
-                        <div className="relative flex-1">
-                            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                            <Input
-                                placeholder="Search jobs..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
-                            />
+                {/* Analytics Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+                    <Card className="p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-blue-100">Total Jobs</span>
+                            <span className="text-2xl font-bold">{jobRoles.length}</span>
                         </div>
-                    </div> */}
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card className="p-6">
-                            <div className="flex items-center">
-                                <div className="p-3 rounded-full bg-indigo-100">
-                                    <FaBriefcase className="h-6 w-6 text-indigo-600" />
-                                </div>
-                                <div className="ml-4">
-                                    <h2 className="text-lg font-semibold text-gray-900">Total Jobs</h2>
-                                    <p className="text-3xl font-bold text-indigo-600">{jobRoles?.length}</p>
-                                </div>
-                            </div>
-                        </Card>
-                        <Card className="p-6">
-                            <div className="flex items-center">
-                                <div className="p-3 rounded-full bg-green-100">
-                                    <FaCheckCircle className="h-6 w-6 text-green-600" />
-                                </div>
-                                <div className="ml-4">
-                                    <h2 className="text-lg font-semibold text-gray-900">Active Jobs</h2>
-                                    <p className="text-3xl font-bold text-green-600">
-                                        {jobRoles?.filter(job => job.is_active)?.length}
-                                    </p>
-                                </div>
-                            </div>
-                        </Card>
-                        <Card className="p-6">
-                            <div className="flex items-center">
-                                <div className="p-3 rounded-full bg-blue-100">
-                                    <FaUsers className="h-6 w-6 text-blue-600" />
-                                </div>
-                                <div className="ml-4">
-                                    <h2 className="text-lg font-semibold text-gray-900">Total Applications</h2>
-                                    <p className="text-3xl font-bold text-blue-600">
-                                        {jobRoles?.reduce((acc, job) => acc + (job.total_applications || 0), 0)}
-                                    </p>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
+                    </Card>
+                    <Card className="p-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-green-100">Active Jobs</span>
+                            <span className="text-2xl font-bold">{jobRoles.filter(j => j.is_active).length}</span>
+                        </div>
+                    </Card>
+                    <Card className="p-4 bg-gradient-to-r from-blue-400 to-blue-500 text-white">
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-blue-100">Total Candidates</span>
+                            <span className="text-2xl font-bold">{totalCandidates}</span>
+                        </div>
+                    </Card>
+                    <Card className="p-4 bg-gradient-to-r from-green-400 to-green-500 text-white">
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-green-100">Audio Attended</span>
+                            <span className="text-2xl font-bold">{totalAudioAttended}</span>
+                        </div>
+                    </Card>
+                    <Card className="p-4 bg-gradient-to-r from-purple-400 to-purple-500 text-white">
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-purple-100">Video Attended</span>
+                            <span className="text-2xl font-bold">{totalVideoAttended}</span>
+                        </div>
+                    </Card>
+                    <Card className="p-4 bg-gradient-to-r from-orange-400 to-orange-500 text-white">
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-orange-100">Final Round</span>
+                            <span className="text-2xl font-bold">{totalMovedToVideo}</span>
+                        </div>
+                    </Card>
+                </div>
+                {/* Conversion Rates */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <Card className="p-4 flex flex-col items-center">
+                        <span className="text-xs text-gray-500">Audio Conversion Rate</span>
+                        <Badge variant={parseFloat(audioConversionRate) > 50 ? "default" : "secondary"} className="mt-1 text-lg">{audioConversionRate}%</Badge>
+                    </Card>
+                    <Card className="p-4 flex flex-col items-center">
+                        <span className="text-xs text-gray-500">Video Conversion Rate</span>
+                        <Badge variant={parseFloat(videoConversionRate) > 30 ? "default" : "secondary"} className="mt-1 text-lg">{videoConversionRate}%</Badge>
+                    </Card>
+                    <Card className="p-4 flex flex-col items-center">
+                        <span className="text-xs text-gray-500">Overall Conversion Rate</span>
+                        <Badge variant={parseFloat(overallConversionRate) > 10 ? "default" : "secondary"} className="mt-1 text-lg">{overallConversionRate}%</Badge>
+                    </Card>
                 </div>
 
                 {/* Job List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredJobs.map((job) => (
-                        <Card key={job._id} className="p-6">
-                            <div className="flex items-start justify-between">
-                                <div>
+                    {filteredJobs.map((job) => {
+                        const audioRate = job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100).toFixed(1) : '0';
+                        const videoRate = job.audio_attended_count > 0 ? ((job.video_attended_count / job.audio_attended_count) * 100).toFixed(1) : '0';
+                        const overallRate = job.total_candidates > 0 ? ((job.moved_to_video_round_count / job.total_candidates) * 100).toFixed(1) : '0';
+                        return (
+                            <Card key={job._id} className="p-6">
+                                <div className="flex items-center justify-between mb-2">
                                     <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                                    <p className="text-gray-600 mt-2 line-clamp-2">{job.description}</p>
-                                </div>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${job.is_active
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                    {job.is_active ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
-                            <div className="mt-4 flex flex-wrap gap-2">
-                                {job.badges?.map((badge: string, index: number) => (
-                                    <span
-                                        key={index}
-                                        className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
-                                    >
-                                        {badge}
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${job.is_active
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                        {job.is_active ? 'Active' : 'Inactive'}
                                     </span>
-                                ))}
-                            </div>
-                            <div className="mt-4 flex items-center justify-between">
-                                <span className="text-sm text-gray-500">
-                                    Posted {job.created_at ? new Date(job.created_at).toLocaleDateString() : ''}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => router.push(`/company/jobs/${job._id}`)}
-                                >
-                                    View Candidates
-                                </Button>
-                            </div>
-                        </Card>
-                    ))}
+                                </div>
+                                <p className="text-gray-600 mt-2 line-clamp-2">{job.description}</p>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {job.badges?.map((badge: string, index: number) => (
+                                        <span
+                                            key={index}
+                                            className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
+                                        >
+                                            {badge}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-4 mb-4 border-2 border-gray-200 rounded-lg p-2">
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-xs text-gray-500">Candidates</span>
+                                        <span className="font-bold text-blue-700">{job.total_candidates}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-xs text-gray-500">Audio Attended</span>
+                                        <span className="font-bold text-green-700">{job.audio_attended_count}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-xs text-gray-500">Video Attended</span>
+                                        <span className="font-bold text-purple-700">{job.video_attended_count}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-xs text-gray-500">Final Round</span>
+                                        <span className="font-bold text-orange-700">{job.moved_to_video_round_count}</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    <Badge variant={parseFloat(audioRate) > 50 ? "default" : "secondary"}>
+                                        Audio: {audioRate}%
+                                    </Badge>
+                                    <Badge variant={parseFloat(videoRate) > 30 ? "default" : "secondary"}>
+                                        Video: {videoRate}%
+                                    </Badge>
+                                    <Badge variant={parseFloat(overallRate) > 10 ? "default" : "secondary"}>
+                                        Overall: {overallRate}%
+                                    </Badge>
+                                </div>
+                                <div className="flex flex-1 grow-1 items-center justify-between mt-2 p-2 mt-auto">
+                                    <span className="text-sm text-gray-500">
+                                        Posted {job.created_at ? new Date(job.created_at).toLocaleDateString() : ''}
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => router.push(`/company/jobs/${job._id}`)}
+                                    >
+                                        View Candidates
+                                    </Button>
+                                </div>
+                            </Card>
+                        );
+                    })}
                 </div>
 
                 {filteredJobs.length === 0 && (

@@ -4,9 +4,22 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getCompanyJobRoles } from '@/lib/adminService';
 import { toast } from "@/hooks/use-toast";
-import { FaPlus, FaBriefcase, FaUsers, FaCheckCircle, FaChartLine } from 'react-icons/fa';
+import {
+    FaPlus,
+    FaBriefcase,
+    FaUsers,
+    FaCheckCircle,
+    FaChartLine,
+    FaMicrophone,
+    FaVideo,
+    FaArrowUp,
+    FaCalendarAlt,
+    FaEye,
+    FaTable
+} from 'react-icons/fa';
 import AddJobModal from '@/components/AddJobModal';
 import {
     LineChart,
@@ -21,16 +34,59 @@ import {
     ResponsiveContainer,
     PieChart,
     Pie,
-    Cell
+    Cell,
+    AreaChart,
+    Area,
+    ComposedChart,
+    LabelList
 } from 'recharts';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+// Custom Tooltip for Funnel
+const FunnelTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div className="bg-white p-3 rounded shadow text-sm border border-gray-200">
+                <div className="font-semibold text-gray-800">{data.stage}</div>
+                <div className="text-blue-600">Candidates: {data.count.toLocaleString()}</div>
+            </div>
+        );
+    }
+    return null;
+};
+
+// Custom Tooltip for Conversion Rates
+const ConversionRateTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        const audio = payload.find((p: any) => p.dataKey === 'audioRate');
+        const video = payload.find((p: any) => p.dataKey === 'videoRate');
+        const overall = payload.find((p: any) => p.dataKey === 'overallRate');
+        return (
+            <div className="bg-white p-3 rounded shadow text-sm border border-gray-200 min-w-[140px]">
+                <div className="font-semibold text-gray-800 mb-1">{label}</div>
+                {audio && (
+                    <div className="text-green-500">Audio Rate: {audio.value.toFixed(1)}%</div>
+                )}
+                {video && (
+                    <div className="text-yellow-500">Video Rate: {video.value.toFixed(1)}%</div>
+                )}
+                {overall && (
+                    <div className="text-orange-500">Overall Rate: {overall.value.toFixed(1)}%</div>
+                )}
+            </div>
+        );
+    }
+    return null;
+};
 
 export default function DashboardPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [jobRoles, setJobRoles] = useState<any[]>([]);
     const [showAddJob, setShowAddJob] = useState(false);
+    const [selectedTimeframe, setSelectedTimeframe] = useState('all');
 
     useEffect(() => {
         const companyId = localStorage.getItem('company_id');
@@ -57,15 +113,50 @@ export default function DashboardPage() {
         }
     };
 
+    // Analytics calculations
+    const totalCandidates = jobRoles.reduce((acc, job) => acc + job.total_candidates, 0);
+    const totalAudioAttended = jobRoles.reduce((acc, job) => acc + job.audio_attended_count, 0);
+    const totalVideoAttended = jobRoles.reduce((acc, job) => acc + job.video_attended_count, 0);
+    const totalMovedToVideo = jobRoles.reduce((acc, job) => acc + job.moved_to_video_round_count, 0);
+    const activeJobs = jobRoles.filter(job => job.is_active).length;
+
+    const audioConversionRate = totalCandidates > 0 ? ((totalAudioAttended / totalCandidates) * 100).toFixed(1) : '0';
+    const videoConversionRate = totalAudioAttended > 0 ? ((totalVideoAttended / totalAudioAttended) * 100).toFixed(1) : '0';
+    const overallConversionRate = totalCandidates > 0 ? ((totalMovedToVideo / totalCandidates) * 100).toFixed(1) : '0';
+
     // Prepare data for charts
+    const prepareCandidateMetricsData = () => {
+        return jobRoles.map(job => ({
+            name: job.title.length > 15 ? job.title.substring(0, 15) + '...' : job.title,
+            total: job.total_candidates,
+            audio: job.audio_attended_count,
+            video: job.video_attended_count,
+            movedToVideo: job.moved_to_video_round_count
+        })).sort((a, b) => b.total - a.total);
+    };
+
+    const prepareConversionFunnelData = () => {
+        return [
+            { stage: 'Total Candidates', count: totalCandidates, color: '#8884d8' },
+            { stage: 'Audio Attended', count: totalAudioAttended, color: '#82ca9d' },
+            { stage: 'Video Attended', count: totalVideoAttended, color: '#ffc658' },
+            { stage: 'Moved to Video Round', count: totalMovedToVideo, color: '#ff7300' }
+        ];
+    };
+
     const prepareJobTimelineData = () => {
         const timelineData = jobRoles.reduce((acc: any[], job) => {
             const date = new Date(job.created_at).toLocaleDateString();
             const existingEntry = acc.find(entry => entry.date === date);
             if (existingEntry) {
                 existingEntry.count++;
+                existingEntry.candidates += job.total_candidates;
             } else {
-                acc.push({ date, count: 1 });
+                acc.push({
+                    date,
+                    count: 1,
+                    candidates: job.total_candidates
+                });
             }
             return acc;
         }, []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -73,34 +164,38 @@ export default function DashboardPage() {
         return timelineData;
     };
 
-    const prepareApplicationsData = () => {
+    const preparePerformanceComparison = () => {
         return jobRoles.map(job => ({
-            name: job.title,
-            applications: job.total_applications || 0
-        })).sort((a, b) => b.applications - a.applications).slice(0, 5);
+            name: job.title.length > 12 ? job.title.substring(0, 12) + '...' : job.title,
+            audioRate: job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100) : 0,
+            videoRate: job.audio_attended_count > 0 ? ((job.video_attended_count / job.audio_attended_count) * 100) : 0,
+            overallRate: job.total_candidates > 0 ? ((job.moved_to_video_round_count / job.total_candidates) * 100) : 0
+        }));
     };
 
-    const prepareStatusDistribution = () => {
-        const activeJobs = jobRoles.filter(job => job.is_active).length;
-        const inactiveJobs = jobRoles.length - activeJobs;
-        return [
-            { name: 'Active', value: activeJobs },
-            { name: 'Inactive', value: inactiveJobs }
-        ];
-    };
-
-    const prepareTopRegions = () => {
-        const regionCounts = jobRoles.reduce((acc: { [key: string]: number }, job) => {
-            job.requirements?.regions?.forEach((region: string) => {
-                acc[region] = (acc[region] || 0) + 1;
-            });
+    const prepareMonthlyTrends = () => {
+        const monthlyData = jobRoles.reduce((acc: any[], job) => {
+            const date = new Date(job.created_at);
+            const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const existingEntry = acc.find(entry => entry.month === monthYear);
+            if (existingEntry) {
+                existingEntry.jobs++;
+                existingEntry.candidates += job.total_candidates;
+                existingEntry.audioAttended += job.audio_attended_count;
+                existingEntry.videoAttended += job.video_attended_count;
+            } else {
+                acc.push({
+                    month: monthYear,
+                    jobs: 1,
+                    candidates: job.total_candidates,
+                    audioAttended: job.audio_attended_count,
+                    videoAttended: job.video_attended_count
+                });
+            }
             return acc;
-        }, {});
+        }, []).sort((a, b) => a.month.localeCompare(b.month));
 
-        return Object.entries(regionCounts)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
+        return monthlyData;
     };
 
     if (loading) {
@@ -118,7 +213,7 @@ export default function DashboardPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <h1 className="text-2xl font-bold text-gray-900">
-                            Dashboard
+                            Analytics Dashboard
                         </h1>
                         <Button
                             onClick={() => setShowAddJob(true)}
@@ -132,132 +227,235 @@ export default function DashboardPage() {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <Card className="p-6">
-                        <div className="flex items-center">
-                            <div className="p-3 rounded-full bg-indigo-100">
-                                <FaBriefcase className="h-6 w-6 text-indigo-600" />
-                            </div>
-                            <div className="ml-4">
-                                <h2 className="text-lg font-semibold text-gray-900">Total Jobs</h2>
-                                <p className="text-3xl font-bold text-indigo-600">{jobRoles?.length}</p>
-                            </div>
-                        </div>
-                    </Card>
-                    <Card className="p-6">
-                        <div className="flex items-center">
-                            <div className="p-3 rounded-full bg-green-100">
-                                <FaCheckCircle className="h-6 w-6 text-green-600" />
-                            </div>
-                            <div className="ml-4">
-                                <h2 className="text-lg font-semibold text-gray-900">Active Jobs</h2>
-                                <p className="text-3xl font-bold text-green-600">
-                                    {jobRoles.filter(job => job.is_active)?.length}
+                {/* Key Metrics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <Card className="p-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-blue-100 text-sm font-medium">Total Candidates</p>
+                                <p className="text-3xl font-bold">{totalCandidates.toLocaleString()}</p>
+                                <p className="text-blue-200 text-sm mt-1">
+                                    Across {jobRoles.length} job roles
                                 </p>
                             </div>
+                            <FaUsers className="h-8 w-8 text-blue-200" />
                         </div>
                     </Card>
-                    <Card className="p-6">
-                        <div className="flex items-center">
-                            <div className="p-3 rounded-full bg-blue-100">
-                                <FaUsers className="h-6 w-6 text-blue-600" />
-                            </div>
-                            <div className="ml-4">
-                                <h2 className="text-lg font-semibold text-gray-900">Total Applications</h2>
-                                <p className="text-3xl font-bold text-blue-600">
-                                    {jobRoles.reduce((acc, job) => acc + (job?.total_applications || 0), 0)}
+
+                    <Card className="p-6 bg-gradient-to-r from-green-500 to-green-600 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-green-100 text-sm font-medium">Audio Interviews</p>
+                                <p className="text-3xl font-bold">{totalAudioAttended.toLocaleString()}</p>
+                                <p className="text-green-200 text-sm mt-1">
+                                    {audioConversionRate}% conversion rate
                                 </p>
                             </div>
+                            <FaMicrophone className="h-8 w-8 text-green-200" />
+                        </div>
+                    </Card>
+
+                    <Card className="p-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-purple-100 text-sm font-medium">Video Interviews</p>
+                                <p className="text-3xl font-bold">{totalVideoAttended.toLocaleString()}</p>
+                                <p className="text-purple-200 text-sm mt-1">
+                                    {videoConversionRate}% from audio
+                                </p>
+                            </div>
+                            <FaVideo className="h-8 w-8 text-purple-200" />
+                        </div>
+                    </Card>
+
+                    <Card className="p-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-orange-100 text-sm font-medium">Final Round</p>
+                                <p className="text-3xl font-bold">{totalMovedToVideo.toLocaleString()}</p>
+                                <p className="text-orange-200 text-sm mt-1">
+                                    {overallConversionRate}% overall rate
+                                </p>
+                            </div>
+                            <FaArrowUp className="h-8 w-8 text-orange-200" />
                         </div>
                     </Card>
                 </div>
+
+                {/* Conversion Funnel */}
+                <Card className="p-6 mb-8">
+                    <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        <FaChartLine className="text-blue-600" />
+                        Candidate Conversion Funnel
+                    </h3>
+                    <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={prepareConversionFunnelData()}
+                                layout="vertical"
+                                margin={{ top: 20, right: 40, left: 40, bottom: 20 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 14 }} />
+                                <YAxis type="category" dataKey="stage" tick={{ fontSize: 16, fontWeight: 500 }} width={180} />
+                                <Tooltip content={<FunnelTooltip />} cursor={{ fill: '#f3f4f6' }} />
+                                <Legend />
+                                <Bar dataKey="count" isAnimationActive fill="#8884d8" radius={[0, 8, 8, 0]}>
+                                    {prepareConversionFunnelData().map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                    <LabelList dataKey="count" position="right" formatter={(value: number) => value.toLocaleString()} />
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
 
                 {/* Charts Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Job Posting Timeline */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    {/* Candidate Metrics by Job */}
                     <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">Job Posting Timeline</h3>
-                        <div className="h-[300px]">
+                        <h3 className="text-lg font-semibold mb-4">Candidate Metrics by Job Role</h3>
+                        <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={prepareJobTimelineData()}>
+                                <ComposedChart data={prepareCandidateMetricsData()}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="date" />
+                                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
                                     <YAxis />
                                     <Tooltip />
                                     <Legend />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="count"
-                                        stroke="#8884d8"
-                                        name="Jobs Posted"
-                                    />
-                                </LineChart>
+                                    <Bar dataKey="total" fill="#8884d8" name="Total Candidates" />
+                                    <Line type="monotone" dataKey="audio" stroke="#82ca9d" name="Audio Attended" />
+                                    <Line type="monotone" dataKey="video" stroke="#ffc658" name="Video Attended" />
+                                </ComposedChart>
                             </ResponsiveContainer>
                         </div>
                     </Card>
 
-                    {/* Applications per Job */}
-                    {/* <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">Top Jobs by Applications</h3>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={prepareApplicationsData()}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="applications" fill="#82ca9d" name="Applications" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Card> */}
-
-                    {/* Job Status Distribution */}
+                    {/* Performance Comparison */}
                     <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">Job Status Distribution</h3>
-                        <div className="h-[300px]">
+                        <h3 className="text-lg font-semibold mb-4">Conversion Rates by Job Role (%)</h3>
+                        <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={prepareStatusDistribution()}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                    >
-                                        {prepareStatusDistribution().map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS?.length || 0]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
+                                <BarChart data={preparePerformanceComparison()}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                                    <YAxis />
+                                    <Tooltip content={<ConversionRateTooltip />} />
                                     <Legend />
-                                </PieChart>
+                                    <Bar dataKey="audioRate" fill="#82ca9d" name="Audio Rate" />
+                                    <Bar dataKey="videoRate" fill="#ffc658" name="Video Rate" />
+                                    <Bar dataKey="overallRate" fill="#ff7300" name="Overall Rate" />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </Card>
-
-                    {/* Top Regions */}
-                    {/* <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4">Top Regions</h3>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={prepareTopRegions()}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="value" fill="#8884d8" name="Job Count" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Card> */}
                 </div>
+
+                {/* Monthly Trends */}
+                <Card className="p-6 mb-8">
+                    <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        <FaCalendarAlt className="text-green-600" />
+                        Monthly Trends
+                    </h3>
+                    <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={prepareMonthlyTrends()}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Area
+                                    type="monotone"
+                                    dataKey="candidates"
+                                    stackId="1"
+                                    stroke="#8884d8"
+                                    fill="#8884d8"
+                                    name="Candidates"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="audioAttended"
+                                    stackId="1"
+                                    stroke="#82ca9d"
+                                    fill="#82ca9d"
+                                    name="Audio Attended"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="videoAttended"
+                                    stackId="1"
+                                    stroke="#ffc658"
+                                    fill="#ffc658"
+                                    name="Video Attended"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+
+                {/* Detailed Analytics Table */}
+                <Card className="p-6">
+                    <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        <FaTable className="text-purple-600" />
+                        Detailed Job Analytics
+                    </h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-gray-200">
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Job Role</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Total Candidates</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Audio Attended</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Video Attended</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Final Round</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Audio Rate</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Video Rate</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Overall Rate</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {jobRoles.map((job, index) => {
+                                    const audioRate = job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100).toFixed(1) : '0';
+                                    const videoRate = job.audio_attended_count > 0 ? ((job.video_attended_count / job.audio_attended_count) * 100).toFixed(1) : '0';
+                                    const overallRate = job.total_candidates > 0 ? ((job.moved_to_video_round_count / job.total_candidates) * 100).toFixed(1) : '0';
+
+                                    return (
+                                        <tr key={job._id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                                            <td className="py-3 px-4 font-medium text-gray-900">{job.title}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{job.total_candidates}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{job.audio_attended_count}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{job.video_attended_count}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{job.moved_to_video_round_count}</td>
+                                            <td className="py-3 px-4 text-center">
+                                                <Badge variant={parseFloat(audioRate) > 50 ? "default" : "secondary"}>
+                                                    {audioRate}%
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <Badge variant={parseFloat(videoRate) > 30 ? "default" : "secondary"}>
+                                                    {videoRate}%
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <Badge variant={parseFloat(overallRate) > 10 ? "default" : "secondary"}>
+                                                    {overallRate}%
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <Badge variant={job.is_active ? "default" : "destructive"}>
+                                                    {job.is_active ? 'Active' : 'Inactive'}
+                                                </Badge>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
             </div>
 
             {/* Add Job Modal */}

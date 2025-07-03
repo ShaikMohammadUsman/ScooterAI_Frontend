@@ -140,7 +140,10 @@ export interface JobRole {
     company_id: string;
     created_at: string;
     is_active: boolean;
-    total_applications?: number;
+    total_candidates: number;
+    audio_attended_count: number;
+    video_attended_count: number;
+    moved_to_video_round_count: number;
 }
 
 export interface CandidatesResponse {
