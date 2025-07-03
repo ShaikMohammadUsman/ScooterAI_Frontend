@@ -6,14 +6,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus } from '@/lib/adminService';
 import formatText from '@/lib/formatText';
 import { toast } from "@/hooks/use-toast";
-import { FaArrowLeft, FaFilter, FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit } from 'react-icons/fa';
 import { use } from 'react';
 // import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
+import UpdateStatusModal from "@/components/UpdateStatusModal";
+import CandidateFilters from "@/components/CandidateFilters";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -28,12 +31,20 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const resolvedParams = use(params);
     const jobId = resolvedParams.id;
     const [filters, setFilters] = useState({
+        // Interview Status Filters
         audioPassed: false,
         videoAttended: false,
         audioUploaded: false,
+        // Application Status Filters
+        applicationStatus: 'all', // 'all', 'approved', 'rejected', 'pending'
+        // Experience Filters
+        experienceRange: 'all', // 'all', '0-2', '3-5', '5-10', '10+'
+        salesExperienceRange: 'all', // 'all', '0-1', '1-3', '3-5', '5+'
     });
     const [searchTerm, setSearchTerm] = useState('');
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+    const [selectedCandidateForStatus, setSelectedCandidateForStatus] = useState<Candidate | null>(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -72,11 +83,64 @@ export default function JobCandidatesPage({ params }: PageProps) {
         }
     };
 
-    const filteredCandidates = candidates?.filter(candidate =>
-        candidate?.basic_information?.full_name?.toLowerCase().includes(searchTerm?.toLowerCase())
-        // ||
-        // (candidate?.basic_information?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
+    const filteredCandidates = candidates?.filter(candidate => {
+        // Search filter
+        const matchesSearch = candidate?.basic_information?.full_name?.toLowerCase().includes(searchTerm?.toLowerCase());
+
+        // Application status filter
+        let matchesApplicationStatus = true;
+        if (filters.applicationStatus !== 'all') {
+            if (filters.applicationStatus === 'pending') {
+                matchesApplicationStatus = typeof candidate?.application_status === 'string';
+            } else if (filters.applicationStatus === 'approved') {
+                matchesApplicationStatus = candidate?.application_status === true;
+            } else if (filters.applicationStatus === 'rejected') {
+                matchesApplicationStatus = candidate?.application_status === false;
+            }
+        }
+
+        // Experience range filter
+        let matchesExperience = true;
+        if (filters.experienceRange !== 'all') {
+            const totalExp = candidate?.career_overview?.total_years_experience || 0;
+            switch (filters.experienceRange) {
+                case '0-2':
+                    matchesExperience = totalExp >= 0 && totalExp <= 2;
+                    break;
+                case '3-5':
+                    matchesExperience = totalExp >= 3 && totalExp <= 5;
+                    break;
+                case '5-10':
+                    matchesExperience = totalExp >= 5 && totalExp <= 10;
+                    break;
+                case '10+':
+                    matchesExperience = totalExp >= 10;
+                    break;
+            }
+        }
+
+        // Sales experience range filter
+        let matchesSalesExperience = true;
+        if (filters.salesExperienceRange !== 'all') {
+            const salesExp = candidate?.career_overview?.years_sales_experience || 0;
+            switch (filters.salesExperienceRange) {
+                case '0-1':
+                    matchesSalesExperience = salesExp >= 0 && salesExp <= 1;
+                    break;
+                case '1-3':
+                    matchesSalesExperience = salesExp >= 1 && salesExp <= 3;
+                    break;
+                case '3-5':
+                    matchesSalesExperience = salesExp >= 3 && salesExp <= 5;
+                    break;
+                case '5+':
+                    matchesSalesExperience = salesExp >= 5;
+                    break;
+            }
+        }
+
+        return matchesSearch && matchesApplicationStatus && matchesExperience && matchesSalesExperience;
+    });
 
     const getCommunicationChartData = (scores: any) => {
         return [
@@ -87,21 +151,26 @@ export default function JobCandidatesPage({ params }: PageProps) {
         ];
     };
 
-    const handleApplicationStatus = async (candidateId: string, status: boolean, reason: string) => {
+    const handleApplicationStatus = async (candidateId: string, status: string, note: string) => {
         setUpdatingStatus(candidateId);
         try {
+            const isApproved = status === 'approve';
+            const reason = note || (isApproved ? 'Seems a good fit for the role' : 'Candidate did not meet requirements');
+
             const response = await updateApplicationStatus({
                 user_id: candidateId,
-                application_status: status,
+                application_status: isApproved,
                 reason: reason
             });
 
             if (response.status || response?.user_id) {
                 toast({
                     title: "Success",
-                    description: status ? 'Candidate approved successfully' : 'Candidate rejected successfully'
+                    description: isApproved ? 'Candidate approved successfully' : 'Candidate rejected successfully'
                 });
-                // Refresh the candidates list
+                // Close modal and refresh the candidates list
+                setIsStatusModalOpen(false);
+                setSelectedCandidateForStatus(null);
                 fetchCandidates();
             } else {
                 toast({
@@ -121,6 +190,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
             setUpdatingStatus(null);
         }
     };
+
+    const openStatusModal = (candidate: Candidate) => {
+        setSelectedCandidateForStatus(candidate);
+        setIsStatusModalOpen(true);
+    };
+
+
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -209,64 +285,17 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 </div>
             </div>
 
-            {/* Filters and Search */}
+            {/* Enhanced Filters and Search */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Card className="p-6 mb-8">
-                    <div className="flex flex-col md:flex-row gap-4 items-center">
-                        <div className="flex-1 w-full relative">
-                            <Input
-                                placeholder="Search candidates..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                disabled={pageLoading}
-                            />
-                            {pageLoading && (
-                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex gap-4">
-                            <Button
-                                variant={filters.audioPassed ? "default" : "outline"}
-                                onClick={() => setFilters(prev => ({
-                                    ...prev,
-                                    audioPassed: !prev.audioPassed
-                                }))}
-                                disabled={pageLoading}
-                            >
-                                {pageLoading ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                                        Loading...
-                                    </div>
-                                ) : (
-                                    'Audio Passed'
-                                )}
-                            </Button>
-                            {/* <Button
-                                variant={filters.videoAttended ? "default" : "outline"}
-                                onClick={() => setFilters(prev => ({
-                                    ...prev,
-                                    videoAttended: !prev.videoAttended
-                                }))}
-                                disabled={pageLoading}
-                            >
-                                Video Attended
-                            </Button>
-                            <Button
-                                variant={filters.audioUploaded ? "default" : "outline"}
-                                onClick={() => setFilters(prev => ({
-                                    ...prev,
-                                    audioUploaded: !prev.audioUploaded
-                                }))}
-                                disabled={pageLoading}
-                            >
-                                Audio Uploaded
-                            </Button> */}
-                        </div>
-                    </div>
-                </Card>
+                <CandidateFilters
+                    filters={filters}
+                    setFilters={setFilters}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    pageLoading={pageLoading}
+                    candidatesCount={candidates.length}
+                    filteredCount={filteredCandidates.length}
+                />
 
                 {/* Candidates List */}
                 <div className="grid grid-cols-1 gap-6">
@@ -330,6 +359,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         )}
                                         <Button
                                             variant="outline"
+                                            className="flex items-center gap-2 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
                                             onClick={() => setSelectedCandidate(candidate)}
                                         >
                                             View Details
@@ -347,11 +377,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             </span>
                                         ))}
                                     </div>
-                                    <div className="flex flex-col md:flex-row gap-2">
+                                    <div className="flex flex-col md:flex-row items-center gap-2">
                                         {candidate?.interview_status?.resume_url && (
                                             <Button
                                                 variant="outline"
-                                                className="flex items-center gap-2"
+                                                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
                                                 onClick={() => {
                                                     if (candidate?.interview_status?.resume_url) {
                                                         window.open(candidate?.interview_status?.resume_url, '_blank');
@@ -361,59 +391,46 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 View Resume
                                             </Button>
                                         )}
-                                        {typeof candidate?.application_status === 'string' ? (
-                                            <>
-                                                <Button
-                                                    className="flex items-center gap-2"
-                                                    onClick={() => handleApplicationStatus(
-                                                        candidate?.profile_id,
-                                                        true,
-                                                        'Candidate passed all interview rounds'
-                                                    )}
-                                                    disabled={updatingStatus === candidate?.profile_id}
-                                                >
-                                                    <FaCheckCircle />
-                                                    {updatingStatus === candidate?.profile_id ? 'Updating...' : 'Approve'}
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    className="flex items-center gap-2"
-                                                    onClick={() => handleApplicationStatus(
-                                                        candidate?.profile_id,
-                                                        false,
-                                                        'Candidate did not meet requirements'
-                                                    )}
-                                                    disabled={updatingStatus === candidate?.profile_id}
-                                                >
-                                                    <FaTimesCircle />
-                                                    {updatingStatus === candidate?.profile_id ? 'Updating...' : 'Reject'}
-                                                </Button>
-                                            </>
-                                        ) : candidate?.application_status ? (
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-md">
-                                                    <FaCheckCircle />
-                                                    <span>Accepted</span>
-                                                </div>
 
-                                                <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 text-sm rounded-md">
-                                                    <FaCheckCircle />
-                                                    <span>{candidate?.application_status_reason || ''}</span>
-                                                </div>
-                                            </div>
+                                        {typeof candidate?.application_status === 'boolean' && (
+                                            <div className="flex items-center justify-center gap-2">
+                                                {candidate.application_status ? (
+                                                    <div className="flex items-center gap-2 px-4 py-3 bg-green-100 text-green-800 rounded-full">
+                                                        <span className="text-sm font-medium">Approved</span>
+                                                        <FaCheckCircle className="text-green-600" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2 px-4 py-3 bg-red-100 text-red-800 rounded-full">
+                                                        <span className="text-sm font-medium">Rejected</span>
+                                                        <FaTimesCircle className="text-red-600" />
+                                                    </div>
+                                                )}
 
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-md">
-                                                    <FaTimesCircle />
-                                                    <span>Rejected</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 text-sm rounded-md">
-                                                    <FaTimesCircle />
-                                                    <span>{candidate?.application_status_reason || ''}</span>
-                                                </div>
+                                                {/* {candidate?.application_status_reason && (
+                                                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-800 text-sm rounded-md">
+                                                        <span>{candidate.application_status_reason}</span>
+                                                    </div>
+                                                )} */}
                                             </div>
                                         )}
+
+                                        <Button
+                                            variant="outline"
+                                            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                            onClick={() => openStatusModal(candidate)}
+                                            disabled={updatingStatus === candidate?.profile_id}
+                                        >
+                                            <FaEdit className="text-white animate-pulse" />
+                                            {updatingStatus === candidate?.profile_id ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                    Updating...
+                                                </>
+                                            ) : (
+                                                typeof candidate?.application_status === 'string' ? 'Add Status' : 'Update Status'
+                                            )}
+                                        </Button>
+
                                     </div>
                                 </div>
                             </Card>
@@ -902,6 +919,24 @@ export default function JobCandidatesPage({ params }: PageProps) {
                         <p className="text-gray-500">No candidates found</p>
                     </div>
                 )}
+
+                {/* Status Update Modal */}
+                <UpdateStatusModal
+                    isOpen={isStatusModalOpen}
+                    onClose={() => {
+                        setIsStatusModalOpen(false);
+                        setSelectedCandidateForStatus(null);
+                    }}
+                    onSubmit={(status, note) => {
+                        if (selectedCandidateForStatus) {
+                            handleApplicationStatus(selectedCandidateForStatus.profile_id, status, note);
+                        }
+                    }}
+                    candidateName={selectedCandidateForStatus?.basic_information?.full_name || ''}
+                    isLoading={updatingStatus === selectedCandidateForStatus?.profile_id}
+                    currentStatus={typeof selectedCandidateForStatus?.application_status === 'boolean' ? selectedCandidateForStatus.application_status : (selectedCandidateForStatus?.application_status === 'string' ? null : undefined)}
+                    currentNote={selectedCandidateForStatus?.application_status_reason}
+                />
             </div>
         </div>
     );
