@@ -2,73 +2,39 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch } from '@/app/store';
+import { fetchJobRoles } from '@/features/jobRoles/jobRolesSlice';
+import {
+    selectJobRoles,
+    selectJobRolesLoading,
+    selectTotalCandidates,
+    selectTotalAudioAttended,
+    selectTotalVideoAttended,
+    selectTotalMovedToVideo,
+    selectAudioConversionRate,
+    selectVideoConversionRate,
+    selectOverallConversionRate
+} from '@/features/jobRoles/selectors';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { getCompanyJobRoles, addJobRole, JobRole } from '@/lib/adminService';
-import { toast } from "@/hooks/use-toast";
-import { FaPlus, FaBriefcase, FaUsers, FaCheckCircle, FaSearch } from 'react-icons/fa';
+import { FaPlus } from 'react-icons/fa';
 import AddJobModal from '@/components/AddJobModal';
 import { Badge } from "@/components/ui/badge";
-import { FaMicrophone, FaVideo, FaArrowUp } from 'react-icons/fa';
 
-const salesTypes = [
-    "Consultative Sales",
-    "Channel Sales",
-    "Direct Sales",
-    "Inside Sales",
-    "Outside Sales",
-    "Technical Sales"
-];
-
-const industries = [
-    "Healthcare",
-    "Textiles",
-    "Technology",
-    "Manufacturing",
-    "Finance",
-    "Retail"
-];
-
-const regions = [
-    "New Jersey",
-    "New York",
-    "California",
-    "Texas",
-    "Florida",
-    "Illinois"
-];
-
-const salesRoleTypes = [
-    "Executive",
-    "Manager",
-    "Representative",
-    "Specialist",
-    "Consultant"
-];
-
-const positionLevels = [
-    "Entry",
-    "Mid",
-    "Senior",
-    "Lead",
-    "Manager"
-];
-
-const crmTools = [
-    "Salesforce.com",
-    "HubSpot",
-    "Microsoft Dynamics",
-    "Zoho CRM",
-    "Pipedrive"
-];
 
 export default function JobsPage() {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
-    const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
+    const dispatch = useDispatch<AppDispatch>();
+    const jobRoles = useSelector(selectJobRoles);
+    const loading = useSelector(selectJobRolesLoading);
+    const totalCandidates = useSelector(selectTotalCandidates);
+    const totalAudioAttended = useSelector(selectTotalAudioAttended);
+    const totalVideoAttended = useSelector(selectTotalVideoAttended);
+    const totalMovedToVideo = useSelector(selectTotalMovedToVideo);
+    const audioConversionRate = useSelector(selectAudioConversionRate);
+    const videoConversionRate = useSelector(selectVideoConversionRate);
+    const overallConversionRate = useSelector(selectOverallConversionRate);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddJob, setShowAddJob] = useState(false);
 
@@ -78,39 +44,15 @@ export default function JobsPage() {
             router.push('/company');
             return;
         }
-        fetchJobs(companyId);
-    }, []);
-
-    const fetchJobs = async (companyId: string) => {
-        try {
-            const response = await getCompanyJobRoles(companyId);
-            setJobRoles(response.roles);
-        } catch (error) {
-            console.error('Error fetching jobs:', error);
-            toast({
-                title: "Error",
-                description: "Failed to fetch jobs",
-                variant: "destructive"
-            });
-        } finally {
-            setLoading(false);
+        if (!jobRoles || jobRoles.length === 0) {
+            dispatch(fetchJobRoles(companyId));
         }
-    };
-
+    }, [dispatch, jobRoles, router]);
 
     const filteredJobs = jobRoles.filter(job =>
         job.title?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
         job.description?.toLowerCase().includes(searchTerm?.toLowerCase())
     );
-
-    // Analytics calculations
-    const totalCandidates = jobRoles.reduce((acc, job) => acc + (job.total_candidates || 0), 0);
-    const totalAudioAttended = jobRoles.reduce((acc, job) => acc + (job.audio_attended_count || 0), 0);
-    const totalVideoAttended = jobRoles.reduce((acc, job) => acc + (job.video_attended_count || 0), 0);
-    const totalMovedToVideo = jobRoles.reduce((acc, job) => acc + (job.moved_to_video_round_count || 0), 0);
-    const audioConversionRate = totalCandidates > 0 ? ((totalAudioAttended / totalCandidates) * 100).toFixed(1) : '0';
-    const videoConversionRate = totalAudioAttended > 0 ? ((totalVideoAttended / totalAudioAttended) * 100).toFixed(1) : '0';
-    const overallConversionRate = totalCandidates > 0 ? ((totalMovedToVideo / totalCandidates) * 100).toFixed(1) : '0';
 
     if (loading) {
         return (
@@ -283,7 +225,7 @@ export default function JobsPage() {
                 onSuccess={() => {
                     const companyId = localStorage.getItem('company_id');
                     if (companyId) {
-                        fetchJobs(companyId);
+                        dispatch(fetchJobRoles(companyId));
                     }
                 }}
             />

@@ -2,10 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch } from '@/app/store';
+import { fetchJobRoles } from '@/features/jobRoles/jobRolesSlice';
+import {
+    selectJobRoles,
+    selectJobRolesLoading,
+    selectTotalCandidates,
+    selectTotalAudioAttended,
+    selectTotalVideoAttended,
+    selectTotalMovedToVideo,
+    selectAudioConversionRate,
+    selectVideoConversionRate,
+    selectOverallConversionRate
+} from '@/features/jobRoles/selectors';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getCompanyJobRoles } from '@/lib/adminService';
 import { toast } from "@/hooks/use-toast";
 import {
     FaPlus,
@@ -83,10 +96,17 @@ const ConversionRateTooltip = ({ active, payload, label }: any) => {
 
 export default function DashboardPage() {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
-    const [jobRoles, setJobRoles] = useState<any[]>([]);
+    const dispatch = useDispatch<AppDispatch>();
+    const jobRoles = useSelector(selectJobRoles);
+    const loading = useSelector(selectJobRolesLoading);
+    const totalCandidates = useSelector(selectTotalCandidates);
+    const totalAudioAttended = useSelector(selectTotalAudioAttended);
+    const totalVideoAttended = useSelector(selectTotalVideoAttended);
+    const totalMovedToVideo = useSelector(selectTotalMovedToVideo);
+    const audioConversionRate = useSelector(selectAudioConversionRate);
+    const videoConversionRate = useSelector(selectVideoConversionRate);
+    const overallConversionRate = useSelector(selectOverallConversionRate);
     const [showAddJob, setShowAddJob] = useState(false);
-    const [selectedTimeframe, setSelectedTimeframe] = useState('all');
 
     useEffect(() => {
         const companyId = localStorage.getItem('company_id');
@@ -94,35 +114,10 @@ export default function DashboardPage() {
             router.push('/company');
             return;
         }
-        fetchJobs(companyId);
-    }, []);
-
-    const fetchJobs = async (companyId: string) => {
-        try {
-            const response = await getCompanyJobRoles(companyId);
-            setJobRoles(response.roles);
-        } catch (error) {
-            console.error('Error fetching jobs:', error);
-            toast({
-                title: "Error",
-                description: "Failed to fetch jobs",
-                variant: "destructive"
-            });
-        } finally {
-            setLoading(false);
+        if (!jobRoles || jobRoles.length === 0) {
+            dispatch(fetchJobRoles(companyId));
         }
-    };
-
-    // Analytics calculations
-    const totalCandidates = jobRoles.reduce((acc, job) => acc + job.total_candidates, 0);
-    const totalAudioAttended = jobRoles.reduce((acc, job) => acc + job.audio_attended_count, 0);
-    const totalVideoAttended = jobRoles.reduce((acc, job) => acc + job.video_attended_count, 0);
-    const totalMovedToVideo = jobRoles.reduce((acc, job) => acc + job.moved_to_video_round_count, 0);
-    const activeJobs = jobRoles.filter(job => job.is_active).length;
-
-    const audioConversionRate = totalCandidates > 0 ? ((totalAudioAttended / totalCandidates) * 100).toFixed(1) : '0';
-    const videoConversionRate = totalAudioAttended > 0 ? ((totalVideoAttended / totalAudioAttended) * 100).toFixed(1) : '0';
-    const overallConversionRate = totalCandidates > 0 ? ((totalMovedToVideo / totalCandidates) * 100).toFixed(1) : '0';
+    }, [dispatch, jobRoles, router]);
 
     // Prepare data for charts
     const prepareCandidateMetricsData = () => {
@@ -465,7 +460,7 @@ export default function DashboardPage() {
                 onSuccess={() => {
                     const companyId = localStorage.getItem('company_id');
                     if (companyId) {
-                        fetchJobs(companyId);
+                        dispatch(fetchJobRoles(companyId));
                     }
                 }}
             />
