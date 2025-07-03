@@ -416,9 +416,12 @@ export default function DashboardPage() {
                                     const audioRate = job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100).toFixed(1) : '0';
                                     const videoRate = job.audio_attended_count > 0 ? ((job.video_attended_count / job.audio_attended_count) * 100).toFixed(1) : '0';
                                     const overallRate = job.total_candidates > 0 ? ((job.moved_to_video_round_count / job.total_candidates) * 100).toFixed(1) : '0';
-
                                     return (
-                                        <tr key={job._id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                                        <tr
+                                            key={job._id}
+                                            className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer hover:bg-indigo-50 transition`}
+                                            onClick={() => router.push(`/company/jobs/${job._id}`)}
+                                        >
                                             <td className="py-3 px-4 font-medium text-gray-900">{job.title}</td>
                                             <td className="py-3 px-4 text-center text-gray-700">{job.total_candidates}</td>
                                             <td className="py-3 px-4 text-center text-gray-700">{job.audio_attended_count}</td>
