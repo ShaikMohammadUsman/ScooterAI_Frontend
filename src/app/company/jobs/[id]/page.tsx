@@ -258,29 +258,31 @@ export default function JobCandidatesPage({ params }: PageProps) {
             {/* Header */}
             <div className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
+                    <div className="flex flex-col items-center justify-between gap-4">
+                        <div className="w-full flex justify-between items-center gap-2 ">
                             <h1 className="text-2xl font-bold text-gray-900">
                                 {jobDetails?.title || 'Job Candidates'}
                             </h1>
-                            {jobDetails?.description && (
-                                <p className="text-gray-600 mt-1">{jobDetails.description}</p>
-                            )}
+                            <Button
+                                variant="outline"
+                                onClick={() => router.back()}
+                                disabled={pageLoading}
+                            >
+                                {pageLoading ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                        Loading...
+                                    </div>
+                                ) : (
+                                    'Back to Jobs'
+                                )}
+                            </Button>
+
                         </div>
-                        <Button
-                            variant="outline"
-                            onClick={() => router.back()}
-                            disabled={pageLoading}
-                        >
-                            {pageLoading ? (
-                                <div className="flex items-center gap-2">
-                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                                    Loading...
-                                </div>
-                            ) : (
-                                'Back to Jobs'
-                            )}
-                        </Button>
+
+                        {jobDetails?.description && (
+                            <p className="text-gray-600 mt-1 text-sm md:text-base">{jobDetails.description}</p>
+                        )}
                     </div>
                 </div>
             </div>
