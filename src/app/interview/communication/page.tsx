@@ -173,7 +173,7 @@ function CommunicationInterview() {
             }
 
             // Start with a test question for camera check
-            const testQuestion = "Hi, how are you? Please click 'Start Interview' to begin.";
+            const testQuestion = "Hi, how are you? Please click 'Start Interview' to begin. I’ll be asking you some questions that will look a lot like the situations you’ll actually encounter as the Founding BDR at TestZeus.";
             setCurrentQuestion(testQuestion);
             setMessages([{
                 own: false,
@@ -662,7 +662,7 @@ function CommunicationInterview() {
                     </svg>
                 </div>
                 <div className="flex-1">
-                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Communication Skills Assessment</div>
+                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Sales Skills Assessment</div>
                     <div className="text-xs text-muted-foreground">Video Assessment Simulation</div>
                 </div>
                 {isProcessingFinalResponse && (
