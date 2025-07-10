@@ -32,7 +32,7 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
     const [accepted, setAccepted] = useState(false);
 
     // Define interview stages with visual status
-    const interviewStages: InterviewStage[] = [
+    const [interviewStages, setInterviewStages] = useState<InterviewStage[]>([
         {
             id: 'application',
             title: 'Application Submitted',
@@ -73,15 +73,28 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
             status: candidate.call_for_interview ? 'completed' : 'current',
             isActive: candidate.final_shortlist,
         },
-    ];
+    ]);
 
     useEffect(() => {
+        setNotes(candidate.call_for_interview_notes);
+        setIsCallForInterview(candidate.call_for_interview);
+        setShowProgress(false);
         if (candidate.call_for_interview) {
+            console.log("called for interview", candidate.call_for_interview)
             setAccepted(true);
         } else {
             setAccepted(false);
         }
-    }, [])
+    }, [candidate])
+
+
+    useEffect(() => {
+        setInterviewStages((prev) => {
+            const newStages = [...prev];
+            newStages[newStages.length - 1].status = accepted ? 'completed' : 'current';
+            return newStages;
+        });
+    }, [accepted]);
 
     const getStageIcon = (stage: InterviewStage) => {
         switch (stage.status) {
@@ -133,8 +146,10 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
 
             // Check if the response indicates success
             if (response && response.user_id) {
-                if (isCallForInterview) {
+                if (response.application_status) {
                     setAccepted(true);
+                } else {
+                    setAccepted(false)
                 }
                 toast({
                     title: isCallForInterview ? "Success" : "Updated",
@@ -260,13 +275,14 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
                                 <span className="text-sm font-medium text-green-800">Candidate Shortlisted</span>
                             </div>
                             <Badge className="bg-green-100 text-green-800">
-                                Called for Final Interview
+                                {candidate.call_for_interview ? 'Called for Final Interview' : 'Shortlisted'}
                             </Badge>
                         </div>
 
                         <div className="mb-4">
                             <p className="text-sm text-green-700 mb-3">
-                                This candidate has been shortlisted for the next round and called for final interview.
+                                This candidate has been shortlisted for the next round.
+                                {candidate.call_for_interview ? ' This candidate has been called for final interview.' : ' This candidate is awaiting final interview call.'}
                             </p>
                             {candidate.call_for_interview_notes && (
                                 <div className="p-3 bg-green-100 rounded">
