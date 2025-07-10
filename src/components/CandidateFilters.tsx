@@ -7,15 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FaFilter, FaTimes, FaSearch, FaUserCheck, FaUserTimes, FaClock, FaGraduationCap, FaBriefcase, FaMicrophone, FaVideo, FaBars } from 'react-icons/fa';
-
-interface FilterState {
-    audioPassed: boolean;
-    videoAttended: boolean;
-    audioUploaded: boolean;
-    applicationStatus: string;
-    experienceRange: string;
-    salesExperienceRange: string;
-}
+import { FilterState } from '@/types/filter';
 
 interface CandidateFiltersProps {
     filters: FilterState;
@@ -40,10 +32,10 @@ export default function CandidateFilters({
 
     const clearAllFilters = () => {
         setFilters({
-            audioPassed: false,
-            videoAttended: false,
-            audioUploaded: false,
             applicationStatus: 'all',
+            videoAttended: false,
+            shortlisted: false,
+            callForInterview: false,
             experienceRange: 'all',
             salesExperienceRange: 'all',
         });
@@ -51,10 +43,10 @@ export default function CandidateFilters({
     };
 
     const hasActiveFilters = () => {
-        return filters.audioPassed ||
+        return filters.applicationStatus !== 'all' ||
             filters.videoAttended ||
-            filters.audioUploaded ||
-            filters.applicationStatus !== 'all' ||
+            filters.shortlisted ||
+            filters.callForInterview ||
             filters.experienceRange !== 'all' ||
             filters.salesExperienceRange !== 'all' ||
             searchTerm.trim() !== '';
@@ -87,7 +79,7 @@ export default function CandidateFilters({
                 <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                         <FaUserCheck className="h-4 w-4 text-blue-600" />
-                        Application Status
+                        Video Round Status
                     </Label>
                     <Select
                         value={filters.applicationStatus}
@@ -100,7 +92,7 @@ export default function CandidateFilters({
                         <SelectContent>
                             <SelectItem value="all">All Statuses</SelectItem>
                             <SelectItem value="pending">Pending Review</SelectItem>
-                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="approved">Moved to Video Round</SelectItem>
                             <SelectItem value="rejected">Rejected</SelectItem>
                         </SelectContent>
                     </Select>
@@ -158,19 +150,9 @@ export default function CandidateFilters({
                 <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                         <FaClock className="h-4 w-4 text-orange-600" />
-                        Interview Status
+                        Interview Stages
                     </Label>
                     <div className="space-y-2">
-                        <Button
-                            variant={filters.audioPassed ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setFilters({ ...filters, audioPassed: !filters.audioPassed })}
-                            disabled={pageLoading}
-                            className="w-full justify-start"
-                        >
-                            <FaMicrophone className="h-3 w-3 mr-2" />
-                            Audio Passed
-                        </Button>
                         <Button
                             variant={filters.videoAttended ? "default" : "outline"}
                             size="sm"
@@ -180,6 +162,26 @@ export default function CandidateFilters({
                         >
                             <FaVideo className="h-3 w-3 mr-2" />
                             Video Attended
+                        </Button>
+                        <Button
+                            variant={filters.shortlisted ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilters({ ...filters, shortlisted: !filters.shortlisted })}
+                            disabled={pageLoading}
+                            className="w-full justify-start"
+                        >
+                            <FaUserCheck className="h-3 w-3 mr-2" />
+                            Passed Video Round
+                        </Button>
+                        <Button
+                            variant={filters.callForInterview ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilters({ ...filters, callForInterview: !filters.callForInterview })}
+                            disabled={pageLoading}
+                            className="w-full justify-start"
+                        >
+                            <FaMicrophone className="h-3 w-3 mr-2" />
+                            Final Interview Call
                         </Button>
                     </div>
                 </div>
@@ -237,18 +239,6 @@ export default function CandidateFilters({
                                 </button>
                             </span>
                         )}
-                        {filters.audioPassed && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                <FaMicrophone className="h-3 w-3" />
-                                Audio Passed
-                                <button
-                                    onClick={() => setFilters({ ...filters, audioPassed: false })}
-                                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                    <FaTimes className="h-3 w-3" />
-                                </button>
-                            </span>
-                        )}
                         {filters.videoAttended && (
                             <span className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
                                 <FaVideo className="h-3 w-3" />
@@ -256,6 +246,30 @@ export default function CandidateFilters({
                                 <button
                                     onClick={() => setFilters({ ...filters, videoAttended: false })}
                                     className="ml-1 hover:bg-indigo-200 rounded-full p-0.5"
+                                >
+                                    <FaTimes className="h-3 w-3" />
+                                </button>
+                            </span>
+                        )}
+                        {filters.shortlisted && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                <FaUserCheck className="h-3 w-3" />
+                                Passed Video Round
+                                <button
+                                    onClick={() => setFilters({ ...filters, shortlisted: false })}
+                                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                                >
+                                    <FaTimes className="h-3 w-3" />
+                                </button>
+                            </span>
+                        )}
+                        {filters.callForInterview && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                                <FaMicrophone className="h-3 w-3" />
+                                Final Interview Call
+                                <button
+                                    onClick={() => setFilters({ ...filters, callForInterview: false })}
+                                    className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
                                 >
                                     <FaTimes className="h-3 w-3" />
                                 </button>

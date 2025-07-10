@@ -21,8 +21,7 @@ export interface JobRoleData {
 
 export interface Candidate {
     profile_id: string;
-    application_status?: boolean | string;  // true for accepted, false for rejected, undefined for pending
-    application_status_reason?: string;
+    profile_created_at: string;
     basic_information: {
         full_name: string;
         current_location: string;
@@ -44,6 +43,12 @@ export interface Candidate {
         };
         languages_spoken?: string[];
     };
+    application_status: boolean;
+    application_status_reason: string;
+    final_shortlist: boolean;
+    shortlist_status_reason: string;
+    call_for_interview: boolean;
+    call_for_interview_notes: string;
     career_overview: {
         total_years_experience: number;
         years_sales_experience: number;
@@ -70,7 +75,52 @@ export interface Candidate {
         audio_interview_url: string | null;
         resume_url: string | null;
     };
-    audio_interview_details?: {
+    interview_details: {
+        session_id: string;
+        created_at: string;
+        communication_evaluation: {
+            content_and_thought: {
+                score: number;
+                feedback: string;
+            };
+            verbal_delivery: {
+                score: number;
+                feedback: string;
+            };
+            non_verbal: {
+                score: number;
+                feedback: string;
+            };
+            presence_and_authenticity: {
+                score: number;
+                feedback: string;
+            };
+            overall_score: number;
+            summary: string;
+        };
+        qa_evaluations: {
+            question_evaluations: Array<{
+                question_number: number;
+                step: string;
+                question: string;
+                answer: string;
+                skill_score: number;
+                trait_score: number;
+                skill_reasoning: string;
+                trait_reasoning: string;
+                has_signal: boolean;
+            }>;
+            overall_scores: {
+                average_skill_score: number;
+                average_trait_score: number;
+                total_questions: number;
+                questions_with_signal: number;
+            };
+            summary: string;
+            interview_completed: boolean;
+        };
+    };
+    audio_interview_details: {
         audio_interview_id: string;
         created_at: string;
         qa_evaluations: Array<{
@@ -97,37 +147,6 @@ export interface Candidate {
             strengths: string[];
             areas_for_improvement: string[];
             audio_interview_status: boolean;
-        };
-    };
-    interview_details?: {
-        session_id: string;
-        created_at: string;
-        communication_evaluation: {
-            content_and_thought?: { score: number; feedback: string };
-            verbal_delivery?: { score: number; feedback: string };
-            non_verbal?: { score: number; feedback: string };
-            presence_and_authenticity?: { score: number; feedback: string };
-            overall_score?: number;
-            summary?: string;
-        };
-        qa_evaluations: {
-            question_evaluations: Array<{
-                question_number: number;
-                question: string;
-                answer: string;
-                skill_score: number;
-                trait_score: number;
-                skill_reasoning: string;
-                trait_reasoning: string;
-                has_signal: boolean;
-            }>;
-            overall_scores: {
-                average_skill_score: number;
-                average_trait_score: number;
-                total_questions: number;
-                questions_with_signal: number;
-            };
-            summary: string;
         };
     };
 }
@@ -324,6 +343,32 @@ export interface UpdateApplicationStatusResponse {
     reason?:string;
 }
 
+export interface CallForInterviewRequest {
+    user_id: string;
+    call_for_interview: boolean;
+    notes: string;
+}
+
+export interface CallForInterviewResponse {
+    message: string;
+    user_id: string;
+    application_status: boolean;
+    reason: string;
+}
+
+export interface MarkFinalShortlistRequest {
+    user_id: string;
+    final_shortlist: boolean;
+    reason: string;
+}
+
+export interface MarkFinalShortlistResponse {
+    message: string;
+    user_id: string;
+    shortlist_status: boolean;
+    reason: string;
+}
+
 function getToken(): string {
     const companyDetails = localStorage.getItem('company_details');
     if (companyDetails) {
@@ -338,9 +383,12 @@ export const getJobCandidates = async (
     jobId: string,
     page: number = 1,
     pageSize: number = 20,
-    audioPassed?: boolean,
+    // audioPassed?: boolean,
+    // audioUploaded?: boolean,
+    application_status?: boolean,
     videoAttended?: boolean,
-    audioUploaded?: boolean
+    shortlisted?: boolean,
+    callForInterview?: boolean,
 ): Promise<CandidatesResponse> => {
     try {
         const params = new URLSearchParams({
@@ -348,9 +396,12 @@ export const getJobCandidates = async (
             page_size: pageSize.toString(),
         });
 
-        if (audioPassed !== undefined) params.append('audio_passed', audioPassed.toString());
-        if (videoAttended !== undefined) params.append('video_attended', videoAttended.toString());
-        if (audioUploaded !== undefined) params.append('audio_uploaded', audioUploaded.toString());
+        // if (audioPassed !== undefined) params.append('audio_passed', audioPassed.toString());
+        if (application_status !== undefined) params.append('application_status', application_status.toString()); // Moved to video round; application accepted
+        if (videoAttended !== undefined) params.append('video_attended', videoAttended.toString()); // Attended video round or not
+        // if (audioUploaded !== undefined) params.append('audio_uploaded', audioUploaded.toString());
+        if (shortlisted !== undefined) params.append('shortlisted', shortlisted.toString()); // Passed video round and moved to company selection
+        if (callForInterview !== undefined) params.append('call_for_interview', callForInterview.toString()); // Shortlisted by company for final interview
 
         const response = await axios.get(`${BASE_URL}/job-candidates/${jobId}?${params.toString()}`);
         return response.data;
@@ -436,6 +487,64 @@ export async function updateApplicationStatus(
         return await response.json();
     } catch (error) {
         console.error('Error updating application status:', error);
+        throw error;
+    }
+}
+
+/**
+ * Updates the call for interview status for a candidate
+ * @param request - Object containing user_id, call_for_interview status, and notes
+ * @returns Promise with the call for interview response
+ */
+export async function callForInterview(
+    request: CallForInterviewRequest
+): Promise<CallForInterviewResponse> {
+    try {
+        const response = await fetch(`${BASE_URL}/call-for-interview/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update call for interview status');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating call for interview status:', error);
+        throw error;
+    }
+}
+
+/**
+ * Marks a candidate for final shortlist
+ * @param request - Object containing user_id, final_shortlist status, and reason
+ * @returns Promise with the final shortlist response
+ */
+export async function markFinalShortlist(
+    request: MarkFinalShortlistRequest
+): Promise<MarkFinalShortlistResponse> {
+    try {
+        const response = await fetch(`${BASE_URL}/mark-final-shortlist/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update final shortlist status');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating final shortlist status:', error);
         throw error;
     }
 } 

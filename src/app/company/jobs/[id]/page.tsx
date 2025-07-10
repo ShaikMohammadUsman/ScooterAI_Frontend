@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus } from '@/lib/adminService';
+import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist } from '@/lib/adminService';
 import formatText from '@/lib/formatText';
 import { toast } from "@/hooks/use-toast";
 import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit } from 'react-icons/fa';
@@ -17,6 +17,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import UpdateStatusModal from "@/components/UpdateStatusModal";
 import CandidateFilters from "@/components/CandidateFilters";
+import { FilterState } from '@/types/filter';
+import ShortlistModal from '@/components/UpdateStatusModal';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -30,13 +32,12 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [jobDetails, setJobDetails] = useState<CandidatesResponse['job_details'] | null>(null);
     const resolvedParams = use(params);
     const jobId = resolvedParams.id;
-    const [filters, setFilters] = useState({
-        // Interview Status Filters
-        audioPassed: false,
-        videoAttended: false,
-        audioUploaded: false,
+    const [filters, setFilters] = useState<FilterState>({
         // Application Status Filters
         applicationStatus: 'all', // 'all', 'approved', 'rejected', 'pending'
+        videoAttended: false,
+        shortlisted: false,
+        callForInterview: false,
         // Experience Filters
         experienceRange: 'all', // 'all', '0-2', '3-5', '5-10', '10+'
         salesExperienceRange: 'all', // 'all', '0-1', '1-3', '3-5', '5+'
@@ -45,6 +46,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [selectedCandidateForStatus, setSelectedCandidateForStatus] = useState<Candidate | null>(null);
+    const [updatingShortlist, setUpdatingShortlist] = useState<string | null>(null);
+    const [isShortlistModalOpen, setIsShortlistModalOpen] = useState(false);
+    const [selectedCandidateForShortlist, setSelectedCandidateForShortlist] = useState<Candidate | null>(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -63,9 +67,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 jobId,
                 currentPage, // Use current page
                 pageSize,
-                filters.audioPassed || undefined,
-                filters.videoAttended || undefined,
-                filters.audioUploaded || undefined
+                filters.applicationStatus === 'approved' ? true :
+                    filters.applicationStatus === 'rejected' ? false : undefined, // application_status
+                filters.videoAttended || undefined, // videoAttended
+                filters.shortlisted || undefined, // shortlisted
+                filters.callForInterview || undefined // callForInterview
             );
             setCandidates(response.candidates);
             setJobDetails(response.job_details);
@@ -91,11 +97,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
         let matchesApplicationStatus = true;
         if (filters.applicationStatus !== 'all') {
             if (filters.applicationStatus === 'pending') {
-                matchesApplicationStatus = typeof candidate?.application_status === 'string';
+                matchesApplicationStatus = candidate?.application_status === undefined || candidate?.application_status === null;
             } else if (filters.applicationStatus === 'approved') {
-                matchesApplicationStatus = candidate?.application_status === true;
+                matchesApplicationStatus = candidate?.application_status === true; // Moved to video round
             } else if (filters.applicationStatus === 'rejected') {
-                matchesApplicationStatus = candidate?.application_status === false;
+                matchesApplicationStatus = candidate?.application_status === false; // Rejected from video round
             }
         }
 
@@ -191,9 +197,54 @@ export default function JobCandidatesPage({ params }: PageProps) {
         }
     };
 
+    const handleShortlist = async (candidateId: string, status: string, note: string) => {
+        setUpdatingShortlist(candidateId);
+        try {
+
+            const reason = note || (status === 'approve' ? 'Candidate shortlisted for final round' : 'Candidate removed from shortlist');
+
+            const response = await markFinalShortlist({
+                user_id: candidateId,
+                final_shortlist: status === 'approve' ? true : false,
+                reason: reason
+            });
+
+            if (response.message || response?.user_id) {
+                toast({
+                    title: "Success",
+                    description: status === 'approve' ? 'Candidate shortlisted successfully' : 'Candidate removed from shortlist'
+                });
+                // Close modal and refresh the candidates list
+                setIsShortlistModalOpen(false);
+                setSelectedCandidateForShortlist(null);
+                fetchCandidates();
+            } else {
+                toast({
+                    title: "Error",
+                    description: response.message || 'Failed to update shortlist status',
+                    variant: "destructive"
+                });
+            }
+        } catch (error) {
+            console.error('Error updating shortlist status:', error);
+            toast({
+                title: "Error",
+                description: "Failed to update shortlist status",
+                variant: "destructive"
+            });
+        } finally {
+            setUpdatingShortlist(null);
+        }
+    };
+
     const openStatusModal = (candidate: Candidate) => {
         setSelectedCandidateForStatus(candidate);
         setIsStatusModalOpen(true);
+    };
+
+    const openShortlistModal = (candidate: Candidate) => {
+        setSelectedCandidateForShortlist(candidate);
+        setIsShortlistModalOpen(true);
     };
 
 
@@ -263,21 +314,30 @@ export default function JobCandidatesPage({ params }: PageProps) {
                             <h1 className="text-2xl font-bold text-gray-900">
                                 {jobDetails?.title || 'Job Candidates'}
                             </h1>
-                            <Button
-                                variant="outline"
-                                onClick={() => router.back()}
-                                disabled={pageLoading}
-                            >
-                                {pageLoading ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                                        Loading...
-                                    </div>
-                                ) : (
-                                    'Back to Jobs'
-                                )}
-                            </Button>
-
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="default"
+                                    onClick={() => router.push(`/company/jobs/${jobId}/candidates?jobId=${jobId}`)}
+                                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                                >
+                                    <FaExternalLinkAlt className="mr-2" />
+                                    Detailed Insights
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => router.back()}
+                                    disabled={pageLoading}
+                                >
+                                    {pageLoading ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                            Loading...
+                                        </div>
+                                    ) : (
+                                        'Back to Jobs'
+                                    )}
+                                </Button>
+                            </div>
                         </div>
 
                         {jobDetails?.description && (
@@ -380,6 +440,22 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         ))}
                                     </div>
                                     <div className="flex flex-col md:flex-row items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                            onClick={() => openShortlistModal(candidate)}
+                                            disabled={updatingShortlist === candidate?.profile_id}
+                                        >
+                                            <FaCheck className="text-white animate-pulse" />
+                                            {updatingShortlist === candidate?.profile_id ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                    Updating...
+                                                </>
+                                            ) : (
+                                                'Shortlist'
+                                            )}
+                                        </Button>
                                         {candidate?.interview_status?.resume_url && (
                                             <Button
                                                 variant="outline"
@@ -398,7 +474,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             <div className="flex items-center justify-center gap-2">
                                                 {candidate.application_status ? (
                                                     <div className="flex items-center gap-2 px-4 py-3 bg-green-100 text-green-800 rounded-full">
-                                                        <span className="text-sm font-medium">Approved</span>
+                                                        <span className="text-sm font-medium">Moved to Video Round</span>
                                                         <FaCheckCircle className="text-green-600" />
                                                     </div>
                                                 ) : (
@@ -922,6 +998,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     </div>
                 )}
 
+                {/* Shortlist Modal */}
                 {/* Status Update Modal */}
                 <UpdateStatusModal
                     isOpen={isStatusModalOpen}
@@ -938,6 +1015,23 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     isLoading={updatingStatus === selectedCandidateForStatus?.profile_id}
                     currentStatus={typeof selectedCandidateForStatus?.application_status === 'boolean' ? selectedCandidateForStatus.application_status : (selectedCandidateForStatus?.application_status === 'string' ? null : undefined)}
                     currentNote={selectedCandidateForStatus?.application_status_reason}
+                />
+                {/* Shortlist Modal */}
+                <ShortlistModal
+                    isOpen={isShortlistModalOpen}
+                    onClose={() => {
+                        setIsShortlistModalOpen(false);
+                        setSelectedCandidateForShortlist(null);
+                    }}
+                    onSubmit={(status, note) => {
+                        if (selectedCandidateForShortlist) {
+                            handleShortlist(selectedCandidateForShortlist.profile_id, status, note);
+                        }
+                    }}
+                    candidateName={selectedCandidateForShortlist?.basic_information?.full_name || ''}
+                    isLoading={updatingShortlist === selectedCandidateForShortlist?.profile_id}
+                    currentStatus={typeof selectedCandidateForShortlist?.final_shortlist === 'boolean' ? selectedCandidateForShortlist.final_shortlist : (selectedCandidateForShortlist?.final_shortlist === 'string' ? null : undefined)}
+                    currentNote={selectedCandidateForShortlist?.shortlist_status_reason}
                 />
             </div>
         </div>
