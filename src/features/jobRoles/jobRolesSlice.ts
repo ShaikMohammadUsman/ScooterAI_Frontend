@@ -5,12 +5,14 @@ export interface JobRoleState {
   jobRoles: JobRole[];
   loading: boolean;
   error: string | null;
+  hasLoaded: boolean; // Add flag to track if data has been loaded
 }
 
 const initialState: JobRoleState = {
   jobRoles: [],
   loading: false,
   error: null,
+  hasLoaded: false,
 };
 
 let inFlight = false;
@@ -46,9 +48,9 @@ const jobRolesSlice = createSlice({
       })
       .addCase(fetchJobRoles.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.payload) {
-          state.jobRoles = action.payload;
-        }
+        state.hasLoaded = true; // Mark as loaded
+        // Always update jobRoles, even if it's an empty array
+        state.jobRoles = action.payload || [];
       })
       .addCase(fetchJobRoles.rejected, (state, action) => {
         state.loading = false;

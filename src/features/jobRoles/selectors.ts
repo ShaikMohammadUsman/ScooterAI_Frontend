@@ -4,6 +4,7 @@ import { JobRoleState } from './jobRolesSlice';
 export const selectJobRoles = (state: RootState) => (state.jobRoles as JobRoleState).jobRoles;
 export const selectJobRolesLoading = (state: RootState) => (state.jobRoles as JobRoleState).loading;
 export const selectJobRolesError = (state: RootState) => (state.jobRoles as JobRoleState).error;
+export const selectJobRolesHasLoaded = (state: RootState) => (state.jobRoles as JobRoleState).hasLoaded;
 
 export const selectTotalCandidates = (state: RootState) =>
   (state.jobRoles as JobRoleState).jobRoles.reduce((acc: number, job: any) => acc + (job.total_candidates || 0), 0);

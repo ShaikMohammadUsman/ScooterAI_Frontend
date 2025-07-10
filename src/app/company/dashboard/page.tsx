@@ -8,6 +8,7 @@ import { fetchJobRoles } from '@/features/jobRoles/jobRolesSlice';
 import {
     selectJobRoles,
     selectJobRolesLoading,
+    selectJobRolesHasLoaded,
     selectTotalCandidates,
     selectTotalAudioAttended,
     selectTotalVideoAttended,
@@ -99,6 +100,7 @@ export default function DashboardPage() {
     const dispatch = useDispatch<AppDispatch>();
     const jobRoles = useSelector(selectJobRoles);
     const loading = useSelector(selectJobRolesLoading);
+    const hasLoaded = useSelector(selectJobRolesHasLoaded);
     const totalCandidates = useSelector(selectTotalCandidates);
     const totalAudioAttended = useSelector(selectTotalAudioAttended);
     const totalVideoAttended = useSelector(selectTotalVideoAttended);
@@ -114,10 +116,11 @@ export default function DashboardPage() {
             router.push('/company');
             return;
         }
-        if (!jobRoles || jobRoles.length === 0) {
+        // Only fetch if not loading and not already loaded
+        if (!loading && !hasLoaded) {
             dispatch(fetchJobRoles(companyId));
         }
-    }, [dispatch, jobRoles, router]);
+    }, [dispatch, loading, hasLoaded, router]);
 
     // Prepare data for charts
     const prepareCandidateMetricsData = () => {
