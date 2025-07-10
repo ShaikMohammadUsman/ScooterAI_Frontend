@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,11 +24,12 @@ interface InterviewStage {
 }
 
 export default function ApplicationStatusSection({ candidate, onStatusUpdate }: ApplicationStatusSectionProps) {
+    const { toast } = useToast();
     const [isCallForInterview, setIsCallForInterview] = useState(candidate.call_for_interview);
     const [notes, setNotes] = useState(candidate.call_for_interview_notes || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showProgress, setShowProgress] = useState(false);
-    const { toast } = useToast();
+    const [accepted, setAccepted] = useState(false);
 
     // Define interview stages with visual status
     const interviewStages: InterviewStage[] = [
@@ -73,6 +74,14 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
             isActive: candidate.final_shortlist,
         },
     ];
+
+    useEffect(() => {
+        if (candidate.call_for_interview) {
+            setAccepted(true);
+        } else {
+            setAccepted(false);
+        }
+    }, [])
 
     const getStageIcon = (stage: InterviewStage) => {
         switch (stage.status) {
@@ -124,8 +133,12 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
 
             // Check if the response indicates success
             if (response && response.user_id) {
+                if (isCallForInterview) {
+                    setAccepted(true);
+                }
                 toast({
-                    title: "Success",
+                    title: isCallForInterview ? "Success" : "Updated",
+                    variant: isCallForInterview ? 'success' : 'info',
                     description: isCallForInterview
                         ? "Candidate called for final interview"
                         : "Call for interview status updated",
@@ -140,7 +153,7 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
         } catch (error) {
             console.error('Error updating call for interview status:', error);
             toast({
-                title: "Error",
+                title: "error",
                 description: error instanceof Error ? error.message : "Failed to update call for interview status",
                 variant: "destructive",
             });
@@ -239,60 +252,95 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
                 )}
 
                 {/* Call for Interview Action Section */}
-                <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Phone className="h-5 w-5 text-orange-600" />
-                            <span className="text-sm font-medium text-orange-800">Call for Final Interview</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Switch
-                                checked={isCallForInterview}
-                                onCheckedChange={setIsCallForInterview}
-                                className="data-[state=checked]:bg-orange-600"
-                            />
-                            <Badge className={isCallForInterview ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-600'}>
-                                {isCallForInterview ? 'Called for Interview' : 'Not Called'}
+                {accepted ? (
+                    <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                <span className="text-sm font-medium text-green-800">Candidate Shortlisted</span>
+                            </div>
+                            <Badge className="bg-green-100 text-green-800">
+                                Called for Final Interview
                             </Badge>
                         </div>
-                    </div>
 
-                    <div className="space-y-3">
-                        <div>
-                            <Label htmlFor="interview-notes" className="text-sm font-medium text-orange-800">
-                                Interview Notes
-                            </Label>
-                            <Textarea
-                                id="interview-notes"
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Add notes about the final interview call..."
-                                className="mt-1"
-                                rows={3}
-                            />
+                        <div className="mb-4">
+                            <p className="text-sm text-green-700 mb-3">
+                                This candidate has been shortlisted for the next round and called for final interview.
+                            </p>
+                            {candidate.call_for_interview_notes && (
+                                <div className="p-3 bg-green-100 rounded">
+                                    <p className="text-xs text-green-800">
+                                        <strong>Notes:</strong> {candidate.call_for_interview_notes}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <Button
-                                onClick={handleCallForInterviewSubmit}
-                                disabled={isSubmitting}
-                                className="bg-orange-600 hover:bg-orange-700 text-white"
-                            >
-                                {isSubmitting ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        Updating...
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        {isCallForInterview ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                                        {isCallForInterview ? 'Call for Interview' : 'Update Status'}
-                                    </div>
-                                )}
-                            </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setAccepted(false)}
+                            className="border-green-300 text-green-700 hover:bg-green-100"
+                        >
+                            Update Status
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Phone className="h-5 w-5 text-orange-600" />
+                                <span className="text-sm font-medium text-orange-800">Call for Final Interview</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Switch
+                                    checked={isCallForInterview}
+                                    onCheckedChange={setIsCallForInterview}
+                                    className="data-[state=checked]:bg-orange-600"
+                                />
+                                <Badge className={isCallForInterview ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-600'}>
+                                    {isCallForInterview ? 'Called for Interview' : 'Not Called'}
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div>
+                                <Label htmlFor="interview-notes" className="text-sm font-medium text-orange-800">
+                                    Interview Notes
+                                </Label>
+                                <Textarea
+                                    id="interview-notes"
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Add notes about the final interview call..."
+                                    className="mt-1"
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    onClick={handleCallForInterviewSubmit}
+                                    disabled={isSubmitting}
+                                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                                >
+                                    {isSubmitting ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            Updating...
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            {isCallForInterview ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                                            {isCallForInterview ? 'Call for Interview' : 'Update Status'}
+                                        </div>
+                                    )}
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </CardContent>
         </Card>
     );
