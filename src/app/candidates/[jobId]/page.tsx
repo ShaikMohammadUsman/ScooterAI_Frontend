@@ -307,7 +307,7 @@ export default function PublicCandidatesPage() {
                                                         </div>
                                                     </div>
                                                     <p className="text-sm text-gray-600 mb-1">
-                                                        {candidate.career_overview.company_history[0]?.position} at {candidate.career_overview.company_history[0]?.company_name}
+                                                        {candidate.career_overview.company_history[candidate.career_overview.company_history.length - 1]?.position} at {candidate.career_overview.company_history[candidate.career_overview.company_history.length - 1]?.company_name}
                                                     </p>
                                                     <div className="flex items-center justify-between text-xs text-gray-500">
                                                         <span>{candidate.career_overview.total_years_experience} years exp • {candidate.basic_information.current_location}</span>
@@ -369,7 +369,7 @@ export default function PublicCandidatesPage() {
                                                         </div>
                                                         <div className="flex items-center gap-1">
                                                             <Building className="h-4 w-4" />
-                                                            {selectedCandidate.career_overview.company_history[0]?.company_name}
+                                                            {selectedCandidate.career_overview.company_history[selectedCandidate.career_overview.company_history.length - 1]?.company_name}
                                                         </div>
                                                         <div className="flex items-center gap-1">
                                                             <Calendar className="h-4 w-4" />
@@ -381,8 +381,8 @@ export default function PublicCandidatesPage() {
 
                                             <div className="flex items-center justify-between">
                                                 <div className="flex gap-2">
-                                                    <Badge variant="outline">
-                                                        {selectedCandidate.career_overview.company_history[0]?.position}
+                                                    <Badge variant="secondary">
+                                                        {selectedCandidate.career_overview.company_history[selectedCandidate.career_overview.company_history.length - 1]?.position}
                                                     </Badge>
                                                     <Badge variant="outline">
                                                         {selectedCandidate.basic_information.notice_period || 'Immediate'}
@@ -390,9 +390,9 @@ export default function PublicCandidatesPage() {
                                                     <Badge variant={selectedCandidate.basic_information.open_to_relocation ? "default" : "secondary"}>
                                                         {selectedCandidate.basic_information.open_to_relocation ? 'Open to Relocation' : 'Not Open to Relocation'}
                                                     </Badge>
-                                                    <Badge className={getInterviewStatusColor(selectedCandidate)}>
+                                                    {/* <Badge className={getInterviewStatusColor(selectedCandidate)}>
                                                         {getInterviewStatusText(selectedCandidate)}
-                                                    </Badge>
+                                                    </Badge> */}
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -451,7 +451,7 @@ export default function PublicCandidatesPage() {
                                                     <Briefcase className="h-5 w-5 text-purple-600" />
                                                     <div>
                                                         <p className="text-xs text-purple-600 font-medium">Recent Role</p>
-                                                        <p className="font-bold text-purple-900 text-sm">{selectedCandidate.career_overview.company_history[0]?.position}</p>
+                                                        <p className="font-bold text-purple-900 text-sm">{selectedCandidate.career_overview.company_history[selectedCandidate.career_overview.company_history.length - 1]?.position}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
@@ -516,7 +516,7 @@ export default function PublicCandidatesPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
-                                        {selectedCandidate.career_overview.company_history.map((job, index) => (
+                                        {[...selectedCandidate.career_overview.company_history].reverse().map((job, index) => (
                                             <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                                 <div className="flex-1">
                                                     <h4 className="font-semibold text-gray-900">{job.position}</h4>

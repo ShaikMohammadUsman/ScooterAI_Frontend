@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { BarChart3, Mic, MessageSquare, Brain, Target, Zap, Pause, Play, Video, Eye, EyeOff } from 'lucide-react';
 import { Candidate } from '@/lib/adminService';
 import { Button } from '../ui/button';
+import ReactMarkdown from 'react-markdown';
 
 interface InterviewEvaluationTabsProps {
     candidate: Candidate;
@@ -264,7 +265,9 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
                                 </div>
                                 <div className="p-4 bg-green-50 rounded-lg">
                                     <h5 className="font-medium text-green-900 mb-2">Overall Summary</h5>
-                                    <p className="text-sm text-green-800">{interviewDetails.qa_evaluations.summary || 'No summary available'}</p>
+                                    <ReactMarkdown>{interviewDetails.qa_evaluations.summary}</ReactMarkdown>
+                                    {/* <div dangerouslySetInnerHTML={{ __html: formatText(interviewDetails.qa_evaluations.summary) }} /> */}
+                                    {/* <p className="text-sm text-green-800">{formatText(interviewDetails.qa_evaluations.summary) || 'No summary available'}</p> */}
                                 </div>
                             </>
                         )}
