@@ -106,8 +106,6 @@ export default function PublicCandidatesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<any>(null);
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-    const [audioPlaying, setAudioPlaying] = useState<string | null>(null);
-    const [videoPlaying, setVideoPlaying] = useState<string | null>(null);
     const [showSensitiveInfo, setShowSensitiveInfo] = useState(true);
     const [jobDetails, setJobDetails] = useState<any>(null);
 
@@ -157,21 +155,7 @@ export default function PublicCandidatesPage() {
         setSelectedCandidate(null); // Reset selection when changing pages
     };
 
-    const handleAudioPlay = (profileId: string, audioUrl: string) => {
-        if (audioPlaying === profileId) {
-            setAudioPlaying(null);
-        } else {
-            setAudioPlaying(profileId);
-        }
-    };
 
-    const handleVideoPlay = (profileId: string, videoUrl: string) => {
-        if (videoPlaying === profileId) {
-            setVideoPlaying(null);
-        } else {
-            setVideoPlaying(profileId);
-        }
-    };
 
     const getCredibilityScore = (score: number): { label: string; color: string } => {
         if (score >= 8) return { label: 'High', color: 'bg-green-100 text-green-800' };
@@ -391,60 +375,7 @@ export default function PublicCandidatesPage() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                {selectedCandidate.interview_status.audio_interview_url && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleAudioPlay(selectedCandidate.profile_id, selectedCandidate.interview_status.audio_interview_url || '')}
-                                                        className="flex items-center gap-1"
-                                                    >
-                                                        {audioPlaying === selectedCandidate.profile_id ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                                                        Audio
-                                                    </Button>
-                                                )}
-                                                {selectedCandidate.interview_status.video_interview_url && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleVideoPlay(selectedCandidate.profile_id, selectedCandidate.interview_status.video_interview_url || '')}
-                                                        className="flex items-center gap-1"
-                                                    >
-                                                        {videoPlaying === selectedCandidate.profile_id ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                                                        Video
-                                                    </Button>
-                                                )}
-                                            </div>
                                         </div>
-
-                                        {/* Audio/Video Player */}
-                                        {audioPlaying === selectedCandidate.profile_id && selectedCandidate.interview_status.audio_interview_url && (
-                                            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                                                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                                    <Mic className="h-4 w-4" />
-                                                    Audio Interview
-                                                </h4>
-                                                <audio
-                                                    controls
-                                                    className="w-full"
-                                                    src={selectedCandidate.interview_status.audio_interview_url}
-                                                />
-                                            </div>
-                                        )}
-
-                                        {videoPlaying === selectedCandidate.profile_id && selectedCandidate.interview_status.video_interview_url && (
-                                            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                                                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                                    <Video className="h-4 w-4" />
-                                                    Video Interview
-                                                </h4>
-                                                <video
-                                                    controls
-                                                    className="w-full rounded-lg"
-                                                    src={selectedCandidate.interview_status.video_interview_url}
-                                                />
-                                            </div>
-                                        )}
 
                                         <div className="flex items-center justify-between">
                                             <div className="flex gap-2">
@@ -464,18 +395,6 @@ export default function PublicCandidatesPage() {
                                         </div>
                                     </CardContent>
                                 </Card>
-
-                                {/* Application Status Section */}
-                                <ApplicationStatusSection
-                                    candidate={selectedCandidate}
-                                    onStatusUpdate={() => {
-                                        // Refresh candidate data after status update
-                                        if (selectedCandidate?.profile_id) {
-                                            // You can add a refetch function here if needed
-                                            console.log('Status updated, candidate data should be refreshed');
-                                        }
-                                    }}
-                                />
 
                                 {/* Quick Summary */}
                                 <Card className="shadow-lg">
@@ -671,6 +590,18 @@ export default function PublicCandidatesPage() {
                                         </CardContent>
                                     </Card>
                                 )}
+
+                                {/* Application Status Section */}
+                                <ApplicationStatusSection
+                                    candidate={selectedCandidate}
+                                    onStatusUpdate={() => {
+                                        // Refresh candidate data after status update
+                                        if (selectedCandidate?.profile_id) {
+                                            // You can add a refetch function here if needed
+                                            console.log('Status updated, candidate data should be refreshed');
+                                        }
+                                    }}
+                                />
 
                                 {/* Languages */}
                                 {selectedCandidate.basic_information.languages_spoken && selectedCandidate.basic_information.languages_spoken.length > 0 && (

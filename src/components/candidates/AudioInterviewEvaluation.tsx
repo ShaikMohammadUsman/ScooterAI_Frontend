@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mic, MessageSquare, Target, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Mic, MessageSquare, Target, TrendingUp, AlertTriangle, Pause, Play } from 'lucide-react';
 import { Candidate } from '@/lib/adminService';
+import { Button } from '../ui/button';
 
 interface AudioInterviewEvaluationProps {
     candidate: Candidate;
@@ -12,6 +13,17 @@ interface AudioInterviewEvaluationProps {
 export default function AudioInterviewEvaluation({ candidate }: AudioInterviewEvaluationProps) {
     const [activeTab, setActiveTab] = useState('summary');
     const [activeQuestionTab, setActiveQuestionTab] = useState('0');
+    const [audioPlaying, setAudioPlaying] = useState<string | null>(null);
+
+
+
+    const handleAudioPlay = (profileId: string, audioUrl: string) => {
+        if (audioPlaying === profileId) {
+            setAudioPlaying(null);
+        } else {
+            setAudioPlaying(profileId);
+        }
+    };
 
     const getScoreColor = (score: number): string => {
         if (score >= 4) return 'bg-green-100 text-green-800';
@@ -30,12 +42,44 @@ export default function AudioInterviewEvaluation({ candidate }: AudioInterviewEv
     return (
         <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Mic className="h-5 w-5" />
-                    Audio Interview Evaluation
+                <CardTitle className="flex items-center gap-2 justify-between">
+                    <div className="flex items-center gap-2">
+                        <Mic className="h-5 w-5" />
+                        Audio Interview Evaluation
+                    </div>
+                    <div>
+                        <div className="flex gap-2">
+                            {candidate.interview_status.audio_interview_url && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAudioPlay(candidate.profile_id, candidate.interview_status.audio_interview_url || '')}
+                                    className="flex items-center gap-1"
+                                >
+                                    {audioPlaying === candidate.profile_id ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                    Audio
+                                </Button>
+                            )}
+
+                        </div>
+                    </div>
                 </CardTitle>
             </CardHeader>
             <CardContent>
+                {/* Audio/Video Player */}
+                {audioPlaying === candidate.profile_id && candidate.interview_status.audio_interview_url && (
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <Mic className="h-4 w-4" />
+                            Audio Interview
+                        </h4>
+                        <audio
+                            controls
+                            className="w-full"
+                            src={candidate.interview_status.audio_interview_url}
+                        />
+                    </div>
+                )}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="summary" className="flex items-center gap-2">
@@ -105,9 +149,9 @@ export default function AudioInterviewEvaluation({ candidate }: AudioInterviewEv
                     <TabsContent value="questions" className="space-y-4">
                         {questions.length > 0 ? (
                             <Tabs value={activeQuestionTab} onValueChange={setActiveQuestionTab} className="w-full">
-                                <TabsList className="grid w-full grid-cols-5">
+                                <TabsList className="grid w-full grid-cols-5 h-fit gap-2">
                                     {questions.map((_, index) => (
-                                        <TabsTrigger key={index} value={index.toString()} className="text-xs">
+                                        <TabsTrigger key={index} value={index.toString()} className="text-xs border-1">
                                             Q{index + 1}
                                         </TabsTrigger>
                                     ))}

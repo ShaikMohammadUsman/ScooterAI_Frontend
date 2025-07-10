@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { UserCheck, Award, Phone, CheckCircle, AlertCircle, Play, Video, Users, Calendar, Clock, XCircle } from 'lucide-react';
+import { UserCheck, Award, Phone, CheckCircle, AlertCircle, Play, Video, Users, Calendar, Clock, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Candidate, callForInterview } from '@/lib/adminService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,6 +27,7 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
     const [isCallForInterview, setIsCallForInterview] = useState(candidate.call_for_interview);
     const [notes, setNotes] = useState(candidate.call_for_interview_notes || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showProgress, setShowProgress] = useState(false);
     const { toast } = useToast();
 
     // Define interview stages with visual status
@@ -151,69 +152,91 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
     return (
         <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Interview Progress
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Interview Progress
+                    </CardTitle>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowProgress(!showProgress)}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    >
+                        {showProgress ? (
+                            <>
+                                <ChevronUp className="h-4 w-4" />
+                                Hide Progress
+                            </>
+                        ) : (
+                            <>
+                                <ChevronDown className="h-4 w-4" />
+                                Show Progress
+                            </>
+                        )}
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
-                {/* Visual Interview Progress */}
-                <div className="space-y-4">
-                    {interviewStages.map((stage, index) => (
-                        <div key={stage.id} className="relative">
-                            {/* Progress Line */}
-                            {index < interviewStages.length - 1 && (
-                                <div className={`absolute left-6 top-8 w-0.5 h-8 ${stage.status === 'completed' ? 'bg-green-400' : 'bg-gray-300'
-                                    }`} />
-                            )}
+                {/* Visual Interview Progress - Hidden by default */}
+                {showProgress && (
+                    <div className="space-y-4 mb-6">
+                        {interviewStages.map((stage, index) => (
+                            <div key={stage.id} className="relative">
+                                {/* Progress Line */}
+                                {index < interviewStages.length - 1 && (
+                                    <div className={`absolute left-6 top-8 w-0.5 h-8 ${stage.status === 'completed' ? 'bg-green-400' : 'bg-gray-300'
+                                        }`} />
+                                )}
 
-                            <div className={`flex items-start gap-4 p-4 rounded-lg border-2 ${getStageColor(stage)}`}>
-                                {/* Status Icon */}
-                                <div className="flex-shrink-0">
-                                    {getStageIcon(stage)}
-                                </div>
-
-                                {/* Stage Content */}
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h4 className="font-medium text-gray-900">{stage.title}</h4>
-                                            <p className="text-sm text-gray-600 mt-1">{stage.description}</p>
-                                        </div>
-                                        <Badge className={
-                                            stage.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                stage.status === 'current' ? 'bg-blue-100 text-blue-800' :
-                                                    stage.status === 'failed' ? 'bg-red-100 text-red-800' :
-                                                        'bg-gray-100 text-gray-600'
-                                        }>
-                                            {stage.status === 'completed' ? 'Completed' :
-                                                stage.status === 'current' ? 'In Progress' :
-                                                    stage.status === 'failed' ? 'Failed' :
-                                                        'Pending'}
-                                        </Badge>
+                                <div className={`flex items-start gap-4 p-4 rounded-lg border-2 ${getStageColor(stage)}`}>
+                                    {/* Status Icon */}
+                                    <div className="flex-shrink-0">
+                                        {getStageIcon(stage)}
                                     </div>
 
-                                    {/* Additional Info for specific stages */}
-                                    {stage.id === 'video_round' && candidate.application_status_reason && (
-                                        <div className="mt-2 p-2 bg-blue-50 rounded">
-                                            <p className="text-xs text-blue-800">
-                                                <strong>Note:</strong> {candidate.application_status_reason}
-                                            </p>
+                                    {/* Stage Content */}
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h4 className="font-medium text-gray-900">{stage.title}</h4>
+                                                <p className="text-sm text-gray-600 mt-1">{stage.description}</p>
+                                            </div>
+                                            <Badge className={
+                                                stage.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                    stage.status === 'current' ? 'bg-blue-100 text-blue-800' :
+                                                        stage.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                                            'bg-gray-100 text-gray-600'
+                                            }>
+                                                {stage.status === 'completed' ? 'Completed' :
+                                                    stage.status === 'current' ? 'In Progress' :
+                                                        stage.status === 'failed' ? 'Failed' :
+                                                            'Pending'}
+                                            </Badge>
                                         </div>
-                                    )}
 
-                                    {stage.id === 'shortlisted' && candidate.shortlist_status_reason && (
-                                        <div className="mt-2 p-2 bg-purple-50 rounded">
-                                            <p className="text-xs text-purple-800">
-                                                <strong>Note:</strong> {candidate.shortlist_status_reason}
-                                            </p>
-                                        </div>
-                                    )}
+                                        {/* Additional Info for specific stages */}
+                                        {stage.id === 'video_round' && candidate.application_status_reason && (
+                                            <div className="mt-2 p-2 bg-blue-50 rounded">
+                                                <p className="text-xs text-blue-800">
+                                                    <strong>Note:</strong> {candidate.application_status_reason}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {stage.id === 'shortlisted' && candidate.shortlist_status_reason && (
+                                            <div className="mt-2 p-2 bg-purple-50 rounded">
+                                                <p className="text-xs text-purple-800">
+                                                    <strong>Note:</strong> {candidate.shortlist_status_reason}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Call for Interview Action Section */}
                 <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">

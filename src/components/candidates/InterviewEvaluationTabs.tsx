@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Mic, MessageSquare, Brain, Target, Zap } from 'lucide-react';
+import { BarChart3, Mic, MessageSquare, Brain, Target, Zap, Pause, Play, Video } from 'lucide-react';
 import { Candidate } from '@/lib/adminService';
+import { Button } from '../ui/button';
 
 interface InterviewEvaluationTabsProps {
     candidate: Candidate;
@@ -12,6 +13,15 @@ interface InterviewEvaluationTabsProps {
 export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluationTabsProps) {
     const [activeTab, setActiveTab] = useState('communication');
     const [activeQuestionTab, setActiveQuestionTab] = useState('0');
+    const [videoPlaying, setVideoPlaying] = useState<string | null>(null);
+
+    const handleVideoPlay = (profileId: string, videoUrl: string) => {
+        if (videoPlaying === profileId) {
+            setVideoPlaying(null);
+        } else {
+            setVideoPlaying(profileId);
+        }
+    };
 
     const getScoreColor = (score: number): string => {
         if (score >= 4) return 'bg-green-100 text-green-800';
@@ -34,12 +44,40 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
     return (
         <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Interview Evaluation
+                <CardTitle className="flex items-center gap-2 justify-between">
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Interview Evaluation
+                    </div>
+                    <div>
+                        {candidate.interview_status.video_interview_url && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleVideoPlay(candidate.profile_id, candidate.interview_status.video_interview_url || '')}
+                                className="flex items-center gap-1"
+                            >
+                                {videoPlaying === candidate.profile_id ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                Video
+                            </Button>
+                        )}
+                    </div>
                 </CardTitle>
             </CardHeader>
             <CardContent>
+                {videoPlaying === candidate.profile_id && candidate.interview_status.video_interview_url && (
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <Video className="h-4 w-4" />
+                            Video Interview
+                        </h4>
+                        <video
+                            controls
+                            className="w-full rounded-lg"
+                            src={candidate.interview_status.video_interview_url}
+                        />
+                    </div>
+                )}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="communication" className="flex items-center gap-2">
@@ -104,9 +142,9 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
                     <TabsContent value="questions" className="space-y-4">
                         {questions.length > 0 ? (
                             <Tabs value={activeQuestionTab} onValueChange={setActiveQuestionTab} className="w-full">
-                                <TabsList className="grid w-full grid-cols-5">
+                                <TabsList className="grid w-full grid-cols-5 gap-2 h-fit">
                                     {questions.map((_, index) => (
-                                        <TabsTrigger key={index} value={index.toString()} className="text-xs">
+                                        <TabsTrigger key={index} value={index.toString()} className="text-xs border-1">
                                             Q{index + 1}
                                         </TabsTrigger>
                                     ))}
