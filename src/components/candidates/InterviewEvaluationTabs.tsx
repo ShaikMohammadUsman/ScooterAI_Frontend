@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Mic, MessageSquare, Brain, Target, Zap, Pause, Play, Video } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { BarChart3, Mic, MessageSquare, Brain, Target, Zap, Pause, Play, Video, Eye, EyeOff } from 'lucide-react';
 import { Candidate } from '@/lib/adminService';
 import { Button } from '../ui/button';
 
@@ -14,6 +15,7 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
     const [activeTab, setActiveTab] = useState('communication');
     const [activeQuestionTab, setActiveQuestionTab] = useState('0');
     const [videoPlaying, setVideoPlaying] = useState<string | null>(null);
+    const [showAnswers, setShowAnswers] = useState(false);
 
     const handleVideoPlay = (profileId: string, videoUrl: string) => {
         if (videoPlaying === profileId) {
@@ -55,10 +57,13 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleVideoPlay(candidate.profile_id, candidate.interview_status.video_interview_url || '')}
-                                className="flex items-center gap-1"
+                                className={`flex items-center gap-1 transition-all duration-200 ${videoPlaying === candidate.profile_id
+                                    ? 'bg-red-500 hover:bg-red-600 text-white border-red-500'
+                                    : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500'
+                                    }`}
                             >
                                 {videoPlaying === candidate.profile_id ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                                Video
+                                {videoPlaying === candidate.profile_id ? 'Stop Video' : 'Play Video'}
                             </Button>
                         )}
                     </div>
@@ -73,6 +78,8 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
                         </h4>
                         <video
                             controls
+                            autoPlay
+                            // preload='auto'
                             className="w-full rounded-lg"
                             src={candidate.interview_status.video_interview_url}
                         />
@@ -141,53 +148,89 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
                     {/* Questions Tab with Individual Question Tabs */}
                     <TabsContent value="questions" className="space-y-4">
                         {questions.length > 0 ? (
-                            <Tabs value={activeQuestionTab} onValueChange={setActiveQuestionTab} className="w-full">
-                                <TabsList className="grid w-full grid-cols-5 gap-2 h-fit">
-                                    {questions.map((_, index) => (
-                                        <TabsTrigger key={index} value={index.toString()} className="text-xs border-1">
-                                            Q{index + 1}
-                                        </TabsTrigger>
-                                    ))}
-                                </TabsList>
+                            <>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-sm font-medium text-gray-700">Question Details</h4>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowAnswers(!showAnswers)}
+                                        className={`flex items-center gap-2 transition-all duration-200 ${showAnswers
+                                            ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
+                                            : 'bg-green-500 hover:bg-green-600 text-white border-green-500'
+                                            }`}
+                                    >
+                                        {showAnswers ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        {showAnswers ? 'Hide Answers' : 'Show Answers'}
+                                    </Button>
+                                </div>
 
-                                {questions.map((qa, index) => (
-                                    <TabsContent key={index} value={index.toString()} className="space-y-4">
-                                        <div className="p-4 border rounded-lg">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <h5 className="font-medium">Question {qa.question_number || index + 1} ({qa.step || 'main'})</h5>
-                                                <Badge className={getSignalColor(qa.has_signal || false)}>
-                                                    {qa.has_signal ? 'Has Signal' : 'No Signal'}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-sm text-gray-700 mb-3">{qa.question || 'No question available'}</p>
-                                            <div className="mb-3 p-3 bg-gray-50 rounded">
-                                                <p className="text-sm text-gray-600 mb-1">Answer:</p>
-                                                <p className="text-sm">{qa.answer || 'No answer available'}</p>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
-                                                        <span className="text-xs text-blue-600">Skill Score</span>
-                                                        <Badge className={getScoreColor(qa.skill_score || 0)}>
-                                                            {qa.skill_score || 0}/5
-                                                        </Badge>
-                                                    </div>
-                                                    <p className="text-xs text-gray-600">{qa.skill_reasoning || 'No reasoning available'}</p>
+                                <Tabs value={activeQuestionTab} onValueChange={setActiveQuestionTab} className="w-full">
+                                    <TabsList className="grid w-full grid-cols-5 gap-2 h-fit">
+                                        {questions.map((_, index) => (
+                                            <TabsTrigger key={index} value={index.toString()} className="text-xs border-1">
+                                                Q{index + 1}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
+
+                                    {questions.map((qa, index) => (
+                                        <TabsContent key={index} value={index.toString()} className="space-y-4">
+                                            <div className="p-4 border rounded-lg">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h5 className="font-medium">Question {qa.question_number || index + 1} ({qa.step || 'main'})</h5>
+                                                    <Badge className={getSignalColor(qa.has_signal || false)}>
+                                                        {qa.has_signal ? 'Has Signal' : 'No Signal'}
+                                                    </Badge>
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between p-2 bg-green-50 rounded">
-                                                        <span className="text-xs text-green-600">Trait Score</span>
-                                                        <Badge className={getScoreColor(qa.trait_score || 0)}>
-                                                            {qa.trait_score || 0}/5
-                                                        </Badge>
+                                                <p className="text-sm text-gray-700 mb-3">{qa.question || 'No question available'}</p>
+
+                                                {/* Answer Section - Hidden by default */}
+                                                {showAnswers && (
+                                                    <div className="p-3 bg-gray-50 rounded">
+                                                        <p className="text-sm text-gray-600 mb-1">Answer:</p>
+                                                        <p className="text-sm">{qa.answer || 'No answer available'}</p>
                                                     </div>
-                                                    <p className="text-xs text-gray-600">{qa.trait_reasoning || 'No reasoning available'}</p>
+                                                    // <Accordion type="single" collapsible className="mb-3">
+                                                    //     <AccordionItem value="answer" className="border rounded">
+                                                    //         <AccordionTrigger className="px-3 py-2 hover:no-underline">
+                                                    //             <span className="text-sm font-medium text-gray-600">View Answer</span>
+                                                    //         </AccordionTrigger>
+                                                    //         <AccordionContent className="px-3 pb-3">
+                                                    //             <div className="p-3 bg-gray-50 rounded">
+                                                    //                 <p className="text-sm text-gray-600 mb-1">Answer:</p>
+                                                    //                 <p className="text-sm">{qa.answer || 'No answer available'}</p>
+                                                    //             </div>
+                                                    //         </AccordionContent>
+                                                    //     </AccordionItem>
+                                                    // </Accordion>
+                                                )}
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                                                            <span className="text-xs text-blue-600">Skill Score</span>
+                                                            <Badge className={getScoreColor(qa.skill_score || 0)}>
+                                                                {qa.skill_score || 0}/5
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="text-xs text-gray-600">{qa.skill_reasoning || 'No reasoning available'}</p>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between p-2 bg-green-50 rounded">
+                                                            <span className="text-xs text-green-600">Trait Score</span>
+                                                            <Badge className={getScoreColor(qa.trait_score || 0)}>
+                                                                {qa.trait_score || 0}/5
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="text-xs text-gray-600">{qa.trait_reasoning || 'No reasoning available'}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </TabsContent>
-                                ))}
-                            </Tabs>
+                                        </TabsContent>
+                                    ))}
+                                </Tabs>
+                            </>
                         ) : (
                             <div className="p-4 text-center text-gray-500">
                                 No questions available

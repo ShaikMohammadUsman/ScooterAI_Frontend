@@ -129,10 +129,10 @@ export default function PublicCandidatesPage() {
             const response = await getJobCandidates(
                 jobId,
                 currentPage,
-                20,
+                10,
                 true, // application_status
                 true, // videoAttended
-                true, // shortlisted
+                true,// shortlisted
                 undefined  // callForInterview
             );
             console.log('API response:', response);
@@ -222,8 +222,8 @@ export default function PublicCandidatesPage() {
             {/* Header */}
             <div className="bg-white shadow-sm border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="w-full flex items-center gap-4">
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -233,14 +233,14 @@ export default function PublicCandidatesPage() {
                                 <ArrowLeft className="h-4 w-4" />
                                 Back
                             </Button>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Public Candidate Insights</h1>
-                                <p className="text-sm text-gray-600">
+                            <div className='w-full justify-between'>
+                                <h1 className="text-2xl font-bold text-gray-900 text-center">Public Candidate Insights</h1>
+                                <p className="text-sm text-gray-600 text-center">
                                     {jobDetails?.title && `Job: ${jobDetails.title}`}
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="w-full md:w-auto flex items-center gap-2 justify-between">
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -259,276 +259,285 @@ export default function PublicCandidatesPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Candidate List */}
-                    <div className="lg:col-span-1">
-                        <Card className="shadow-lg">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Users className="h-5 w-5" />
-                                    Candidates ({candidates.length})
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {candidates.map((candidate) => (
-                                        <div
-                                            key={candidate.profile_id}
-                                            className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${selectedCandidate?.profile_id === candidate.profile_id
-                                                ? 'border-blue-500 bg-blue-50 shadow-md'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                                }`}
-                                            onClick={() => setSelectedCandidate(candidate)}
-                                        >
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h3 className="font-semibold text-gray-900">
-                                                    {maskSensitiveInfo(candidate.basic_information.full_name)}
-                                                </h3>
-                                                <div className="flex gap-1">
-                                                    {candidate.application_status && (
-                                                        <Badge variant="default" className="text-xs bg-green-100 text-green-800">
-                                                            Video Round
-                                                        </Badge>
-                                                    )}
-                                                    {candidate.final_shortlist && (
-                                                        <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">
-                                                            Shortlisted
-                                                        </Badge>
-                                                    )}
-                                                    {candidate.call_for_interview && (
-                                                        <Badge variant="outline" className="text-xs bg-orange-100 text-orange-800">
-                                                            Interview Call
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-gray-600 mb-1">
-                                                {candidate.career_overview.company_history[0]?.position} at {candidate.career_overview.company_history[0]?.company_name}
-                                            </p>
-                                            <div className="flex items-center justify-between text-xs text-gray-500">
-                                                <span>{candidate.career_overview.total_years_experience} years exp • {candidate.basic_information.current_location}</span>
-                                                <Badge className={`text-xs ${getInterviewStatusColor(candidate)}`}>
-                                                    {getInterviewStatusText(candidate)}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Pagination */}
-                                {pagination && pagination.total_pages > 1 && (
-                                    <div className="mt-6 flex items-center justify-between">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handlePageChange(currentPage - 1)}
-                                            disabled={!pagination.has_previous}
-                                            className="flex items-center gap-1"
-                                        >
-                                            <ChevronLeft className="h-4 w-4" />
-                                            Previous
-                                        </Button>
-                                        <span className="text-sm text-gray-600">
-                                            Page {pagination.current_page} of {pagination.total_pages}
-                                        </span>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handlePageChange(currentPage + 1)}
-                                            disabled={!pagination.has_next}
-                                            className="flex items-center gap-1"
-                                        >
-                                            Next
-                                            <ChevronRight className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Candidate Details */}
-                    <div className="lg:col-span-2">
-                        {selectedCandidate ? (
-                            <div className="space-y-6">
-                                {/* Header Bar */}
-                                <Card className="shadow-lg pt-6">
-                                    <CardContent className="p-6">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div>
-                                                <h2 className="text-2xl font-bold text-gray-900">
-                                                    {maskSensitiveInfo(selectedCandidate.basic_information.full_name)}
-                                                </h2>
-                                                <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                                                    <div className="flex items-center gap-1">
-                                                        <MapPin className="h-4 w-4" />
-                                                        {selectedCandidate.basic_information.current_location}
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Building className="h-4 w-4" />
-                                                        {selectedCandidate.career_overview.company_history[0]?.company_name}
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Calendar className="h-4 w-4" />
-                                                        {new Date(selectedCandidate.profile_created_at).toLocaleDateString()}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex gap-2">
-                                                <Badge variant="outline">
-                                                    {selectedCandidate.career_overview.company_history[0]?.position}
-                                                </Badge>
-                                                <Badge variant="outline">
-                                                    {selectedCandidate.basic_information.notice_period || 'Immediate'}
-                                                </Badge>
-                                                <Badge variant={selectedCandidate.basic_information.open_to_relocation ? "default" : "secondary"}>
-                                                    {selectedCandidate.basic_information.open_to_relocation ? 'Open to Relocation' : 'Not Open to Relocation'}
-                                                </Badge>
-                                                <Badge className={getInterviewStatusColor(selectedCandidate)}>
-                                                    {getInterviewStatusText(selectedCandidate)}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Quick Summary */}
-                                <Card className="shadow-lg">
+            <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {selectedCandidate ? (
+                    <div className="space-y-8">
+                        {/* Top Section: Candidate List + Profile/Summary/Snapshot */}
+                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+                            {/* Candidate List - 1/4 width */}
+                            <div className="xl:col-span-1">
+                                <Card className="shadow-lg h-full">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
-                                            <Award className="h-5 w-5" />
-                                            Quick Summary
+                                            <Users className="h-5 w-5" />
+                                            Candidates ({candidates.length})
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <p className="text-gray-700 leading-relaxed">
-                                            {maskSensitiveInfo(selectedCandidate.basic_information.full_name.split(' ')[0])} is a{' '}
-                                            {selectedCandidate.career_overview.total_years_experience >= 5 ? 'Senior' :
-                                                selectedCandidate.career_overview.total_years_experience >= 3 ? 'Mid-level' : 'Junior'} professional with{' '}
-                                            {selectedCandidate.career_overview.total_years_experience} years of experience in{' '}
-                                            {selectedCandidate.career_overview.company_history[0]?.position.toLowerCase() || 'sales'}.
-                                            They have worked with {selectedCandidate.career_overview.company_history.length} companies,
-                                            focusing on {selectedCandidate.career_overview.company_history[0]?.position.toLowerCase() || 'sales'}.
-                                            In their most recent role as {selectedCandidate.career_overview.company_history[0]?.position} at{' '}
-                                            {selectedCandidate.career_overview.company_history[0]?.company_name}, they managed{' '}
-                                            {selectedCandidate.career_overview.average_tenure_per_role} years average tenure per role.
-                                        </p>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Enhanced Snapshot Grid */}
-                                <Card className="shadow-lg">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <BarChart3 className="h-5 w-5" />
-                                            Candidate Snapshot
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                                                <Clock className="h-5 w-5 text-blue-600" />
-                                                <div>
-                                                    <p className="text-xs text-blue-600 font-medium">Experience</p>
-                                                    <p className="font-bold text-blue-900">{selectedCandidate.career_overview.total_years_experience} years</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                                                <Calendar className="h-5 w-5 text-green-600" />
-                                                <div>
-                                                    <p className="text-xs text-green-600 font-medium">Avg Tenure</p>
-                                                    <p className="font-bold text-green-900">{selectedCandidate.career_overview.average_tenure_per_role} years</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                                                <Briefcase className="h-5 w-5 text-purple-600" />
-                                                <div>
-                                                    <p className="text-xs text-purple-600 font-medium">Recent Role</p>
-                                                    <p className="font-bold text-purple-900 text-sm">{selectedCandidate.career_overview.company_history[0]?.position}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
-                                                <Target className="h-5 w-5 text-orange-600" />
-                                                <div>
-                                                    <p className="text-xs text-orange-600 font-medium">CTC</p>
-                                                    <p className="font-bold text-orange-900">
-                                                        {showSensitiveInfo ? formatCTC(selectedCandidate.basic_information.current_ctc) : '***'} | {showSensitiveInfo ? formatCTC(selectedCandidate.basic_information.expected_ctc) : '***'}
+                                        <div className="space-y-3 overflow-y-auto max-h-[650px]">
+                                            {candidates.map((candidate) => (
+                                                <div
+                                                    key={candidate.profile_id}
+                                                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${selectedCandidate?.profile_id === candidate.profile_id
+                                                        ? 'border-blue-500 bg-blue-50 shadow-md'
+                                                        : 'border-gray-200 hover:border-gray-300'
+                                                        }`}
+                                                    onClick={() => setSelectedCandidate(candidate)}
+                                                >
+                                                    <div className="flex flex-col items-center justify-between mb-2">
+                                                        <h3 className="font-semibold text-gray-900">
+                                                            {maskSensitiveInfo(candidate.basic_information.full_name)}
+                                                        </h3>
+                                                        <div className="flex gap-1">
+                                                            {candidate.application_status && (
+                                                                <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+                                                                    Video Round
+                                                                </Badge>
+                                                            )}
+                                                            {candidate.final_shortlist && (
+                                                                <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">
+                                                                    Shortlisted
+                                                                </Badge>
+                                                            )}
+                                                            {candidate.call_for_interview && (
+                                                                <Badge variant="outline" className="text-xs bg-orange-100 text-orange-800">
+                                                                    Interview Call
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mb-1">
+                                                        {candidate.career_overview.company_history[0]?.position} at {candidate.career_overview.company_history[0]?.company_name}
                                                     </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg">
-                                                <Globe className="h-5 w-5 text-indigo-600" />
-                                                <div>
-                                                    <p className="text-xs text-indigo-600 font-medium">Notice</p>
-                                                    <p className="font-bold text-indigo-900">{selectedCandidate.basic_information.notice_period || 'Immediate'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                                                <Star className="h-5 w-5 text-yellow-600" />
-                                                <div>
-                                                    <p className="text-xs text-yellow-600 font-medium">Credibility</p>
-                                                    <Badge className="text-xs bg-yellow-100 text-yellow-800">High</Badge>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
-                                                <TrendingUp className="h-5 w-5 text-red-600" />
-                                                <div>
-                                                    <p className="text-xs text-red-600 font-medium">Sales Exp</p>
-                                                    <p className="font-bold text-red-900">{selectedCandidate.career_overview.years_sales_experience} years</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-teal-50 rounded-lg">
-                                                <Building2 className="h-5 w-5 text-teal-600" />
-                                                <div>
-                                                    <p className="text-xs text-teal-600 font-medium">Companies</p>
-                                                    <p className="font-bold text-teal-900">{selectedCandidate.career_overview.company_history.length}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Interview Details Section */}
-                                <InterviewEvaluationTabs candidate={selectedCandidate} />
-
-                                {/* Audio Interview Details Section */}
-                                <AudioInterviewEvaluation candidate={selectedCandidate} />
-
-                                {/* Work Experience */}
-                                <Card className="shadow-lg">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Building className="h-5 w-5" />
-                                            Work Experience
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            {selectedCandidate.career_overview.company_history.map((job, index) => (
-                                                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                                    <div className="flex-1">
-                                                        <h4 className="font-semibold text-gray-900">{job.position}</h4>
-                                                        <p className="text-sm text-gray-600">{job.company_name}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">
-                                                            {new Date(job.start_date).toLocaleDateString()} - {job.is_current ? 'Present' : new Date(job.end_date).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-sm font-medium text-gray-900">{job.duration_months} months</p>
-                                                        {job.is_current && (
-                                                            <Badge variant="default" className="text-xs">Current</Badge>
-                                                        )}
+                                                    <div className="flex items-center justify-between text-xs text-gray-500">
+                                                        <span>{candidate.career_overview.total_years_experience} years exp • {candidate.basic_information.current_location}</span>
+                                                        <Badge className={`text-xs ${getInterviewStatusColor(candidate)}`}>
+                                                            {getInterviewStatusText(candidate)}
+                                                        </Badge>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
+
+                                        {/* Pagination */}
+                                        {pagination && pagination.total_pages > 1 && (
+                                            <div className="mt-6 flex items-center justify-between pt-4 border-t">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(currentPage - 1)}
+                                                    disabled={!pagination.has_previous}
+                                                    className="flex items-center gap-1"
+                                                >
+                                                    <ChevronLeft className="h-4 w-4" />
+                                                    Previous
+                                                </Button>
+                                                <span className="text-sm text-gray-600">
+                                                    Page {pagination.current_page} of {pagination.total_pages}
+                                                </span>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(currentPage + 1)}
+                                                    disabled={!pagination.has_next}
+                                                    className="flex items-center gap-1"
+                                                >
+                                                    Next
+                                                    <ChevronRight className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
+                            </div>
 
+                            {/* Profile/Summary/Snapshot - 3/4 width */}
+                            <div className="xl:col-span-3">
+                                <div className="space-y-6">
+                                    {/* Header Bar */}
+                                    <Card className="shadow-lg pt-6">
+                                        <CardContent className="p-6">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div>
+                                                    <h2 className="text-2xl font-bold text-gray-900">
+                                                        {maskSensitiveInfo(selectedCandidate.basic_information.full_name)}
+                                                    </h2>
+                                                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                                        <div className="flex items-center gap-1">
+                                                            <MapPin className="h-4 w-4" />
+                                                            {selectedCandidate.basic_information.current_location}
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Building className="h-4 w-4" />
+                                                            {selectedCandidate.career_overview.company_history[0]?.company_name}
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Calendar className="h-4 w-4" />
+                                                            {new Date(selectedCandidate.profile_created_at).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex gap-2">
+                                                    <Badge variant="outline">
+                                                        {selectedCandidate.career_overview.company_history[0]?.position}
+                                                    </Badge>
+                                                    <Badge variant="outline">
+                                                        {selectedCandidate.basic_information.notice_period || 'Immediate'}
+                                                    </Badge>
+                                                    <Badge variant={selectedCandidate.basic_information.open_to_relocation ? "default" : "secondary"}>
+                                                        {selectedCandidate.basic_information.open_to_relocation ? 'Open to Relocation' : 'Not Open to Relocation'}
+                                                    </Badge>
+                                                    <Badge className={getInterviewStatusColor(selectedCandidate)}>
+                                                        {getInterviewStatusText(selectedCandidate)}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Quick Summary */}
+                                    <Card className="shadow-lg">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <Award className="h-5 w-5" />
+                                                Quick Summary
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-gray-700 leading-relaxed">
+                                                {maskSensitiveInfo(selectedCandidate.basic_information.full_name.split(' ')[0])} is a{' '}
+                                                {selectedCandidate.career_overview.total_years_experience >= 5 ? 'Senior' :
+                                                    selectedCandidate.career_overview.total_years_experience >= 3 ? 'Mid-level' : 'Junior'} professional with{' '}
+                                                {selectedCandidate.career_overview.total_years_experience} years of experience in{' '}
+                                                {selectedCandidate.career_overview.company_history[0]?.position.toLowerCase() || 'sales'}.
+                                                They have worked with {selectedCandidate.career_overview.company_history.length} companies,
+                                                focusing on {selectedCandidate.career_overview.company_history[0]?.position.toLowerCase() || 'sales'}.
+                                                In their most recent role as {selectedCandidate.career_overview.company_history[0]?.position} at{' '}
+                                                {selectedCandidate.career_overview.company_history[0]?.company_name}, they managed{' '}
+                                                {selectedCandidate.career_overview.average_tenure_per_role} years average tenure per role.
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Enhanced Snapshot Grid */}
+                                    <Card className="shadow-lg">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <BarChart3 className="h-5 w-5" />
+                                                Candidate Snapshot
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                                                    <Clock className="h-5 w-5 text-blue-600" />
+                                                    <div>
+                                                        <p className="text-xs text-blue-600 font-medium">Experience</p>
+                                                        <p className="font-bold text-blue-900">{selectedCandidate.career_overview.total_years_experience} years</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                                    <Calendar className="h-5 w-5 text-green-600" />
+                                                    <div>
+                                                        <p className="text-xs text-green-600 font-medium">Avg Tenure</p>
+                                                        <p className="font-bold text-green-900">{selectedCandidate.career_overview.average_tenure_per_role} years</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                                                    <Briefcase className="h-5 w-5 text-purple-600" />
+                                                    <div>
+                                                        <p className="text-xs text-purple-600 font-medium">Recent Role</p>
+                                                        <p className="font-bold text-purple-900 text-sm">{selectedCandidate.career_overview.company_history[0]?.position}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
+                                                    <Target className="h-5 w-5 text-orange-600" />
+                                                    <div>
+                                                        <p className="text-xs text-orange-600 font-medium">CTC</p>
+                                                        <p className="font-bold text-orange-900">
+                                                            {showSensitiveInfo ? formatCTC(selectedCandidate.basic_information.current_ctc) : '***'} | {showSensitiveInfo ? formatCTC(selectedCandidate.basic_information.expected_ctc) : '***'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg">
+                                                    <Globe className="h-5 w-5 text-indigo-600" />
+                                                    <div>
+                                                        <p className="text-xs text-indigo-600 font-medium">Notice</p>
+                                                        <p className="font-bold text-indigo-900">{selectedCandidate.basic_information.notice_period || 'Immediate'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
+                                                    <Star className="h-5 w-5 text-yellow-600" />
+                                                    <div>
+                                                        <p className="text-xs text-yellow-600 font-medium">Credibility</p>
+                                                        <Badge className="text-xs bg-yellow-100 text-yellow-800">High</Badge>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
+                                                    <TrendingUp className="h-5 w-5 text-red-600" />
+                                                    <div>
+                                                        <p className="text-xs text-red-600 font-medium">Sales Exp</p>
+                                                        <p className="font-bold text-red-900">{selectedCandidate.career_overview.years_sales_experience} years</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-teal-50 rounded-lg">
+                                                    <Building2 className="h-5 w-5 text-teal-600" />
+                                                    <div>
+                                                        <p className="text-xs text-teal-600 font-medium">Companies</p>
+                                                        <p className="font-bold text-teal-900">{selectedCandidate.career_overview.company_history.length}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Middle Section: Interview Evaluation + Audio Evaluation side by side */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <InterviewEvaluationTabs candidate={selectedCandidate} />
+                            <AudioInterviewEvaluation candidate={selectedCandidate} />
+                        </div>
+
+                        {/* Bottom Section: Work Experience + Contact Info & Interview Progress side by side */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Work Experience */}
+                            <Card className="shadow-lg">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Building className="h-5 w-5" />
+                                        Work Experience
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        {selectedCandidate.career_overview.company_history.map((job, index) => (
+                                            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                                <div className="flex-1">
+                                                    <h4 className="font-semibold text-gray-900">{job.position}</h4>
+                                                    <p className="text-sm text-gray-600">{job.company_name}</p>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {new Date(job.start_date).toLocaleDateString()} - {job.is_current ? 'Present' : new Date(job.end_date).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-medium text-gray-900">{job.duration_months} months</p>
+                                                    {job.is_current && (
+                                                        <Badge variant="default" className="text-xs">Current</Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Contact Info & Interview Progress */}
+                            <div className="space-y-6">
                                 {/* Contact Information (Only when sensitive info is shown) */}
                                 {showSensitiveInfo && (
                                     <Card className="shadow-lg">
@@ -624,16 +633,16 @@ export default function PublicCandidatesPage() {
                                     </Card>
                                 )}
                             </div>
-                        ) : (
-                            <Card className="shadow-lg">
-                                <CardContent className="p-8 text-center">
-                                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-500">Select a candidate to view detailed information</p>
-                                </CardContent>
-                            </Card>
-                        )}
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <Card className="shadow-lg">
+                        <CardContent className="p-8 text-center">
+                            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-500">Select a candidate to view detailed information</p>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );
