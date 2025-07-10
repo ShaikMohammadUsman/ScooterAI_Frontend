@@ -505,7 +505,7 @@ export default function PublicCandidatesPage() {
                         </div>
 
                         {/* Bottom Section: Work Experience + Contact Info & Interview Progress side by side */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             {/* Work Experience */}
                             <Card className="shadow-lg">
                                 <CardHeader>
