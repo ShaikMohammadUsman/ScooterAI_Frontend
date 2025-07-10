@@ -43,6 +43,7 @@ export interface Candidate {
         };
         languages_spoken?: string[];
     };
+    short_summary:string;
     application_status: boolean;
     application_status_reason: string;
     final_shortlist: boolean;

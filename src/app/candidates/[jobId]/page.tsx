@@ -407,7 +407,7 @@ export default function PublicCandidatesPage() {
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            <p className="text-gray-700 leading-relaxed">
+                                            {/* <p className="text-gray-700 leading-relaxed">
                                                 {maskSensitiveInfo(selectedCandidate.basic_information.full_name.split(' ')[0])} is a{' '}
                                                 {selectedCandidate.career_overview.total_years_experience >= 5 ? 'Senior' :
                                                     selectedCandidate.career_overview.total_years_experience >= 3 ? 'Mid-level' : 'Junior'} professional with{' '}
@@ -418,7 +418,8 @@ export default function PublicCandidatesPage() {
                                                 In their most recent role as {selectedCandidate.career_overview.company_history[0]?.position} at{' '}
                                                 {selectedCandidate.career_overview.company_history[0]?.company_name}, they managed{' '}
                                                 {selectedCandidate.career_overview.average_tenure_per_role} years average tenure per role.
-                                            </p>
+                                            </p> */}
+                                            <p className="text-gray-700 leading-relaxed">{selectedCandidate.short_summary}</p>
                                         </CardContent>
                                     </Card>
 
@@ -601,7 +602,7 @@ export default function PublicCandidatesPage() {
                                 )}
 
                                 {/* Application Status Section */}
-                                <ApplicationStatusSection
+                                {/* <ApplicationStatusSection
                                     candidate={selectedCandidate}
                                     onStatusUpdate={() => {
                                         // Refresh candidate data after status update
@@ -610,7 +611,7 @@ export default function PublicCandidatesPage() {
                                             console.log('Status updated, candidate data should be refreshed');
                                         }
                                     }}
-                                />
+                                /> */}
 
                                 {/* Languages */}
                                 {selectedCandidate.basic_information.languages_spoken && selectedCandidate.basic_information.languages_spoken.length > 0 && (
