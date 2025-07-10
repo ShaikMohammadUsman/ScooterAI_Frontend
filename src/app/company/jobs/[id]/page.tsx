@@ -439,6 +439,16 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             </span>
                                         ))}
                                     </div>
+                                    {typeof candidate?.call_for_interview === 'boolean' && (
+                                        <div className="flex items-center justify-center gap-2">
+                                            {candidate.call_for_interview &&
+                                                <div className="flex items-center gap-2 px-4 py-3 bg-green-100 text-green-800 rounded-full">
+                                                    <span className="text-sm font-medium">Called for Final Interview</span>
+                                                    <FaCheckCircle className="text-green-600" />
+                                                </div>
+                                            }
+                                        </div>
+                                    )}
                                     <div className="flex flex-col md:flex-row items-center gap-2">
                                         <Button
                                             variant="outline"
