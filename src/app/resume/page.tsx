@@ -2,9 +2,7 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { parseResume, addResumeProfile, ParseResumeResponse, ResumeProfile } from "@/lib/resumeService";
 import LoadingSpinner from "@/components/ui/loadingSpinner";
@@ -13,39 +11,22 @@ import { FiUploadCloud } from "react-icons/fi";
 import { MdOutlineEditNote } from "react-icons/md";
 import { FaRegSave } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MultiSelect } from "@/components/ui/multi-select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
-    SALES_TYPES,
-    SALES_MOTIONS,
-    INDUSTRIES,
-    REGIONS,
-    BUYER_PERSONAS,
-    CRM_OPTIONS,
-    SALES_TOOLS,
-    COMMUNICATION_TOOLS,
-    SALES_ROLE_TYPES,
-    POSITION_LEVELS,
-    SALES_STAGES,
-    DEAL_SIZE_RANGES,
-    SALES_CYCLE_LENGTHS,
-    QUOTA_CADENCE,
-    YES_NO_OPTIONS
-} from "@/lib/formConstants";
-import { ParsingMessage } from "@/components/ui/parsing-message";
-import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { InfoIcon, MapPin, Linkedin, X, CheckCircle, Clock, Headphones, RotateCcw, Mic } from "lucide-react";
-import { SingleSelect } from "@/components/ui/single-select";
 import ResumeSuggestionBox from "@/components/interview/ResumeSuggestionBox";
 import ProfileSuccessScreen from "@/components/interview/ProfileSuccessScreen";
+
+// Import modular components
+import {
+    ContactInformationForm,
+    SalaryExpectationsForm,
+    WorkHistoryForm,
+    SalesContextForm,
+    RoleProcessExposureForm,
+    ToolsPlatformsForm,
+    ResumeUploadSection,
+    UserDetailsForm,
+    LinkedInUrlInput,
+    ConsentCheckbox
+} from "@/components/resume";
 
 interface CompanyHistory {
     company_name: string;
@@ -105,90 +86,6 @@ const defaultProfile: ResumeProfile = {
     },
 };
 
-// Simple form components
-const FormLabel = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <label className={`block text-sm font-medium mb-1 ${className}`}>{children}</label>
-);
-
-const FormControl = ({ children }: { children: React.ReactNode }) => (
-    <div className="space-y-1">{children}</div>
-);
-
-const FormMessage = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <p className={`text-sm text-destructive ${className}`}>{children}</p>
-);
-
-// Add this near other constants
-const NOTICE_PERIOD_OPTIONS = [
-    "Immediate",
-    "15 days",
-    "30 days",
-    "60 days",
-    "90 days"
-];
-
-// Add LinkedIn URL validation function
-const isValidLinkedInUrl = (url: string): boolean => {
-    if (!url || url.trim() === '') return false;
-
-    // LinkedIn URL patterns
-    const linkedInPatterns = [
-        /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_]+\/?$/,
-        /^https?:\/\/(www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_]+\/?$/,
-        /^https?:\/\/(www\.)?linkedin\.com\/pub\/[a-zA-Z0-9\-_]+\/?$/,
-        /^linkedin\.com\/in\/[a-zA-Z0-9\-_]+\/?$/,
-        /^linkedin\.com\/company\/[a-zA-Z0-9\-_]+\/?$/,
-        /^linkedin\.com\/pub\/[a-zA-Z0-9\-_]+\/?$/
-    ];
-
-    return linkedInPatterns.some(pattern => pattern.test(url.trim()));
-};
-
-// Add this near the top or with other constants
-const INDIAN_CITIES = [
-    "Mumbai, Maharashtra",
-    "Delhi, Delhi",
-    "Bengaluru, Karnataka",
-    "Hyderabad, Telangana",
-    "Ahmedabad, Gujarat",
-    "Chennai, Tamil Nadu",
-    "Kolkata, West Bengal",
-    "Pune, Maharashtra",
-    "Jaipur, Rajasthan",
-    "Lucknow, Uttar Pradesh",
-    "Kanpur, Uttar Pradesh",
-    "Nagpur, Maharashtra",
-    "Indore, Madhya Pradesh",
-    "Thane, Maharashtra",
-    "Bhopal, Madhya Pradesh",
-    "Visakhapatnam, Andhra Pradesh",
-    "Pimpri-Chinchwad, Maharashtra",
-    "Patna, Bihar",
-    "Vadodara, Gujarat",
-    "Ghaziabad, Uttar Pradesh",
-    "Ludhiana, Punjab",
-    "Agra, Uttar Pradesh",
-    "Nashik, Maharashtra",
-    "Faridabad, Haryana",
-    "Meerut, Uttar Pradesh",
-    "Rajkot, Gujarat",
-    "Kalyan-Dombivli, Maharashtra",
-    "Vasai-Virar, Maharashtra",
-    "Varanasi, Uttar Pradesh",
-    "Srinagar, Jammu and Kashmir",
-    "Aurangabad, Maharashtra",
-    "Dhanbad, Jharkhand",
-    "Amritsar, Punjab",
-    "Navi Mumbai, Maharashtra",
-    "Allahabad, Uttar Pradesh",
-    "Ranchi, Jharkhand",
-    "Howrah, West Bengal",
-    "Coimbatore, Tamil Nadu",
-    "Jabalpur, Madhya Pradesh",
-    "Gwalior, Madhya Pradesh",
-    "Vijayawada, Andhra Pradesh"
-];
-
 export default function ResumePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -202,62 +99,6 @@ export default function ResumePage() {
     const [consentToUpdates, setConsentToUpdates] = useState<boolean>(false);
     const [linkedInUrl, setLinkedInUrl] = useState<string>("");
     const [resumeParsed, setResumeParsed] = useState<boolean>(false);
-    // Add local state for custom tool options and input for each tools field
-    const [crmOptions, setCrmOptions] = useState([
-        "Salesforce",
-        "HubSpot",
-        "Zoho",
-        "Pipedrive",
-        "Outreach",
-        "Apollo",
-        "Salesloft",
-        "Sales Nav",
-        "Gong",
-        "Chorus",
-        "ZoomInfo",
-        "Slack",
-        "Notion",
-        "Excel",
-        "Google Sheets",
-        "Other"
-    ]);
-    const [salesToolOptions, setSalesToolOptions] = useState([
-        "LinkedIn Sales Navigator",
-        "WhatsApp Business",
-        "Gong",
-        "Outreach",
-        "Apollo",
-        "ZoomInfo",
-        "SalesLoft",
-        "HubSpot Sales",
-        "Pipedrive",
-        "Salesforce",
-        "Chorus",
-        "Calendly",
-        "Loom",
-        "Zoom",
-        "Microsoft Teams",
-        "Slack",
-        "Notion",
-        "Excel",
-        "Google Sheets",
-        "Other"
-    ]);
-    const [commToolOptions, setCommToolOptions] = useState([
-        "Slack",
-        "Microsoft Teams",
-        "Zoom",
-        "Google Meet",
-        "WhatsApp Business",
-        "LinkedIn",
-        "Email",
-        "Phone",
-        "SMS",
-        "Other"
-    ]);
-    const [customCrm, setCustomCrm] = useState("");
-    const [customSalesTool, setCustomSalesTool] = useState("");
-    const [customCommTool, setCustomCommTool] = useState("");
     const [showSuggestion, setShowSuggestion] = useState(false);
 
     // Handle file upload and parse
@@ -280,12 +121,10 @@ export default function ResumePage() {
             };
 
             const parsedResponse: ParseResumeResponse = await parseResume(userDetails);
-            // console.log('Raw parsed data:', parsedResponse);
 
             if (!parsedResponse.status) {
                 toast({ title: "Error", description: parsedResponse?.message, variant: "destructive" });
                 setShowSuggestion(true);
-                // setError(parsedResponse?.message || "Failed to parse resume");
                 return;
             }
             const parsed = parsedResponse.data;
@@ -296,7 +135,7 @@ export default function ResumePage() {
                     current_location: parsed.basic_information.current_location || "",
                     open_to_relocation: parsed.basic_information.open_to_relocation || false,
                     phone_number: parsed.basic_information.phone_number || "",
-                    linkedin_url: parsed.basic_information.linkedin_url || (isValidLinkedInUrl(linkedInUrl) ? linkedInUrl : ""),
+                    linkedin_url: parsed.basic_information.linkedin_url || "",
                     email: parsed.basic_information.email || "",
                     specific_phone_number: parsed.basic_information.specific_phone_number || "",
                     notice_period: parsed.basic_information.notice_period || "",
@@ -327,7 +166,7 @@ export default function ResumePage() {
                     sales_stages_owned: parsed.role_process_exposure.sales_stages_owned || [],
                     average_deal_size_range: parsed.role_process_exposure.average_deal_size || "",
                     sales_cycle_length: parsed.role_process_exposure.sales_cycle_length || "",
-                    monthly_deal_volume: 0, // Initialize as 0 since it's missing
+                    monthly_deal_volume: 0,
                     quota_ownership: {
                         has_quota: parsed.role_process_exposure.own_quota || false,
                         amount: 0,
@@ -338,11 +177,10 @@ export default function ResumePage() {
                 tools_platforms: {
                     crm_used: parsed.tools_platforms.crm_tools || [],
                     sales_tools: parsed.tools_platforms.sales_tools || [],
-                    communication_tools: [], // Initialize as empty array since it's missing
+                    communication_tools: [],
                 },
             };
 
-            // console.log('Transformed profile:', transformedProfile);
             setProfile(transformedProfile);
             toast({ title: "Resume parsed!", description: "Edit and submit your profile." });
             setResumeParsed(true);
@@ -361,7 +199,6 @@ export default function ResumePage() {
             if (!prev) return prev;
             const updated = { ...prev };
             if (subkey) {
-                // e.g. employment_gaps.has_gaps
                 (updated as any)[section][key][subkey] = value;
             } else {
                 (updated as any)[section][key] = value;
@@ -373,12 +210,10 @@ export default function ResumePage() {
     // Handle array field change
     const handleArrayChange = (section: string, key: string, arr: string[]) => {
         if (!profile) return;
-        // console.log('handleArrayChange called with:', { section, key, arr });
         setProfile((prev) => {
             if (!prev) return prev;
             const updated = { ...prev };
             (updated as any)[section][key] = arr;
-            // console.log('Updated profile:', updated);
             return { ...updated };
         });
     };
@@ -536,216 +371,40 @@ export default function ResumePage() {
                         <CardHeader className="flex flex-col items-center gap-3  bg-white/80 px-8 py-6 rounded-3xl">
                             <FiUploadCloud className="text-primary w-8 h-8" />
                             <CardTitle className="text-4xl font-bold text-primary mb-2 text-center">
-                                {/* Onboarding Header and Subcopy */}
                                 Let's get you set up
                             </CardTitle>
                             <CardDescription>This won't take long. Less than 10 mins to capture your sales superpowers.</CardDescription>
-
                         </CardHeader>
                         <CardContent className="p-2 sm:p-4">
-
-
-
                             {/* User Details Form - Required for Resume Parsing */}
-                            <div className="mb-8 w-full max-w-md mx-auto space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Your Details</h3>
-                                <p className="text-sm text-gray-600">Please provide your basic information for resume processing.</p>
-
-                                {/* Full Name */}
-                                <FormControl>
-                                    <FormLabel>Full Name *</FormLabel>
-                                    <Input
-                                        value={profile?.basic_information?.full_name || ""}
-                                        onChange={e => handleFieldChange("basic_information", "full_name", e.target.value)}
-                                        placeholder="Enter your full name"
-                                        required
-                                    />
-                                </FormControl>
-
-                                {/* Email Address */}
-                                <FormControl>
-                                    <FormLabel>Email Address *</FormLabel>
-                                    <Input
-                                        type="email"
-                                        value={profile?.basic_information?.email || ""}
-                                        onChange={e => handleFieldChange("basic_information", "email", e.target.value)}
-                                        placeholder="your.email@example.com"
-                                        required
-                                    />
-                                </FormControl>
-
-                                {/* Phone Number */}
-                                <FormControl>
-                                    <FormLabel>Phone Number *</FormLabel>
-                                    <Input
-                                        type="tel"
-                                        value={profile?.basic_information?.phone_number || ""}
-                                        onChange={e => {
-                                            // Only allow digits, +, -, and spaces
-                                            const cleaned = e.target.value.replace(/[^\d+\-\s]/g, "");
-                                            handleFieldChange("basic_information", "phone_number", cleaned);
-                                        }}
-                                        placeholder="+1 (555) 555-5555"
-                                        required
-                                    />
-                                </FormControl>
-                            </div>
+                            <UserDetailsForm
+                                profile={profile}
+                                onFieldChange={handleFieldChange}
+                            />
 
                             {/* LinkedIn URL Input (optional) */}
-                            <div className="mb-6 w-full max-w-md mx-auto">
-                                <FormControl>
-                                    <div className="flex items-center gap-2">
-                                        <FormLabel>LinkedIn profile (optional)</FormLabel>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger>
-                                                    <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Used to match and enrich your resume data — optional.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
-                                    <form className="flex gap-2">
-                                        <Input
-                                            value={linkedInUrl}
-                                            onChange={e => setLinkedInUrl(e.target.value)}
-                                            placeholder="https://linkedin.com/in/your-profile"
-                                            className="flex-1"
-                                        />
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        disabled={!linkedInUrl || linkedInUrl.length === 0 || !isValidLinkedInUrl(linkedInUrl)}
-                                                        onClick={() => window.open(`${linkedInUrl}`, "_blank")}
-                                                    >
-                                                        <Linkedin className="h-4 w-4 mr-2" />
-                                                        See Profile
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>
-                                                        {!linkedInUrl || linkedInUrl.length === 0
-                                                            ? "Enter a LinkedIn profile URL"
-                                                            : !isValidLinkedInUrl(linkedInUrl)
-                                                                ? "Enter a valid LinkedIn profile URL"
-                                                                : "Open LinkedIn profile"
-                                                        }
-                                                    </p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </form>
-                                </FormControl>
-                            </div>
+                            <LinkedInUrlInput
+                                linkedInUrl={linkedInUrl}
+                                onLinkedInUrlChange={setLinkedInUrl}
+                            />
 
                             {/* Consent Checkbox */}
-                            <div className="mb-8 w-full max-w-md mx-auto flex items-start gap-2">
-                                <input
-                                    id="consent-checkbox"
-                                    type="checkbox"
-                                    required={!!profile?.basic_information.phone_number}
-                                    className="mt-1"
-                                    onChange={() => {
-                                        setConsentToUpdates(!consentToUpdates);
-                                    }}
-                                // value={consentToUpdates.toString()}
-                                />
-                                <label htmlFor="consent-checkbox" className="text-sm text-gray-700">
-                                    I consent to receive updates about my application via SMS/Whatsapp/email
-                                    <span className="block text-xs text-muted-foreground mt-1">This lets us update you via email or SMS on interview status.</span>
-                                </label>
-                            </div>
+                            <ConsentCheckbox
+                                consentToUpdates={consentToUpdates}
+                                onConsentChange={setConsentToUpdates}
+                                profile={profile}
+                            />
+
                             {/* Resume Upload Section */}
-                            <div className="mb-8 flex flex-col items-center gap-4">
-                                <div className="flex flex-col items-center gap-2 w-full max-w-md">
-                                    <div className="flex items-center gap-2 w-full">
-                                        <label
-                                            htmlFor="upload-resume"
-                                            className={`cursor-pointer w-full ${!consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number ? 'cursor-not-allowed opacity-50' : ''}`}
-                                        >
-                                            <Button
-                                                variant="outline"
-                                                type="button"
-                                                disabled={loading || submitting || !consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number}
-                                                onClick={() => {
-                                                    if (consentToUpdates && !loading && !submitting && profile?.basic_information?.full_name && profile?.basic_information?.email && profile?.basic_information?.phone_number) {
-                                                        document.getElementById('upload-resume')?.click();
-                                                    }
-                                                }}
-                                                className="h-12 px-6 text-lg w-full hover:bg-primary hover:text-white transition-colors"
-                                            >
-                                                <FiUploadCloud className="mr-2 w-5 h-5" />
-                                                Upload your resume
-                                            </Button>
-                                        </label>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <span className="ml-2">
-                                                        <InfoIcon className="h-5 w-5 text-muted-foreground" />
-                                                    </span>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>We'll extract your experience and roles to save you typing.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
-                                    <input
-                                        id="upload-resume"
-                                        name="upload-resume"
-                                        type="file"
-                                        accept="application/pdf"
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                        disabled={loading || submitting || !consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number}
-                                        aria-label="Select resume PDF file"
-                                    />
-                                    {file && <span className="text-muted-foreground text-sm">{file.name}</span>}
-                                    {(!profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number) && (
-                                        <p className="text-sm text-orange-600">Please fill in your name, email, and phone number above to upload your resume.</p>
-                                    )}
-                                </div>
-                                {loading && (
-                                    <>
-                                        <ParsingMessage />
-                                        {/* <LoadingSpinner /> */}
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Message when resume hasn't been parsed yet */}
-                            {!resumeParsed && loading && file && (
-                                <div className="mb-8 text-center">
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-                                        <div className="flex items-center justify-center gap-2 mb-2">
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                            <span className="text-blue-800 font-medium">Processing your resume...</span>
-                                        </div>
-                                        <p className="text-sm text-blue-700">
-                                            We're extracting your information. This may take a few moments.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Message when no resume has been uploaded */}
-                            {!resumeParsed && !loading && !file && (
-                                <div className="mb-8 text-center">
-                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 max-w-md mx-auto">
-                                        <FiUploadCloud className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                        <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Your Resume First</h3>
-                                        <p className="text-sm text-gray-600">
-                                            Please upload your resume above to extract your information and start building your profile.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
+                            <ResumeUploadSection
+                                file={file}
+                                loading={loading}
+                                submitting={submitting}
+                                consentToUpdates={consentToUpdates}
+                                profile={profile}
+                                onFileChange={handleFileChange}
+                                resumeParsed={resumeParsed}
+                            />
 
                             {/* Error State */}
                             {error && <ErrorBox message={error} />}
@@ -765,305 +424,10 @@ export default function ResumePage() {
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-6 py-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* Full Name */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Full Name</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>First + last name as it should appear to hiring teams</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <Input
-                                                            value={profile?.basic_information.full_name || ""}
-                                                            onChange={e => handleFieldChange("basic_information", "full_name", e.target.value)}
-                                                            placeholder="Enter your full name"
-                                                            required
-                                                        />
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            We'll display this on your candidate profile for hiring managers.
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Current Location */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Current Location</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Include detect button using browser geolocation</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <SingleSelect
-                                                                options={INDIAN_CITIES}
-                                                                selected={profile?.basic_information.current_location || ""}
-                                                                onChange={(value: string) => handleFieldChange("basic_information", "current_location", value)}
-                                                                placeholder="Search for your city..."
-                                                                className="flex-1 bg-white"
-                                                            />
-                                                            {/* <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="icon"
-                                                                onClick={() => {
-                                                                    if (navigator.geolocation) {
-                                                                        navigator.geolocation.getCurrentPosition(
-                                                                            async (position) => {
-                                                                                try {
-                                                                                    const response = await fetch(
-                                                                                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
-                                                                                    );
-                                                                                    const data = await response.json();
-                                                                                    const city = data.address.city || data.address.town || data.address.village;
-                                                                                    if (city) {
-                                                                                        handleFieldChange("basic_information", "current_location", city);
-                                                                                    }
-                                                                                } catch (error) {
-                                                                                    console.error("Error getting location:", error);
-                                                                                    toast({
-                                                                                        title: "Error",
-                                                                                        description: "Could not detect location. Please enter manually.",
-                                                                                        variant: "destructive"
-                                                                                    });
-                                                                                }
-                                                                            },
-                                                                            (error) => {
-                                                                                console.error("Error getting location:", error);
-                                                                                toast({
-                                                                                    title: "Error",
-                                                                                    description: "Could not detect location. Please enter manually.",
-                                                                                    variant: "destructive"
-                                                                                });
-                                                                            }
-                                                                        );
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <MapPin className="h-4 w-4" />
-                                                            </Button> */}
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Your current city helps us show location-relevant roles.
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Relocation Preference */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Open to Relocation</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Optional, adds flexibility to matching</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <div className="flex items-center space-x-2">
-                                                            <Switch
-                                                                checked={profile.basic_information.open_to_relocation}
-                                                                onCheckedChange={(checked) => handleFieldChange("basic_information", "open_to_relocation", checked)}
-                                                            />
-                                                            <Label>I am open to relocating</Label>
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Helps us match you with companies open to remote or relocation.
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Phone Number */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Phone Number</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Auto-detect country code, supports SMS follow-up</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <Input
-                                                                type="tel"
-                                                                value={profile?.basic_information.phone_number || ""}
-                                                                onChange={e => {
-                                                                    // Only allow digits, +, -, and spaces
-                                                                    const cleaned = e.target.value.replace(/[^\d+\-\s]/g, "");
-                                                                    handleFieldChange("basic_information", "phone_number", cleaned);
-                                                                }}
-                                                                placeholder="+1 (555) 555-5555"
-                                                                required
-                                                                className="flex-1"
-                                                            />
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            For time-sensitive follow-ups, including interview scheduling.
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* LinkedIn URL */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>LinkedIn Profile</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Avoids duplication if already captured</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <div className="flex gap-2 flex-col lg:flex-row ">
-                                                            <Input
-                                                                value={profile?.basic_information.linkedin_url || ""}
-                                                                onChange={e => handleFieldChange("basic_information", "linkedin_url", e.target.value)}
-                                                                placeholder="https://linkedin.com/in/your-profile"
-                                                            />
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            disabled={!profile?.basic_information.linkedin_url || profile.basic_information.linkedin_url.length === 0 || !isValidLinkedInUrl(profile.basic_information.linkedin_url)}
-                                                                            onClick={() => window.open(profile?.basic_information.linkedin_url || "", "_blank")}
-                                                                        >
-                                                                            <Linkedin className="h-4 w-4 mr-2" />
-                                                                            See Profile
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>
-                                                                            {!profile?.basic_information.linkedin_url || profile.basic_information.linkedin_url.length === 0
-                                                                                ? "Enter a LinkedIn profile URL"
-                                                                                : !isValidLinkedInUrl(profile.basic_information.linkedin_url)
-                                                                                    ? "Enter a valid LinkedIn profile URL"
-                                                                                    : "Open LinkedIn profile"
-                                                                            }
-                                                                        </p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Used to match and enrich your resume data — optional.
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Email Address */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Email Address</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Used for login + interview coordination</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <Input
-                                                            type="email"
-                                                            value={profile?.basic_information.email || ""}
-                                                            onChange={e => handleFieldChange("basic_information", "email", e.target.value)}
-                                                            placeholder="your.email@example.com"
-                                                            required
-                                                        />
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            We'll use this to send interview updates and feedback.
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Specific Phone Number
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Specific Phone Number</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>With country code auto-detect; used for time-sensitive outreach</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <Input
-                                                            type="tel"
-                                                            value={profile?.basic_information.specific_phone_number || ""}
-                                                            onChange={e => handleFieldChange("basic_information", "specific_phone_number", e.target.value)}
-                                                            placeholder="+1 (555) 555-5555"
-                                                        />
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            For urgent updates — we won't spam.
-                                                        </p>
-                                                    </FormControl> */}
-
-                                                    {/* Notice Period */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Notice Period</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Used for hiring availability and scheduling fit</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <Select
-                                                            value={profile?.basic_information.notice_period || ""}
-                                                            onValueChange={(value) => handleFieldChange("basic_information", "notice_period", value)}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select notice period" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {NOTICE_PERIOD_OPTIONS.map((option) => (
-                                                                    <SelectItem key={option} value={option}>
-                                                                        {option}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            How much notice do you need to give your current employer?
-                                                        </p>
-                                                    </FormControl>
-
-
-                                                </div>
+                                                <ContactInformationForm
+                                                    profile={profile}
+                                                    onFieldChange={handleFieldChange}
+                                                />
                                             </AccordionContent>
                                         </AccordionItem>
 
@@ -1076,285 +440,12 @@ export default function ResumePage() {
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-6 py-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* Current CTC */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Current CTC (Base Salary)</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Your fixed monthly or annual base. We only show jobs that offer more.</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="flex gap-2">
-                                                                <Select
-                                                                    value={profile?.basic_information.current_ctc.cadence || "annual"}
-                                                                    onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, cadence: value })}
-                                                                >
-                                                                    <SelectTrigger className="w-24 flex-1/2">
-                                                                        <SelectValue placeholder="Annual" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="annual">Annual</SelectItem>
-                                                                        <SelectItem value="monthly">Monthly</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                                <Select
-                                                                    value={profile?.basic_information.current_ctc.currencyType || ""}
-                                                                    onValueChange={(value) => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, currencyType: value })}
-                                                                >
-                                                                    <SelectTrigger className="w-24 flex-1/2">
-                                                                        <SelectValue placeholder="₹" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="INR">₹ (INR)</SelectItem>
-                                                                        <SelectItem value="USD">$ (USD)</SelectItem>
-                                                                        <SelectItem value="EUR">€ (EUR)</SelectItem>
-                                                                        <SelectItem value="GBP">£ (GBP)</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                            <Input
-                                                                type="number"
-                                                                value={profile?.basic_information.current_ctc.value || ""}
-                                                                onChange={e => handleFieldChange("basic_information", "current_ctc", { ...profile?.basic_information.current_ctc, value: Number(e.target.value) })}
-                                                                placeholder="Enter amount"
-                                                            />
-
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Optional - Helps us match you with better-paying opportunities.
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Expected CTC (OTE) */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Expected CTC (OTE)</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Add your expected total compensation including incentives.</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="flex gap-2">
-                                                                <Select
-                                                                    value={profile?.basic_information.expected_ctc.cadence || "annual"}
-                                                                    onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, cadence: value })}
-                                                                >
-                                                                    <SelectTrigger className="w-24 flex-1/2">
-                                                                        <SelectValue placeholder="Annual" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="annual">Annual</SelectItem>
-                                                                        <SelectItem value="monthly">Monthly</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                                <Select
-                                                                    value={profile?.basic_information.expected_ctc.currencyType || ""}
-                                                                    onValueChange={(value) => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, currencyType: value })}
-                                                                >
-                                                                    <SelectTrigger className="w-24 flex-1/2">
-                                                                        <SelectValue placeholder="₹" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="INR">₹ (INR)</SelectItem>
-                                                                        <SelectItem value="USD">$ (USD)</SelectItem>
-                                                                        <SelectItem value="EUR">€ (EUR)</SelectItem>
-                                                                        <SelectItem value="GBP">£ (GBP)</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                            <Input
-                                                                type="number"
-                                                                value={profile?.basic_information.expected_ctc.value || ""}
-                                                                onChange={e => handleFieldChange("basic_information", "expected_ctc", { ...profile?.basic_information.expected_ctc, value: Number(e.target.value) })}
-                                                                placeholder="Enter amount"
-                                                            />
-
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Optional - Your expected total compensation including incentives.
-                                                        </p>
-                                                    </FormControl>
-                                                </div>
+                                                <SalaryExpectationsForm
+                                                    profile={profile}
+                                                    onFieldChange={handleFieldChange}
+                                                />
                                             </AccordionContent>
                                         </AccordionItem>
-                                        {/* Career Overview */}
-                                        {/* <AccordionItem value="career_overview" className="border rounded-lg mb-4">
-                                        <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                                            <div className="flex items-center gap-2">
-                                                <MdOutlineEditNote className="text-primary w-6 h-6" />
-                                                <span className="text-xl font-semibold">Career Overview</span>
-                                            </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="px-6 py-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <FormControl>
-                                                    <FormLabel>Total Years Experience</FormLabel>
-                                                    <Input
-                                                        type="number"
-                                                        value={profile.career_overview.total_years_experience}
-                                                        onChange={e => handleFieldChange("career_overview", "total_years_experience", Number(e.target.value))}
-                                                        min={0}
-                                                        step={0.1}
-                                                    />
-                                                </FormControl>
-                                                <FormControl>
-                                                    <FormLabel>Years Sales Experience</FormLabel>
-                                                    <Input
-                                                        type="number"
-                                                        value={profile.career_overview.years_sales_experience}
-                                                        onChange={e => handleFieldChange("career_overview", "years_sales_experience", Number(e.target.value))}
-                                                        min={0}
-                                                        step={0.1}
-                                                    />
-                                                </FormControl>
-                                                <FormControl>
-                                                    <FormLabel>Average Tenure Per Role</FormLabel>
-                                                    <Input
-                                                        type="number"
-                                                        value={profile.career_overview.average_tenure_per_role}
-                                                        onChange={e => handleFieldChange("career_overview", "average_tenure_per_role", Number(e.target.value))}
-                                                        min={0}
-                                                        step={0.1}
-                                                    />
-                                                </FormControl>
-                                                <FormControl>
-                                                    <FormLabel>Employment Gaps</FormLabel>
-                                                    <RadioGroup
-                                                        value={profile.career_overview.employment_gaps.has_gaps ? "Yes" : "No"}
-                                                        onValueChange={(value) => handleFieldChange("career_overview", "employment_gaps", value === "Yes", "has_gaps")}
-                                                        className="flex gap-4"
-                                                    >
-                                                        {YES_NO_OPTIONS.map((option) => (
-                                                            <div key={option} className="flex items-center space-x-2">
-                                                                <RadioGroupItem value={option} id={`gaps-${option}`} />
-                                                                <label htmlFor={`gaps-${option}`}>{option}</label>
-                                                            </div>
-                                                        ))}
-                                                    </RadioGroup>
-                                                    {profile.career_overview.employment_gaps.has_gaps && (
-                                                        <Input
-                                                            placeholder="Duration"
-                                                            value={profile.career_overview.employment_gaps.duration}
-                                                            onChange={e => handleFieldChange("career_overview", "employment_gaps", e.target.value, "duration")}
-                                                            className="mt-2"
-                                                        />
-                                                    )}
-                                                </FormControl>
-                                                <FormControl>
-                                                    <FormLabel>Promotion History</FormLabel>
-                                                    <RadioGroup
-                                                        value={profile.career_overview.promotion_history ? "Yes" : "No"}
-                                                        onValueChange={(value) => handleFieldChange("career_overview", "promotion_history", value === "Yes")}
-                                                        className="flex gap-4"
-                                                    >
-                                                        {YES_NO_OPTIONS.map((option) => (
-                                                            <div key={option} className="flex items-center space-x-2">
-                                                                <RadioGroupItem value={option} id={`promotion-${option}`} />
-                                                                <label htmlFor={`promotion-${option}`}>{option}</label>
-                                                            </div>
-                                                        ))}
-                                                    </RadioGroup>
-                                                </FormControl>
-                                                <FormControl >
-                                                    <FormLabel>Company History</FormLabel>
-                                                    <div className="space-y-4">
-                                                        {profile?.career_overview?.company_history?.map((company, index) => (
-                                                            <Card key={index} className="p-4">
-                                                                <div className="flex justify-between items-center mb-4">
-                                                                    <h4 className="font-medium">Company {index + 1}</h4>
-                                                                    <Button
-                                                                        variant="destructive"
-                                                                        size="sm"
-                                                                        onClick={() => removeCompanyHistory(index)}
-                                                                    >
-                                                                        Remove
-                                                                    </Button>
-                                                                </div>
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    <FormControl>
-                                                                        <FormLabel>Company Name</FormLabel>
-                                                                        <Input
-                                                                            value={company.company_name}
-                                                                            onChange={e => handleCompanyHistoryChange(index, "company_name", e.target.value)}
-                                                                            required
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormControl>
-                                                                        <FormLabel>Position</FormLabel>
-                                                                        <Input
-                                                                            value={company.position}
-                                                                            onChange={e => handleCompanyHistoryChange(index, "position", e.target.value)}
-                                                                            required
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormControl>
-                                                                        <FormLabel>Start Date</FormLabel>
-                                                                        <Input
-                                                                            type="date"
-                                                                            value={company.start_date}
-                                                                            onChange={e => handleCompanyHistoryChange(index, "start_date", e.target.value)}
-                                                                            required
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormControl>
-                                                                        <FormLabel>End Date</FormLabel>
-                                                                        <Input
-                                                                            type="date"
-                                                                            value={company.end_date}
-                                                                            onChange={e => handleCompanyHistoryChange(index, "end_date", e.target.value)}
-                                                                            disabled={company.is_current}
-                                                                            required={!company.is_current}
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormControl>
-                                                                        <FormLabel>Duration (months)</FormLabel>
-                                                                        <Input
-                                                                            type="number"
-                                                                            value={company.duration_months}
-                                                                            onChange={e => handleCompanyHistoryChange(index, "duration_months", Number(e.target.value))}
-                                                                            min={0}
-                                                                            required
-                                                                        />
-                                                                    </FormControl>
-                                                                    <FormControl>
-                                                                        <FormLabel>Current Position</FormLabel>
-                                                                        <Switch
-                                                                            checked={company.is_current}
-                                                                            onCheckedChange={v => handleCompanyHistoryChange(index, "is_current", v)}
-                                                                        />
-                                                                    </FormControl>
-                                                                </div>
-                                                            </Card>
-                                                        ))}
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            onClick={addCompanyHistory}
-                                                            className="w-full"
-                                                        >
-                                                            Add Company
-                                                        </Button>
-                                                    </div>
-                                                </FormControl>
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem> */}
 
                                         {/* Work History */}
                                         <AccordionItem value="work_history" className="border rounded-lg mb-4">
@@ -1365,173 +456,12 @@ export default function ResumePage() {
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-6 py-4">
-                                                <div className="space-y-6">
-                                                    <p className="text-muted-foreground">
-                                                        We parsed this from your resume — feel free to tweak or add details.
-                                                    </p>
-
-                                                    {profile?.career_overview?.company_history?.length > 0 ? (
-                                                        <>
-                                                            <div className="grid gap-4">
-                                                                {profile.career_overview.company_history.map((company, index) => (
-                                                                    <Card key={`company-${index}`} className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
-                                                                        <div className="absolute top-0 right-0 p-2">
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() => removeCompanyHistory(index)}
-                                                                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                                                            >
-                                                                                <X className="h-4 w-4" />
-                                                                            </Button>
-                                                                        </div>
-                                                                        <CardContent className="p-6">
-                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                                                {/* Company Name */}
-                                                                                <div className="col-span-2 md:col-span-1">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <FormLabel>Company</FormLabel>
-                                                                                        <TooltipProvider>
-                                                                                            <Tooltip>
-                                                                                                <TooltipTrigger>
-                                                                                                    <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                                                </TooltipTrigger>
-                                                                                                <TooltipContent>
-                                                                                                    <p>Your employer's name as it should appear</p>
-                                                                                                </TooltipContent>
-                                                                                            </Tooltip>
-                                                                                        </TooltipProvider>
-                                                                                    </div>
-                                                                                    <Input
-                                                                                        value={company.company_name}
-                                                                                        onChange={e => handleCompanyHistoryChange(index, "company_name", e.target.value)}
-                                                                                        placeholder="Enter company name"
-                                                                                        required
-                                                                                        className="font-medium"
-                                                                                    />
-                                                                                </div>
-
-                                                                                {/* Position */}
-                                                                                <div className="col-span-2 md:col-span-1">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <FormLabel>Position</FormLabel>
-                                                                                        <TooltipProvider>
-                                                                                            <Tooltip>
-                                                                                                <TooltipTrigger>
-                                                                                                    <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                                                </TooltipTrigger>
-                                                                                                <TooltipContent>
-                                                                                                    <p>Your job title or role</p>
-                                                                                                </TooltipContent>
-                                                                                            </Tooltip>
-                                                                                        </TooltipProvider>
-                                                                                    </div>
-                                                                                    <Input
-                                                                                        value={company.position}
-                                                                                        onChange={e => handleCompanyHistoryChange(index, "position", e.target.value)}
-                                                                                        placeholder="Enter your position"
-                                                                                        required
-                                                                                        className="font-medium"
-                                                                                    />
-                                                                                </div>
-
-                                                                                {/* Duration */}
-                                                                                <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                                                    <FormControl>
-                                                                                        <FormLabel>Start Date</FormLabel>
-                                                                                        <Input
-                                                                                            type="date"
-                                                                                            value={company.start_date}
-                                                                                            onChange={e => handleCompanyHistoryChange(index, "start_date", e.target.value)}
-                                                                                            required
-                                                                                        />
-                                                                                    </FormControl>
-                                                                                    <FormControl>
-                                                                                        <FormLabel>End Date</FormLabel>
-                                                                                        <Input
-                                                                                            type="date"
-                                                                                            value={company.end_date}
-                                                                                            onChange={e => handleCompanyHistoryChange(index, "end_date", e.target.value)}
-                                                                                            disabled={company.is_current}
-                                                                                            required={!company.is_current}
-                                                                                        />
-                                                                                    </FormControl>
-                                                                                    <FormControl>
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <FormLabel>Duration</FormLabel>
-                                                                                            <TooltipProvider>
-                                                                                                <Tooltip>
-                                                                                                    <TooltipTrigger>
-                                                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                                                    </TooltipTrigger>
-                                                                                                    <TooltipContent>
-                                                                                                        <p>Total months in this role</p>
-                                                                                                    </TooltipContent>
-                                                                                                </Tooltip>
-                                                                                            </TooltipProvider>
-                                                                                        </div>
-                                                                                        <Input
-                                                                                            type="number"
-                                                                                            value={company.duration_months}
-                                                                                            onChange={e => handleCompanyHistoryChange(index, "duration_months", Number(e.target.value))}
-                                                                                            min={0}
-                                                                                            required
-                                                                                            placeholder="Months"
-                                                                                        />
-                                                                                    </FormControl>
-                                                                                </div>
-
-                                                                                {/* Current Position */}
-                                                                                <div className="col-span-2">
-                                                                                    <div className="flex items-center space-x-2">
-                                                                                        <Switch
-                                                                                            checked={company.is_current}
-                                                                                            onCheckedChange={v => handleCompanyHistoryChange(index, "is_current", v)}
-                                                                                            id={`current-${index}`}
-                                                                                        />
-                                                                                        <Label htmlFor={`current-${index}`} className="text-sm font-medium">
-                                                                                            This is my current position
-                                                                                        </Label>
-                                                                                    </div>
-                                                                                    {company.is_current && (
-                                                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                                                            End date will be automatically set to "Present"
-                                                                                        </p>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        </CardContent>
-                                                                    </Card>
-                                                                ))}
-                                                            </div>
-
-                                                            <div className="flex justify-end">
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    onClick={addCompanyHistory}
-                                                                    className="flex items-center gap-2"
-                                                                >
-                                                                    <MdOutlineEditNote className="w-4 h-4" />
-                                                                    Add Experience
-                                                                </Button>
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                                                            <p className="text-muted-foreground mb-4">No work history found in your resume</p>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                onClick={addCompanyHistory}
-                                                                className="flex items-center gap-2 mx-auto"
-                                                            >
-                                                                <MdOutlineEditNote className="w-4 h-4" />
-                                                                Add Your First Experience
-                                                            </Button>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <WorkHistoryForm
+                                                    profile={profile}
+                                                    onCompanyHistoryChange={handleCompanyHistoryChange}
+                                                    onAddCompanyHistory={addCompanyHistory}
+                                                    onRemoveCompanyHistory={removeCompanyHistory}
+                                                />
                                             </AccordionContent>
                                         </AccordionItem>
 
@@ -1544,147 +474,10 @@ export default function ResumePage() {
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-6 py-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* Sales Type */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Sales Type</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Do you primarily sell to businesses (B2B), consumers (B2C), or both?</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <RadioGroup
-                                                            value={profile.sales_context.sales_type[0] || ""}
-                                                            onValueChange={(value) => handleArrayChange("sales_context", "sales_type", [value])}
-                                                            className="flex flex-col gap-3"
-                                                        >
-                                                            {["B2B", "B2C", "Both"].map((type) => (
-                                                                <div key={type} className="flex items-center space-x-2">
-                                                                    <RadioGroupItem value={type} id={`sales-type-${type}`} />
-                                                                    <Label htmlFor={`sales-type-${type}`} className="text-sm font-medium">
-                                                                        {type}
-                                                                    </Label>
-                                                                </div>
-                                                            ))}
-                                                        </RadioGroup>
-                                                    </FormControl>
-
-                                                    {/* Sales Motion */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Sales Motion</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Inbound means leads come to you; outbound means you reach out first.</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <RadioGroup
-                                                            value={profile.sales_context.sales_motion[0] || ""}
-                                                            onValueChange={(value) => handleArrayChange("sales_context", "sales_motion", [value])}
-                                                            className="flex flex-col gap-3"
-                                                        >
-                                                            {["Inbound", "Outbound", "Mixed"].map((motion) => (
-                                                                <div key={motion} className="flex items-center space-x-2">
-                                                                    <RadioGroupItem value={motion} id={`sales-motion-${motion}`} />
-                                                                    <Label htmlFor={`sales-motion-${motion}`} className="text-sm font-medium">
-                                                                        {motion}
-                                                                    </Label>
-                                                                </div>
-                                                            ))}
-                                                        </RadioGroup>
-                                                    </FormControl>
-
-                                                    {/* Industries Sold Into */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Industries You've Sold Into</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>E.g. SaaS, EdTech, BFSI — helps understand your domain experience.</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <MultiSelect
-                                                            options={INDUSTRIES}
-                                                            selected={profile.sales_context.industries_sold_into}
-                                                            onChange={(values) => handleArrayChange("sales_context", "industries_sold_into", values)}
-                                                            placeholder="Select industries..."
-                                                        />
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Select from common industries
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Regions Sold Into */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Regions You've Sold Into</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>What countries or geographies have your customers typically been in?</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <MultiSelect
-                                                            options={REGIONS}
-                                                            selected={profile.sales_context.regions_sold_into}
-                                                            onChange={(values) => handleArrayChange("sales_context", "regions_sold_into", values)}
-                                                            placeholder="Select regions..."
-                                                        />
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Select all regions where you have sales experience
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Buyer Personas */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Who Were Your Buyers?</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Who did you typically sell to? Job titles or decision-maker roles.</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <MultiSelect
-                                                            options={BUYER_PERSONAS}
-                                                            selected={profile.sales_context.buyer_personas}
-                                                            onChange={(values) => handleArrayChange("sales_context", "buyer_personas", values)}
-                                                            placeholder="Select buyer personas..."
-                                                        />
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            E.g. HR Heads, CXOs, Procurement — select from common roles
-                                                        </p>
-                                                    </FormControl>
-                                                </div>
+                                                <SalesContextForm
+                                                    profile={profile}
+                                                    onArrayChange={handleArrayChange}
+                                                />
                                             </AccordionContent>
                                         </AccordionItem>
 
@@ -1697,325 +490,11 @@ export default function ResumePage() {
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-6 py-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* Sales Process Owned */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Sales Process Owned</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Select all you've owned directly.</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <MultiSelect
-                                                            options={[
-                                                                "Prospecting",
-                                                                "Lead Research",
-                                                                "Outreach",
-                                                                "Emailing",
-                                                                "Qualification",
-                                                                "Demoing",
-                                                                "Proposal Creation",
-                                                                "Objection Handling",
-                                                                "Closing",
-                                                                "Negotiation",
-                                                                "Post-Sale",
-                                                                "Renewals",
-                                                                "Expansion"
-                                                            ]}
-                                                            selected={profile.role_process_exposure.sales_stages_owned}
-                                                            onChange={(values) => handleArrayChange("role_process_exposure", "sales_stages_owned", values)}
-                                                            placeholder="Select all stages you've owned..."
-                                                        />
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Check all the stages you personally handled — from prospecting to post-sale.
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Sales Role */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Most Recent Sales Role</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>E.g. SDR, Account Executive, Enterprise Sales — pick what best matches your role title.</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <Select
-                                                            value={profile.role_process_exposure.sales_role_type}
-                                                            onValueChange={(value) => handleFieldChange("role_process_exposure", "sales_role_type", value)}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select your role..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {[
-                                                                    "SDR",
-                                                                    "BDR",
-                                                                    "Inside Sales",
-                                                                    "AE",
-                                                                    "Key Account Manager",
-                                                                    "Enterprise Sales",
-                                                                    "Channel Manager",
-                                                                    "Sales Manager",
-                                                                    "CSM",
-                                                                    "Pre-sales",
-                                                                    "Growth Manager",
-                                                                    "Head of Sales",
-                                                                    "VP",
-                                                                    "Other"
-                                                                ].map((role) => (
-                                                                    <SelectItem key={role} value={role}>
-                                                                        {role}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </FormControl>
-
-                                                    {/* Position Level */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Position Level</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Were you primarily an IC or did you manage others?</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <RadioGroup
-                                                            value={profile.role_process_exposure.position_level}
-                                                            onValueChange={(value) => handleFieldChange("role_process_exposure", "position_level", value)}
-                                                            className="flex flex-col gap-3"
-                                                        >
-                                                            {[
-                                                                "Individual Contributor",
-                                                                "Team Lead",
-                                                                "Manager",
-                                                                "Director / VP+"
-                                                            ].map((level) => (
-                                                                <div key={level} className="flex items-center space-x-2">
-                                                                    <RadioGroupItem value={level} id={`position-level-${level}`} />
-                                                                    <Label htmlFor={`position-level-${level}`} className="text-sm font-medium">
-                                                                        {level}
-                                                                    </Label>
-                                                                </div>
-                                                            ))}
-                                                        </RadioGroup>
-                                                    </FormControl>
-
-                                                    {/* Average Deal Size */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Average Deal Size</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>What was your average closed deal value in your most recent or current role?</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <Select
-                                                            value={profile.role_process_exposure.average_deal_size_range}
-                                                            onValueChange={(value) => handleFieldChange("role_process_exposure", "average_deal_size_range", value)}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select deal size range..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {[
-                                                                    "<$1K",
-                                                                    "$1K–$5K",
-                                                                    "$5K–$25K",
-                                                                    "$25K–$100K",
-                                                                    "$100K–$500K",
-                                                                    "$500K–$1M",
-                                                                    "$1M+",
-                                                                    "Varies"
-                                                                ].map((size) => (
-                                                                    <SelectItem key={size} value={size}>
-                                                                        {size}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Support ranges or best estimate
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Sales Cycle Length */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Typical Sales Cycle Length</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>How long does it usually take to close a deal?</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <Select
-                                                            value={profile.role_process_exposure.sales_cycle_length}
-                                                            onValueChange={(value) => handleFieldChange("role_process_exposure", "sales_cycle_length", value)}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select cycle length..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {[
-                                                                    "<1 week",
-                                                                    "1–4 weeks",
-                                                                    "1–3 months",
-                                                                    "3–6 months",
-                                                                    "6–12 months",
-                                                                    "12+ months",
-                                                                    "Varies"
-                                                                ].map((length) => (
-                                                                    <SelectItem key={length} value={length}>
-                                                                        {length}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </FormControl>
-
-                                                    {/* Quota Ownership */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Did You Own a Quota?</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Were you responsible for hitting a sales number?</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <RadioGroup
-                                                            value={profile.role_process_exposure.quota_ownership.has_quota ? "Yes" : "No"}
-                                                            onValueChange={(value) => handleFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, has_quota: value === "Yes" })}
-                                                            className="flex gap-4"
-                                                        >
-                                                            {["Yes", "No"].map((option) => (
-                                                                <div key={option} className="flex items-center space-x-2">
-                                                                    <RadioGroupItem value={option} id={`quota-${option}`} />
-                                                                    <Label htmlFor={`quota-${option}`}>{option}</Label>
-                                                                </div>
-                                                            ))}
-                                                        </RadioGroup>
-                                                    </FormControl>
-
-                                                    {/* Quota Measurement (Conditional) */}
-                                                    {profile.role_process_exposure.quota_ownership.has_quota && (
-                                                        <FormControl>
-                                                            <div className="flex items-center gap-2">
-                                                                <FormLabel>Quota Measurement</FormLabel>
-                                                                <TooltipProvider>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger>
-                                                                            <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            <p>What metrics were you measured on?</p>
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                </TooltipProvider>
-                                                            </div>
-                                                            <MultiSelect
-                                                                options={[
-                                                                    "Revenue Closed",
-                                                                    "Deals Closed",
-                                                                    "Meetings Booked",
-                                                                    "Pipeline Generated",
-                                                                    "Renewals",
-                                                                    "Upsell",
-                                                                    "Demos",
-                                                                    "Conversions",
-                                                                    "Onboarding",
-                                                                    "Team Targets",
-                                                                    "Other"
-                                                                ]}
-                                                                selected={profile.role_process_exposure.quota_ownership.cadence ? [profile.role_process_exposure.quota_ownership.cadence] : []}
-                                                                onChange={(values) => handleFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, cadence: values[0] || "" })}
-                                                                placeholder="Select quota metrics..."
-                                                            />
-                                                        </FormControl>
-                                                    )}
-
-                                                    {/* Quota Attainment (Conditional) */}
-                                                    {profile.role_process_exposure.quota_ownership.has_quota && (
-                                                        <FormControl>
-                                                            <div className="flex items-center gap-2">
-                                                                <FormLabel>Quota Attainment (% Achieved)</FormLabel>
-                                                                <TooltipProvider>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger>
-                                                                            <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            <p>Roughly what % of your quota did you hit on average?</p>
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                </TooltipProvider>
-                                                            </div>
-                                                            <Select
-                                                                value={profile.role_process_exposure.quota_ownership.attainment_history}
-                                                                onValueChange={(value) => handleFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, attainment_history: value })}
-                                                            >
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Select attainment range..." />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {[
-                                                                        "<50%",
-                                                                        "50–74%",
-                                                                        "75–99%",
-                                                                        "100–124%",
-                                                                        "125–149%",
-                                                                        "150%+",
-                                                                        "Varies"
-                                                                    ].map((attainment) => (
-                                                                        <SelectItem key={attainment} value={attainment}>
-                                                                            {attainment}
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <p className="text-sm text-muted-foreground mt-1">
-                                                                It doesn't have to be exact
-                                                            </p>
-                                                        </FormControl>
-                                                    )}
-                                                </div>
+                                                <RoleProcessExposureForm
+                                                    profile={profile}
+                                                    onFieldChange={handleFieldChange}
+                                                    onArrayChange={handleArrayChange}
+                                                />
                                             </AccordionContent>
                                         </AccordionItem>
 
@@ -2028,184 +507,10 @@ export default function ResumePage() {
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-6 py-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* CRM Tools */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>CRM Tools You've Used</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>What CRMs have you used regularly for tracking deals and pipeline?</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <MultiSelect
-                                                            options={crmOptions}
-                                                            selected={profile.tools_platforms.crm_used}
-                                                            onChange={(values) => handleArrayChange("tools_platforms", "crm_used", values)}
-                                                            placeholder="Select CRM tools..."
-                                                        />
-                                                        {profile.tools_platforms.crm_used.includes("Other") && (
-                                                            <div className="flex gap-2 mt-2">
-                                                                <Input
-                                                                    value={customCrm}
-                                                                    onChange={e => setCustomCrm(e.target.value)}
-                                                                    placeholder="Add a new CRM tool..."
-                                                                    className="flex-1"
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === "Enter" && customCrm.trim()) {
-                                                                            if (!crmOptions.includes(customCrm.trim())) {
-                                                                                setCrmOptions([...crmOptions.slice(0, -1), customCrm.trim(), "Other"]);
-                                                                            }
-                                                                            handleArrayChange("tools_platforms", "crm_used", [...profile.tools_platforms.crm_used.filter(t => t !== "Other"), customCrm.trim()]);
-                                                                            setCustomCrm("");
-                                                                            e.preventDefault();
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        if (customCrm.trim() && !crmOptions.includes(customCrm.trim())) {
-                                                                            setCrmOptions([...crmOptions.slice(0, -1), customCrm.trim(), "Other"]);
-                                                                        }
-                                                                        handleArrayChange("tools_platforms", "crm_used", [...profile.tools_platforms.crm_used.filter(t => t !== "Other"), customCrm.trim()]);
-                                                                        setCustomCrm("");
-                                                                    }}
-                                                                    disabled={!customCrm.trim()}
-                                                                >
-                                                                    Add
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            E.g. Salesforce, Zoho, HubSpot — searchable dropdown
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Sales Tools */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Other Sales Tools</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Tools that helped with prospecting, outreach, or closing</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <MultiSelect
-                                                            options={salesToolOptions}
-                                                            selected={profile.tools_platforms.sales_tools}
-                                                            onChange={(values) => handleArrayChange("tools_platforms", "sales_tools", values)}
-                                                            placeholder="Select sales tools..."
-                                                        />
-                                                        {profile.tools_platforms.sales_tools.includes("Other") && (
-                                                            <div className="flex gap-2 mt-2">
-                                                                <Input
-                                                                    value={customSalesTool}
-                                                                    onChange={e => setCustomSalesTool(e.target.value)}
-                                                                    placeholder="Add a new sales tool..."
-                                                                    className="flex-1"
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === "Enter" && customSalesTool.trim()) {
-                                                                            if (!salesToolOptions.includes(customSalesTool.trim())) {
-                                                                                setSalesToolOptions([...salesToolOptions.slice(0, -1), customSalesTool.trim(), "Other"]);
-                                                                            }
-                                                                            handleArrayChange("tools_platforms", "sales_tools", [...profile.tools_platforms.sales_tools.filter(t => t !== "Other"), customSalesTool.trim()]);
-                                                                            setCustomSalesTool("");
-                                                                            e.preventDefault();
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        if (customSalesTool.trim() && !salesToolOptions.includes(customSalesTool.trim())) {
-                                                                            setSalesToolOptions([...salesToolOptions.slice(0, -1), customSalesTool.trim(), "Other"]);
-                                                                        }
-                                                                        handleArrayChange("tools_platforms", "sales_tools", [...profile.tools_platforms.sales_tools.filter(t => t !== "Other"), customSalesTool.trim()]);
-                                                                        setCustomSalesTool("");
-                                                                    }}
-                                                                    disabled={!customSalesTool.trim()}
-                                                                >
-                                                                    Add
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            E.g. LinkedIn Sales Nav, Gong, WhatsApp Business
-                                                        </p>
-                                                    </FormControl>
-
-                                                    {/* Communication Tools */}
-                                                    <FormControl>
-                                                        <div className="flex items-center gap-2">
-                                                            <FormLabel>Communication Tools</FormLabel>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>What tools did you use to communicate with prospects and customers?</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                        <MultiSelect
-                                                            options={commToolOptions}
-                                                            selected={profile.tools_platforms.communication_tools}
-                                                            onChange={(values) => handleArrayChange("tools_platforms", "communication_tools", values)}
-                                                            placeholder="Select communication tools..."
-                                                        />
-                                                        {profile.tools_platforms.communication_tools.includes("Other") && (
-                                                            <div className="flex gap-2 mt-2">
-                                                                <Input
-                                                                    value={customCommTool}
-                                                                    onChange={e => setCustomCommTool(e.target.value)}
-                                                                    placeholder="Add a new communication tool..."
-                                                                    className="flex-1"
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === "Enter" && customCommTool.trim()) {
-                                                                            if (!commToolOptions.includes(customCommTool.trim())) {
-                                                                                setCommToolOptions([...commToolOptions.slice(0, -1), customCommTool.trim(), "Other"]);
-                                                                            }
-                                                                            handleArrayChange("tools_platforms", "communication_tools", [...profile.tools_platforms.communication_tools.filter(t => t !== "Other"), customCommTool.trim()]);
-                                                                            setCustomCommTool("");
-                                                                            e.preventDefault();
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        if (customCommTool.trim() && !commToolOptions.includes(customCommTool.trim())) {
-                                                                            setCommToolOptions([...commToolOptions.slice(0, -1), customCommTool.trim(), "Other"]);
-                                                                        }
-                                                                        handleArrayChange("tools_platforms", "communication_tools", [...profile.tools_platforms.communication_tools.filter(t => t !== "Other"), customCommTool.trim()]);
-                                                                        setCustomCommTool("");
-                                                                    }}
-                                                                    disabled={!customCommTool.trim()}
-                                                                >
-                                                                    Add
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                        <p className="text-sm text-muted-foreground mt-1">
-                                                            Tools used for customer and team communication
-                                                        </p>
-                                                    </FormControl>
-                                                </div>
+                                                <ToolsPlatformsForm
+                                                    profile={profile}
+                                                    onArrayChange={handleArrayChange}
+                                                />
                                             </AccordionContent>
                                         </AccordionItem>
                                     </Accordion>
