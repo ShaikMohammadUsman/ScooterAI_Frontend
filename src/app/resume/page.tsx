@@ -1,15 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { toast } from "@/hooks/use-toast";
 import { parseResume, addResumeProfile, ParseResumeResponse, ResumeProfile } from "@/lib/resumeService";
 import LoadingSpinner from "@/components/ui/loadingSpinner";
 import ErrorBox from "@/components/ui/error";
 import { FiUploadCloud } from "react-icons/fi";
-import { MdOutlineEditNote } from "react-icons/md";
-import { FaRegSave } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
 import ResumeSuggestionBox from "@/components/interview/ResumeSuggestionBox";
 import ProfileSuccessScreen from "@/components/interview/ProfileSuccessScreen";
@@ -25,7 +21,9 @@ import {
     ResumeUploadSection,
     UserDetailsForm,
     LinkedInUrlInput,
-    ConsentCheckbox
+    ConsentCheckbox,
+    StepFormWrapper,
+    ModernHeader
 } from "@/components/resume";
 
 interface CompanyHistory {
@@ -275,8 +273,8 @@ export default function ResumePage() {
     };
 
     // Handle form submit
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!profile) return;
         setSubmitting(true);
         setError(null);
@@ -367,172 +365,84 @@ export default function ResumePage() {
                 {showSuccessScreen ? (
                     <ProfileSuccessScreen handleStartInterview={handleStartInterview} />
                 ) : (
-                    <Card className="w-full lg:w-2/3 mx-auto shadow-lg border-0 rounded-3xl bg-white/95 backdrop-blur-sm">
-                        <CardHeader className="flex flex-col items-center gap-3  bg-white/80 px-8 py-6 rounded-3xl">
-                            <FiUploadCloud className="text-primary w-8 h-8" />
-                            <CardTitle className="text-4xl font-bold text-primary mb-2 text-center">
-                                Let's get you set up
-                            </CardTitle>
-                            <CardDescription>This won't take long. Less than 10 mins to capture your sales superpowers.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-2 sm:p-4">
-                            {/* User Details Form - Required for Resume Parsing */}
-                            <UserDetailsForm
-                                profile={profile}
-                                onFieldChange={handleFieldChange}
-                            />
-
-                            {/* LinkedIn URL Input (optional) */}
-                            <LinkedInUrlInput
-                                linkedInUrl={linkedInUrl}
-                                onLinkedInUrlChange={setLinkedInUrl}
-                            />
-
-                            {/* Consent Checkbox */}
-                            <ConsentCheckbox
-                                consentToUpdates={consentToUpdates}
-                                onConsentChange={setConsentToUpdates}
-                                profile={profile}
-                            />
-
-                            {/* Resume Upload Section */}
-                            <ResumeUploadSection
-                                file={file}
-                                loading={loading}
-                                submitting={submitting}
-                                consentToUpdates={consentToUpdates}
-                                profile={profile}
-                                onFileChange={handleFileChange}
-                                resumeParsed={resumeParsed}
-                            />
-
-                            {/* Error State */}
-                            {error && <ErrorBox message={error} />}
-
-                            {showSuggestion && <ResumeSuggestionBox />}
-
-                            {/* Editable Form */}
-                            {resumeParsed && !loading && (
-                                <form onSubmit={handleSubmit} className="space-y-8">
-                                    <Accordion type="multiple" className="mb-4">
-                                        {/* Contact Information */}
-                                        <AccordionItem value="contact_info" className="border rounded-lg mb-4">
-                                            <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                                                <div className="flex items-center gap-2">
-                                                    <MdOutlineEditNote className="text-primary w-6 h-6" />
-                                                    <span className="text-xl font-semibold">Confirm your contact information</span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="px-6 py-4">
-                                                <ContactInformationForm
-                                                    profile={profile}
-                                                    onFieldChange={handleFieldChange}
-                                                />
-                                            </AccordionContent>
-                                        </AccordionItem>
-
-                                        {/* Salary Expectations */}
-                                        <AccordionItem value="salary_expectations" className="border rounded-lg mb-4">
-                                            <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                                                <div className="flex items-center gap-2">
-                                                    <MdOutlineEditNote className="text-primary w-6 h-6" />
-                                                    <span className="text-xl font-semibold">What are your salary expectations?</span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="px-6 py-4">
-                                                <SalaryExpectationsForm
-                                                    profile={profile}
-                                                    onFieldChange={handleFieldChange}
-                                                />
-                                            </AccordionContent>
-                                        </AccordionItem>
-
-                                        {/* Work History */}
-                                        <AccordionItem value="work_history" className="border rounded-lg mb-4">
-                                            <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                                                <div className="flex items-center gap-2">
-                                                    <MdOutlineEditNote className="text-primary w-6 h-6" />
-                                                    <span className="text-xl font-semibold">Does your work history look right?</span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="px-6 py-4">
-                                                <WorkHistoryForm
-                                                    profile={profile}
-                                                    onCompanyHistoryChange={handleCompanyHistoryChange}
-                                                    onAddCompanyHistory={addCompanyHistory}
-                                                    onRemoveCompanyHistory={removeCompanyHistory}
-                                                />
-                                            </AccordionContent>
-                                        </AccordionItem>
-
-                                        {/* Sales Context */}
-                                        <AccordionItem value="sales_context" className="border rounded-lg mb-4">
-                                            <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                                                <div className="flex items-center gap-2">
-                                                    <MdOutlineEditNote className="text-primary w-6 h-6" />
-                                                    <span className="text-xl font-semibold">What kind of sales do you do?</span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="px-6 py-4">
-                                                <SalesContextForm
-                                                    profile={profile}
-                                                    onArrayChange={handleArrayChange}
-                                                />
-                                            </AccordionContent>
-                                        </AccordionItem>
-
-                                        {/* Role Process Exposure */}
-                                        <AccordionItem value="role_process_exposure" className="border rounded-lg mb-4">
-                                            <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                                                <div className="flex items-center gap-2">
-                                                    <MdOutlineEditNote className="text-primary w-6 h-6" />
-                                                    <span className="text-xl font-semibold">What have you owned in the sales process?</span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="px-6 py-4">
-                                                <RoleProcessExposureForm
-                                                    profile={profile}
-                                                    onFieldChange={handleFieldChange}
-                                                    onArrayChange={handleArrayChange}
-                                                />
-                                            </AccordionContent>
-                                        </AccordionItem>
-
-                                        {/* Tools & Platforms */}
-                                        <AccordionItem value="tools_platforms" className="border rounded-lg mb-4">
-                                            <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                                                <div className="flex items-center gap-2">
-                                                    <MdOutlineEditNote className="text-primary w-6 h-6" />
-                                                    <span className="text-xl font-semibold">What tools have you used?</span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="px-6 py-4">
-                                                <ToolsPlatformsForm
-                                                    profile={profile}
-                                                    onArrayChange={handleArrayChange}
-                                                />
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    </Accordion>
-                                    <div className="flex flex-col sm:flex-row gap-4 justify-end mt-8">
-                                        <Button
-                                            type="submit"
-                                            disabled={submitting}
-                                            className="w-full sm:w-auto h-12 px-8 text-lg bg-primary hover:bg-primary/90"
-                                        >
-                                            <FaRegSave className="mr-2 w-5 h-5" />
-                                            {submitting ? "Saving..." : "Save Profile"}
-                                        </Button>
+                    <>
+                        {/* Initial Form Sections - Hidden after resume parsing */}
+                        {!resumeParsed && (
+                            <div className="transition-all duration-500 ease-in-out">
+                                {/* Side-by-side layout for larger screens */}
+                                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+                                    {/* Left Column - Header */}
+                                    <div className="lg:h-screen flex items-center justify-center">
+                                        <ModernHeader
+                                            title="Let's get you set up"
+                                            description="This won't take long. Less than 10 mins to capture your sales superpowers."
+                                        />
                                     </div>
-                                    {success && (
-                                        <div className="text-green-600 font-semibold mt-4 text-center text-lg">
-                                            {success}
-                                        </div>
-                                    )}
-                                </form>
-                            )}
-                        </CardContent>
-                    </Card>
+
+                                    {/* Right Column - Form Sections */}
+                                    <div className="space-y-6 bg-card py-12 rounded-3xl">
+                                        {/* User Details Form - Required for Resume Parsing */}
+                                        <UserDetailsForm
+                                            profile={profile}
+                                            onFieldChange={handleFieldChange}
+                                        />
+
+                                        {/* LinkedIn URL Input (optional) */}
+                                        <LinkedInUrlInput
+                                            linkedInUrl={linkedInUrl}
+                                            onLinkedInUrlChange={setLinkedInUrl}
+                                        />
+
+                                        {/* Consent Checkbox */}
+                                        <ConsentCheckbox
+                                            consentToUpdates={consentToUpdates}
+                                            onConsentChange={setConsentToUpdates}
+                                            profile={profile}
+                                        />
+
+                                        {/* Resume Upload Section */}
+                                        <ResumeUploadSection
+                                            file={file}
+                                            loading={loading}
+                                            submitting={submitting}
+                                            consentToUpdates={consentToUpdates}
+                                            profile={profile}
+                                            onFileChange={handleFileChange}
+                                            resumeParsed={resumeParsed}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Error State */}
+                        {error && <ErrorBox message={error} />}
+
+                        {showSuggestion && <ResumeSuggestionBox />}
+
+                        {/* Step-by-Step Form */}
+                        {resumeParsed && !loading && (
+                            <div className="w-full lg:w-2/3 mx-auto mt-8">
+                                <StepFormWrapper
+                                    profile={profile}
+                                    onFieldChange={handleFieldChange}
+                                    onArrayChange={handleArrayChange}
+                                    onCompanyHistoryChange={handleCompanyHistoryChange}
+                                    onAddCompanyHistory={addCompanyHistory}
+                                    onRemoveCompanyHistory={removeCompanyHistory}
+                                    onSave={handleSubmit}
+                                    isSubmitting={submitting}
+                                />
+                            </div>
+                        )}
+
+                        {/* Success Message */}
+                        {success && (
+                            <div className="text-green-600 font-semibold mt-4 text-center text-lg">
+                                {success}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

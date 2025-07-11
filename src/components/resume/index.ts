@@ -7,4 +7,11 @@ export { default as ToolsPlatformsForm } from './ToolsPlatformsForm';
 export { default as ResumeUploadSection } from './ResumeUploadSection';
 export { default as UserDetailsForm } from './UserDetailsForm';
 export { default as LinkedInUrlInput } from './LinkedInUrlInput';
-export { default as ConsentCheckbox } from './ConsentCheckbox'; 
+export { default as ConsentCheckbox } from './ConsentCheckbox';
+
+// New step-by-step form components
+export { default as FormProgressBar } from './FormProgressBar';
+export { default as StepNavigation } from './StepNavigation';
+export { default as AnimatedFormContainer } from './AnimatedFormContainer';
+export { default as StepFormWrapper } from './StepFormWrapper';
+export { default as ModernHeader } from './ModernHeader'; 
