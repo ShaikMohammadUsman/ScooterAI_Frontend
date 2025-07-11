@@ -35,6 +35,83 @@ body {
     font-family: var(--font-sans);
 }
 
+* {
+    box-sizing: border-box;
+}
+
+/* Custom Scrollbar Utilities */
+.scrollbar-thin {
+    scrollbar-width: thin;
+    /* Firefox */
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    background: #f3f4f6;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.scrollbar-hide {
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Opera */
+}
+
+.scrollbar-show {
+    overflow: auto;
+}
+
+.scrollbar-show::-webkit-scrollbar {
+    display: auto;
+}
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-ghost {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.scrollbar-ghost::-webkit-scrollbar {
+    display: none;
+}
+
+/* Fade shadow for menu overflow indication */
+.menu-fade-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+    z-index: 10;
+}
+
+.menu-fade-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+    z-index: 10;
+}
+
 @layer utilities {
     @keyframes road-move {
         0% {
