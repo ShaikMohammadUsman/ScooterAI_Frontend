@@ -130,6 +130,7 @@ export function MultiSelect({
         option: (base: CSSObjectWithLabel, state: OptionProps<OptionType, true, GroupBase<OptionType>>) => ({
             ...base,
             whiteSpace: 'normal',
+            fontSize: '0.8rem',
             backgroundColor: state.isSelected
                 ? '#cbd5e1' // slate-300
                 : state.isFocused
