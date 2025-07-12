@@ -25,6 +25,7 @@ import {
     StepFormWrapper,
     ModernHeader
 } from "@/components/resume";
+import { ParsingMessage } from "@/components/ui/parsing-message";
 
 interface CompanyHistory {
     company_name: string;
@@ -183,7 +184,7 @@ export default function ResumePage() {
             toast({ title: "Resume parsed!", description: "Edit and submit your profile." });
             setResumeParsed(true);
         } catch (err: any) {
-            setError(err.message || "Failed to parse resume");
+            setError(err.message || "Failed to parse resume.\nCheck your internet connection.");
             toast({ title: "Error", description: err.message || "Failed to parse resume", variant: "destructive" });
         } finally {
             setLoading(false);
@@ -351,7 +352,7 @@ export default function ResumePage() {
             toast({ title: "Profile saved!", description: `ID: ${res.profile_id}` });
             setShowSuccessScreen(true);
         } catch (err: any) {
-            setError(err.message || "Failed to save profile");
+            setError(err.message || "Failed to save profile.\nCheck your internet connection.");
             toast({ title: "Error", description: err.message || "Failed to save profile", variant: "destructive" });
         } finally {
             setSubmitting(false);
@@ -367,16 +368,25 @@ export default function ResumePage() {
                 ) : (
                     <>
                         {/* Initial Form Sections - Hidden after resume parsing */}
-                        {!resumeParsed && (
+                        {!resumeParsed && !loading && (
                             <div className="transition-all duration-500 ease-in-out">
                                 {/* Side-by-side layout for larger screens */}
                                 <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
                                     {/* Left Column - Header */}
                                     <div className="lg:h-screen flex items-center justify-center">
-                                        <ModernHeader
-                                            title="Let's get you set up"
-                                            description="This won't take long. Less than 10 mins to capture your sales superpowers."
-                                        />
+                                        {
+                                            !showSuggestion && !error && (
+                                                <ModernHeader
+                                                    title="Let's get you set up"
+                                                    description="This won't take long. Less than 10 mins to capture your sales superpowers."
+                                                />
+                                            )
+                                        }
+
+                                        {/* Error State */}
+                                        {error && <ErrorBox message={error} />}
+
+                                        {showSuggestion && <ResumeSuggestionBox />}
                                     </div>
 
                                     {/* Right Column - Form Sections */}
@@ -415,10 +425,38 @@ export default function ResumePage() {
                             </div>
                         )}
 
-                        {/* Error State */}
-                        {error && <ErrorBox message={error} />}
 
-                        {showSuggestion && <ResumeSuggestionBox />}
+                        {
+                            (loading || !resumeParsed) && (
+                                <div className="flex flex-col justify-center items-center border-2 border-blue-500">
+                                    {loading && (<ParsingMessage />)}
+
+                                    {/* Loading State - Show when resume parsing is in progress */}
+                                    {!resumeParsed && (
+                                        <div className="w-full lg:w-2/3 mx-auto border-2 border-red-500">
+                                            <div className="text-center">
+                                                {/* <LoadingSpinner /> */}
+                                                {/* Message when resume hasn't been parsed yet */}
+                                                {loading && file && (
+                                                    <div className="mb-8 text-center mt-8">
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                                                            <div className="flex items-center justify-center gap-2 mb-2">
+                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                                                <span className="text-blue-800 font-medium">Processing your resume...</span>
+                                                            </div>
+                                                            <p className="text-sm text-blue-700">
+                                                                We're extracting your information. This may take a few moments.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                            )
+                        }
 
                         {/* Step-by-Step Form */}
                         {resumeParsed && !loading && (

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoIcon } from "lucide-react";
 import { FiUploadCloud } from "react-icons/fi";
-import { ParsingMessage } from "@/components/ui/parsing-message";
 
 interface ResumeUploadSectionProps {
     file: File | null;
@@ -77,41 +76,21 @@ export default function ResumeUploadSection({
                     {(!profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number) && (
                         <p className="text-sm text-orange-600">Please fill in your name, email, and phone number above to upload your resume.</p>
                     )}
-                </div>
-                {loading && (
-                    <>
-                        <ParsingMessage />
-                    </>
-                )}
-            </div>
 
-            {/* Message when resume hasn't been parsed yet */}
-            {!resumeParsed && loading && file && (
-                <div className="mb-8 text-center">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                            <span className="text-blue-800 font-medium">Processing your resume...</span>
+                    {/* Message when no resume has been uploaded */}
+                    {!loading && !file && (
+                        <div className="mb-8 text-center mt-8">
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 max-w-md mx-auto">
+                                <FiUploadCloud className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Your Resume First</h3>
+                                <p className="text-sm text-gray-600">
+                                    Please upload your resume above to extract your information and start building your profile.
+                                </p>
+                            </div>
                         </div>
-                        <p className="text-sm text-blue-700">
-                            We're extracting your information. This may take a few moments.
-                        </p>
-                    </div>
+                    )}
                 </div>
-            )}
-
-            {/* Message when no resume has been uploaded */}
-            {!resumeParsed && !loading && !file && (
-                <div className="mb-8 text-center">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 max-w-md mx-auto">
-                        <FiUploadCloud className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Your Resume First</h3>
-                        <p className="text-sm text-gray-600">
-                            Please upload your resume above to extract your information and start building your profile.
-                        </p>
-                    </div>
-                </div>
-            )}
+            </div>
         </>
     );
 } 
