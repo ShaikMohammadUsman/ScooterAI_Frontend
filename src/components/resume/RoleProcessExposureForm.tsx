@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Target, ArrowRightLeft, Users, TrendingUp, Banknote, Calendar } from "lucide-react";
 import { ResumeProfile } from "@/lib/resumeService";
 import { Input } from "@/components/ui/input";
 
@@ -26,12 +26,14 @@ interface RoleProcessExposureFormProps {
 export default function RoleProcessExposureForm({ profile, onFieldChange, onArrayChange }: RoleProcessExposureFormProps) {
     return (
         <div className="flex items-center justify-center p-2">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl relative overflow-hidden">
+                {/* Subtle background icon */}
+                <Target className="absolute right-6 top-6 w-24 h-24 text-blue-50 opacity-30 pointer-events-none z-0" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                     {/* Sales Process Owned */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Sales Process Owned</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><ArrowRightLeft className="w-4 h-4 text-blue-400" />Sales Process Owned</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -70,7 +72,7 @@ export default function RoleProcessExposureForm({ profile, onFieldChange, onArra
                     {/* Sales Role */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Most Recent Sales Role</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Users className="w-4 h-4 text-purple-400" />Most Recent Sales Role</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -116,7 +118,7 @@ export default function RoleProcessExposureForm({ profile, onFieldChange, onArra
                     {/* Position Level */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Position Level</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><TrendingUp className="w-4 h-4 text-green-400" />Position Level</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -151,7 +153,7 @@ export default function RoleProcessExposureForm({ profile, onFieldChange, onArra
                     {/* Average Deal Size */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Average Deal Size</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Banknote className="w-4 h-4 text-green-500" />Average Deal Size</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -194,7 +196,7 @@ export default function RoleProcessExposureForm({ profile, onFieldChange, onArra
                     {/* Sales Cycle Length */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Typical Sales Cycle Length</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Calendar className="w-4 h-4 text-blue-400" />Typical Sales Cycle Length</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -233,7 +235,7 @@ export default function RoleProcessExposureForm({ profile, onFieldChange, onArra
                     {/* Quota Ownership */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Did You Own a Quota?</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Target className="w-4 h-4 text-pink-400" />Did You Own a Quota?</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -264,7 +266,7 @@ export default function RoleProcessExposureForm({ profile, onFieldChange, onArra
                     {profile.role_process_exposure.quota_ownership?.has_quota && (
                         <FormControl>
                             <div className="flex items-center gap-2">
-                                <FormLabel>Quota Details</FormLabel>
+                                <FormLabel className="flex items-center gap-1"><Target className="w-4 h-4 text-pink-400" />Quota Details</FormLabel>
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger>

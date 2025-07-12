@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Settings, Building2, TrendingUp, Users } from "lucide-react";
 import { ResumeProfile } from "@/lib/resumeService";
 
 // Simple form components
@@ -81,12 +81,14 @@ export default function ToolsPlatformsForm({ profile, onArrayChange }: ToolsPlat
 
     return (
         <div className="flex items-center justify-center p-2">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl relative overflow-hidden">
+                {/* Subtle background icon */}
+                <Settings className="absolute right-6 top-6 w-24 h-24 text-blue-50 opacity-30 pointer-events-none z-0" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                     {/* CRM Tools */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>CRM Tools You've Used</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Building2 className="w-4 h-4 text-yellow-500" />CRM Tools You've Used</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -144,7 +146,7 @@ export default function ToolsPlatformsForm({ profile, onArrayChange }: ToolsPlat
                     {/* Sales Tools */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Other Sales Tools</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><TrendingUp className="w-4 h-4 text-blue-400" />Other Sales Tools</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -202,7 +204,7 @@ export default function ToolsPlatformsForm({ profile, onArrayChange }: ToolsPlat
                     {/* Communication Tools */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Communication Tools</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Users className="w-4 h-4 text-purple-400" />Communication Tools</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>

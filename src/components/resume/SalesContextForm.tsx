@@ -4,6 +4,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoIcon } from "lucide-react";
+import { TrendingUp, ArrowRightLeft, Building2, Globe, Users } from "lucide-react";
 import { ResumeProfile } from "@/lib/resumeService";
 import { INDUSTRIES, REGIONS, BUYER_PERSONAS } from "@/lib/formConstants";
 
@@ -24,12 +25,14 @@ interface SalesContextFormProps {
 export default function SalesContextForm({ profile, onArrayChange }: SalesContextFormProps) {
     return (
         <div className="flex items-center justify-center p-2">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl relative overflow-hidden">
+                {/* Subtle background icon */}
+                <TrendingUp className="absolute right-6 top-6 w-24 h-24 text-blue-50 opacity-30 pointer-events-none z-0" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                     {/* Sales Type */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Sales Type</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><TrendingUp className="w-4 h-4 text-blue-400" />Sales Type</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -59,7 +62,7 @@ export default function SalesContextForm({ profile, onArrayChange }: SalesContex
                     {/* Sales Motion */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Sales Motion</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><ArrowRightLeft className="w-4 h-4 text-green-500" />Sales Motion</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -89,7 +92,7 @@ export default function SalesContextForm({ profile, onArrayChange }: SalesContex
                     {/* Industries Sold Into */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Industries You've Sold Into</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Building2 className="w-4 h-4 text-yellow-500" />Industries You've Sold Into</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -111,7 +114,7 @@ export default function SalesContextForm({ profile, onArrayChange }: SalesContex
                     {/* Regions Sold Into */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Regions You've Sold Into</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Globe className="w-4 h-4 text-blue-500" />Regions You've Sold Into</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -133,7 +136,7 @@ export default function SalesContextForm({ profile, onArrayChange }: SalesContex
                     {/* Buyer Personas */}
                     <FormControl>
                         <div className="flex items-center gap-2">
-                            <FormLabel>Who Were Your Buyers?</FormLabel>
+                            <FormLabel className="flex items-center gap-1"><Users className="w-4 h-4 text-purple-500" />Who Were Your Buyers?</FormLabel>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
