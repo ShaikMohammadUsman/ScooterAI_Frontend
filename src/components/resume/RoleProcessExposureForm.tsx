@@ -6,6 +6,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoIcon } from "lucide-react";
 import { ResumeProfile } from "@/lib/resumeService";
+import { Input } from "@/components/ui/input";
 
 // Simple form components
 const FormLabel = ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -24,324 +25,279 @@ interface RoleProcessExposureFormProps {
 
 export default function RoleProcessExposureForm({ profile, onFieldChange, onArrayChange }: RoleProcessExposureFormProps) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Sales Process Owned */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Sales Process Owned</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Select all you've owned directly.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <MultiSelect
-                    options={[
-                        "Prospecting",
-                        "Lead Research",
-                        "Outreach",
-                        "Emailing",
-                        "Qualification",
-                        "Demoing",
-                        "Proposal Creation",
-                        "Objection Handling",
-                        "Closing",
-                        "Negotiation",
-                        "Post-Sale",
-                        "Renewals",
-                        "Expansion"
-                    ]}
-                    selected={profile.role_process_exposure.sales_stages_owned}
-                    onChange={(values) => onArrayChange("role_process_exposure", "sales_stages_owned", values)}
-                    placeholder="Select all stages you've owned..."
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                    Check all the stages you personally handled — from prospecting to post-sale.
-                </p>
-            </FormControl>
-
-            {/* Sales Role */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Most Recent Sales Role</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>E.g. SDR, Account Executive, Enterprise Sales — pick what best matches your role title.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <Select
-                    value={profile.role_process_exposure.sales_role_type}
-                    onValueChange={(value) => onFieldChange("role_process_exposure", "sales_role_type", value)}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select your role..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {[
-                            "SDR",
-                            "BDR",
-                            "Inside Sales",
-                            "AE",
-                            "Key Account Manager",
-                            "Enterprise Sales",
-                            "Channel Manager",
-                            "Sales Manager",
-                            "CSM",
-                            "Pre-sales",
-                            "Growth Manager",
-                            "Head of Sales",
-                            "VP",
-                            "Other"
-                        ].map((role) => (
-                            <SelectItem key={role} value={role}>
-                                {role}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </FormControl>
-
-            {/* Position Level */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Position Level</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Were you primarily an IC or did you manage others?</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <RadioGroup
-                    value={profile.role_process_exposure.position_level}
-                    onValueChange={(value) => onFieldChange("role_process_exposure", "position_level", value)}
-                    className="flex flex-col gap-3"
-                >
-                    {[
-                        "Individual Contributor",
-                        "Team Lead",
-                        "Manager",
-                        "Director / VP+"
-                    ].map((level) => (
-                        <div key={level} className="flex items-center space-x-2">
-                            <RadioGroupItem value={level} id={`position-level-${level}`} />
-                            <label htmlFor={`position-level-${level}`} className="text-sm font-medium">
-                                {level}
-                            </label>
+        <div className="flex items-center justify-center p-2">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Sales Process Owned */}
+                    <FormControl>
+                        <div className="flex items-center gap-2">
+                            <FormLabel>Sales Process Owned</FormLabel>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Select all you've owned directly.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
-                    ))}
-                </RadioGroup>
-            </FormControl>
-
-            {/* Average Deal Size */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Average Deal Size</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>What was your average closed deal value in your most recent or current role?</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <Select
-                    value={profile.role_process_exposure.average_deal_size_range}
-                    onValueChange={(value) => onFieldChange("role_process_exposure", "average_deal_size_range", value)}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select deal size range..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {[
-                            "<$1K",
-                            "$1K–$5K",
-                            "$5K–$25K",
-                            "$25K–$100K",
-                            "$100K–$500K",
-                            "$500K–$1M",
-                            "$1M+",
-                            "Varies"
-                        ].map((size) => (
-                            <SelectItem key={size} value={size}>
-                                {size}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Support ranges or best estimate
-                </p>
-            </FormControl>
-
-            {/* Sales Cycle Length */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Typical Sales Cycle Length</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>How long does it usually take to close a deal?</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <Select
-                    value={profile.role_process_exposure.sales_cycle_length}
-                    onValueChange={(value) => onFieldChange("role_process_exposure", "sales_cycle_length", value)}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select cycle length..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {[
-                            "<1 week",
-                            "1–4 weeks",
-                            "1–3 months",
-                            "3–6 months",
-                            "6–12 months",
-                            "12+ months",
-                            "Varies"
-                        ].map((length) => (
-                            <SelectItem key={length} value={length}>
-                                {length}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </FormControl>
-
-            {/* Quota Ownership */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Did You Own a Quota?</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Were you responsible for hitting a sales number?</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <RadioGroup
-                    value={profile.role_process_exposure.quota_ownership.has_quota ? "Yes" : "No"}
-                    onValueChange={(value) => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, has_quota: value === "Yes" })}
-                    className="flex gap-4"
-                >
-                    {["Yes", "No"].map((option) => (
-                        <div key={option} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`quota-${option}`} />
-                            <label htmlFor={`quota-${option}`}>{option}</label>
+                        <MultiSelect
+                            options={[
+                                "Prospecting",
+                                "Lead Research",
+                                "Outreach",
+                                "Emailing",
+                                "Qualification",
+                                "Demoing",
+                                "Proposal Creation",
+                                "Objection Handling",
+                                "Closing",
+                                "Negotiation",
+                                "Post-Sale",
+                                "Renewals",
+                                "Expansion"
+                            ]}
+                            selected={profile.role_process_exposure.sales_stages_owned}
+                            onChange={(values) => onArrayChange("role_process_exposure", "sales_stages_owned", values)}
+                            placeholder="Select all stages you've owned..."
+                        />
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Check all the stages you personally handled — from prospecting to post-sale.
+                        </p>
+                    </FormControl>
+                    {/* Sales Role */}
+                    <FormControl>
+                        <div className="flex items-center gap-2">
+                            <FormLabel>Most Recent Sales Role</FormLabel>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>E.g. SDR, Account Executive, Enterprise Sales — pick what best matches your role title.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
-                    ))}
-                </RadioGroup>
-            </FormControl>
-
-            {/* Quota Measurement (Conditional) */}
-            {profile.role_process_exposure.quota_ownership.has_quota && (
-                <FormControl>
-                    <div className="flex items-center gap-2">
-                        <FormLabel>Quota Measurement</FormLabel>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>What metrics were you measured on?</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                    <MultiSelect
-                        options={[
-                            "Revenue Closed",
-                            "Deals Closed",
-                            "Meetings Booked",
-                            "Pipeline Generated",
-                            "Renewals",
-                            "Upsell",
-                            "Demos",
-                            "Conversions",
-                            "Onboarding",
-                            "Team Targets",
-                            "Other"
-                        ]}
-                        selected={profile.role_process_exposure.quota_ownership.cadence ? [profile.role_process_exposure.quota_ownership.cadence] : []}
-                        onChange={(values) => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, cadence: values[0] || "" })}
-                        placeholder="Select quota metrics..."
-                    />
-                </FormControl>
-            )}
-
-            {/* Quota Attainment (Conditional) */}
-            {profile.role_process_exposure.quota_ownership.has_quota && (
-                <FormControl>
-                    <div className="flex items-center gap-2">
-                        <FormLabel>Quota Attainment (% Achieved)</FormLabel>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Roughly what % of your quota did you hit on average?</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                    <Select
-                        value={profile.role_process_exposure.quota_ownership.attainment_history}
-                        onValueChange={(value) => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, attainment_history: value })}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select attainment range..." />
-                        </SelectTrigger>
-                        <SelectContent>
+                        <Select
+                            value={profile.role_process_exposure.sales_role_type}
+                            onValueChange={(value) => onFieldChange("role_process_exposure", "sales_role_type", value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select your role..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[
+                                    "SDR",
+                                    "BDR",
+                                    "Inside Sales",
+                                    "AE",
+                                    "Key Account Manager",
+                                    "Enterprise Sales",
+                                    "Channel Manager",
+                                    "Sales Manager",
+                                    "CSM",
+                                    "Pre-sales",
+                                    "Growth Manager",
+                                    "Head of Sales",
+                                    "VP",
+                                    "Other"
+                                ].map((role) => (
+                                    <SelectItem key={role} value={role}>
+                                        {role}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormControl>
+                    {/* Position Level */}
+                    <FormControl>
+                        <div className="flex items-center gap-2">
+                            <FormLabel>Position Level</FormLabel>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Were you primarily an IC or did you manage others?</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <RadioGroup
+                            value={profile.role_process_exposure.position_level}
+                            onValueChange={(value) => onFieldChange("role_process_exposure", "position_level", value)}
+                            className="flex flex-col gap-3"
+                        >
                             {[
-                                "<50%",
-                                "50–74%",
-                                "75–99%",
-                                "100–124%",
-                                "125–149%",
-                                "150%+",
-                                "Varies"
-                            ].map((attainment) => (
-                                <SelectItem key={attainment} value={attainment}>
-                                    {attainment}
-                                </SelectItem>
+                                "Individual Contributor",
+                                "Team Lead",
+                                "Manager",
+                                "Director / VP+"
+                            ].map((level) => (
+                                <div key={level} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={level} id={`position-level-${level}`} />
+                                    <label htmlFor={`position-level-${level}`} className="text-sm font-medium">
+                                        {level}
+                                    </label>
+                                </div>
                             ))}
-                        </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        It doesn't have to be exact
-                    </p>
-                </FormControl>
-            )}
+                        </RadioGroup>
+                    </FormControl>
+                    {/* Average Deal Size */}
+                    <FormControl>
+                        <div className="flex items-center gap-2">
+                            <FormLabel>Average Deal Size</FormLabel>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>What was your average closed deal value in your most recent or current role?</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <Select
+                            value={profile.role_process_exposure.average_deal_size_range}
+                            onValueChange={(value) => onFieldChange("role_process_exposure", "average_deal_size_range", value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select deal size range..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[
+                                    "<$1K",
+                                    "$1K–$5K",
+                                    "$5K–$25K",
+                                    "$25K–$100K",
+                                    "$100K–$500K",
+                                    "$500K–$1M",
+                                    "$1M+",
+                                    "Varies"
+                                ].map((size) => (
+                                    <SelectItem key={size} value={size}>
+                                        {size}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Support ranges or best estimate
+                        </p>
+                    </FormControl>
+                    {/* Sales Cycle Length */}
+                    <FormControl>
+                        <div className="flex items-center gap-2">
+                            <FormLabel>Typical Sales Cycle Length</FormLabel>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>How long does it usually take to close a deal?</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <Select
+                            value={profile.role_process_exposure.sales_cycle_length}
+                            onValueChange={(value) => onFieldChange("role_process_exposure", "sales_cycle_length", value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select cycle length..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[
+                                    "<1 week",
+                                    "1–4 weeks",
+                                    "1–3 months",
+                                    "3–6 months",
+                                    "6–12 months",
+                                    "12+ months",
+                                    "Varies"
+                                ].map((length) => (
+                                    <SelectItem key={length} value={length}>
+                                        {length}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormControl>
+                    {/* Quota Ownership */}
+                    <FormControl>
+                        <div className="flex items-center gap-2">
+                            <FormLabel>Did You Own a Quota?</FormLabel>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Were you responsible for hitting a sales number?</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <RadioGroup
+                            value={profile.role_process_exposure.quota_ownership?.has_quota ? "Yes" : "No"}
+                            onValueChange={(value) => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, has_quota: value === "Yes" })}
+                            className="flex flex-col gap-3"
+                        >
+                            {['Yes', 'No'].map((option) => (
+                                <div key={option} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={option} id={`quota-ownership-${option}`} />
+                                    <label htmlFor={`quota-ownership-${option}`} className="text-sm font-medium">
+                                        {option}
+                                    </label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                    </FormControl>
+                    {/* Quota Details */}
+                    {profile.role_process_exposure.quota_ownership?.has_quota && (
+                        <FormControl>
+                            <div className="flex items-center gap-2">
+                                <FormLabel>Quota Details</FormLabel>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Amount, cadence, and attainment history</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <Input
+                                    type="number"
+                                    value={profile.role_process_exposure.quota_ownership.amount || ""}
+                                    onChange={e => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, amount: Number(e.target.value) })}
+                                    placeholder="Quota amount"
+                                />
+                                <Input
+                                    value={profile.role_process_exposure.quota_ownership.cadence || ""}
+                                    onChange={e => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, cadence: e.target.value })}
+                                    placeholder="Quota cadence (e.g. monthly, quarterly)"
+                                />
+                                <Input
+                                    value={profile.role_process_exposure.quota_ownership.attainment_history || ""}
+                                    onChange={e => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, attainment_history: e.target.value })}
+                                    placeholder="Quota attainment history (e.g. 90% in 2023)"
+                                />
+                            </div>
+                        </FormControl>
+                    )}
+                </div>
+            </div>
         </div>
     );
 } 

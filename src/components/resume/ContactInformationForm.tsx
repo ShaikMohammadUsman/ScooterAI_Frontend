@@ -6,7 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SingleSelect } from "@/components/ui/single-select";
-import { InfoIcon, Linkedin } from "lucide-react";
+import {
+    InfoIcon,
+    Linkedin,
+    User,
+    MapPin,
+    Phone,
+    Mail,
+    Globe,
+    CheckCircle2,
+    Sparkles
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResumeProfile } from "@/lib/resumeService";
 
@@ -79,13 +89,22 @@ const isValidLinkedInUrl = (url: string): boolean => {
     return linkedInPatterns.some(pattern => pattern.test(url.trim()));
 };
 
-// Simple form components
-const FormLabel = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <label className={`block text-sm font-medium mb-1 ${className}`}>{children}</label>
+// Enhanced form components
+const FormLabel = ({ children, className, icon }: { children: React.ReactNode; className?: string; icon?: React.ReactNode }) => (
+    <label className={`flex items-center gap-2 text-sm font-semibold mb-2 text-gray-700 ${className}`}>
+        {icon && <span className="text-blue-500">{icon}</span>}
+        {children}
+    </label>
 );
 
-const FormControl = ({ children }: { children: React.ReactNode }) => (
-    <div className="space-y-1">{children}</div>
+const FormControl = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div className={`space-y-2 ${className}`}>{children}</div>
+);
+
+const FormCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div className={`p-6 rounded-xl border border-gray-200 bg-gradient-to-br from-white to-blue-50/30 shadow-sm hover:shadow-md transition-all duration-300 ${className}`}>
+        {children}
+    </div>
 );
 
 interface ContactInformationFormProps {
@@ -94,236 +113,178 @@ interface ContactInformationFormProps {
 }
 
 export default function ContactInformationForm({ profile, onFieldChange }: ContactInformationFormProps) {
+    const isContactComplete = !!(profile?.basic_information?.full_name &&
+        profile?.basic_information?.email &&
+        profile?.basic_information?.phone_number);
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Full Name */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Full Name</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>First + last name as it should appear to hiring teams</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <Input
-                    value={profile?.basic_information.full_name || ""}
-                    onChange={e => onFieldChange("basic_information", "full_name", e.target.value)}
-                    placeholder="Enter your full name"
-                    required
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                    We'll display this on your candidate profile for hiring managers.
-                </p>
-            </FormControl>
+        <div className="flex items-center justify-center py-2">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl">
+                {/* Section Header */}
 
-            {/* Current Location */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Current Location</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Include detect button using browser geolocation</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Full Name */}
+                    <div className="flex flex-col gap-1">
+                        <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                            <User className="w-4 h-4 text-blue-400" />
+                            Name
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-gray-400 ml-1" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>First + last name as it should appear to hiring teams</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </Label>
+                        <Input
+                            value={profile?.basic_information.full_name || ""}
+                            onChange={e => onFieldChange("basic_information", "full_name", e.target.value)}
+                            placeholder="Full name"
+                            required
+                            className="h-9 text-sm"
+                        />
+                    </div>
+                    {/* Email */}
+                    <div className="flex flex-col gap-1">
+                        <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                            <Mail className="w-4 h-4 text-blue-400" />
+                            Email
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-gray-400 ml-1" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Primary contact for job opportunities</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </Label>
+                        <Input
+                            type="email"
+                            value={profile?.basic_information.email || ""}
+                            onChange={e => onFieldChange("basic_information", "email", e.target.value)}
+                            placeholder="Email address"
+                            required
+                            className="h-9 text-sm"
+                        />
+                    </div>
+                    {/* Phone */}
+                    <div className="flex flex-col gap-1">
+                        <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                            <Phone className="w-4 h-4 text-blue-400" />
+                            Phone
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-gray-400 ml-1" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Auto-detect country code, supports SMS follow-up</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </Label>
+                        <Input
+                            type="tel"
+                            value={profile?.basic_information.phone_number || ""}
+                            onChange={e => {
+                                const cleaned = e.target.value.replace(/[^\d+\-\s]/g, "");
+                                onFieldChange("basic_information", "phone_number", cleaned);
+                            }}
+                            placeholder="Phone number"
+                            required
+                            className="h-9 text-sm"
+                        />
+                    </div>
+                    {/* Location */}
+                    <div className="flex flex-col gap-1">
+                        <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                            <MapPin className="w-4 h-4 text-blue-400" />
+                            Location
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-gray-400 ml-1" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Your current city helps us show location-relevant roles.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </Label>
+                        <SingleSelect
+                            options={INDIAN_CITIES}
+                            selected={profile?.basic_information.current_location || ""}
+                            onChange={(value: string) => onFieldChange("basic_information", "current_location", value)}
+                            placeholder="City"
+                            className="h-9 text-sm"
+                        />
+                    </div>
+                    {/* LinkedIn */}
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                        <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                            <Linkedin className="w-4 h-4 text-blue-400" />
+                            LinkedIn
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-gray-400 ml-1" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Paste your LinkedIn profile URL</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </Label>
+                        <div className="flex gap-2">
+                            <Input
+                                value={profile?.basic_information.linkedin_url || ""}
+                                onChange={e => onFieldChange("basic_information", "linkedin_url", e.target.value)}
+                                placeholder="LinkedIn profile URL"
+                                className="h-9 text-sm flex-1"
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={!profile?.basic_information.linkedin_url}
+                                onClick={() => window.open(profile?.basic_information.linkedin_url || "", "_blank")}
+                            >
+                                <Linkedin className="w-4 h-4 mr-1" />
+                                View
+                            </Button>
+                        </div>
+                    </div>
+                    {/* Relocation */}
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                        <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                            <Globe className="w-4 h-4 text-blue-400" />
+                            Open to Relocation
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <InfoIcon className="h-4 w-4 text-gray-400 ml-1" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Optional, adds flexibility to matching</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </Label>
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                checked={profile.basic_information.open_to_relocation}
+                                onCheckedChange={(checked) => onFieldChange("basic_information", "open_to_relocation", checked)}
+                            />
+                            <span className="text-sm text-gray-600">I am open to relocating</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <SingleSelect
-                        options={INDIAN_CITIES}
-                        selected={profile?.basic_information.current_location || ""}
-                        onChange={(value: string) => onFieldChange("basic_information", "current_location", value)}
-                        placeholder="Search for your city..."
-                        className="flex-1 bg-white"
-                    />
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Your current city helps us show location-relevant roles.
-                </p>
-            </FormControl>
-
-            {/* Relocation Preference */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Open to Relocation</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Optional, adds flexibility to matching</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        checked={profile.basic_information.open_to_relocation}
-                        onCheckedChange={(checked) => onFieldChange("basic_information", "open_to_relocation", checked)}
-                    />
-                    <Label>I am open to relocating</Label>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Helps us match you with companies open to remote or relocation.
-                </p>
-            </FormControl>
-
-            {/* Phone Number */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Phone Number</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Auto-detect country code, supports SMS follow-up</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <div className="flex gap-2">
-                    <Input
-                        type="tel"
-                        value={profile?.basic_information.phone_number || ""}
-                        onChange={e => {
-                            const cleaned = e.target.value.replace(/[^\d+\-\s]/g, "");
-                            onFieldChange("basic_information", "phone_number", cleaned);
-                        }}
-                        placeholder="+1 (555) 555-5555"
-                        required
-                        className="flex-1"
-                    />
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                    For time-sensitive follow-ups, including interview scheduling.
-                </p>
-            </FormControl>
-
-            {/* LinkedIn URL */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>LinkedIn Profile</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Avoids duplication if already captured</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <div className="flex gap-2 flex-col lg:flex-row">
-                    <Input
-                        value={profile?.basic_information.linkedin_url || ""}
-                        onChange={e => onFieldChange("basic_information", "linkedin_url", e.target.value)}
-                        placeholder="https://linkedin.com/in/your-profile"
-                    />
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={!profile?.basic_information.linkedin_url || profile.basic_information.linkedin_url.length === 0 || !isValidLinkedInUrl(profile.basic_information.linkedin_url)}
-                                    onClick={() => window.open(profile?.basic_information.linkedin_url || "", "_blank")}
-                                >
-                                    <Linkedin className="h-4 w-4 mr-2" />
-                                    See Profile
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>
-                                    {!profile?.basic_information.linkedin_url || profile.basic_information.linkedin_url.length === 0
-                                        ? "Enter a LinkedIn profile URL"
-                                        : !isValidLinkedInUrl(profile.basic_information.linkedin_url)
-                                            ? "Enter a valid LinkedIn profile URL"
-                                            : "Open LinkedIn profile"
-                                    }
-                                </p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Used to match and enrich your resume data — optional.
-                </p>
-            </FormControl>
-
-            {/* Email Address */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Email Address</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Used for login + interview coordination</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <Input
-                    type="email"
-                    value={profile?.basic_information.email || ""}
-                    onChange={e => onFieldChange("basic_information", "email", e.target.value)}
-                    placeholder="your.email@example.com"
-                    required
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                    We'll use this to send interview updates and feedback.
-                </p>
-            </FormControl>
-
-            {/* Notice Period */}
-            <FormControl>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Notice Period</FormLabel>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Used for hiring availability and scheduling fit</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <Select
-                    value={profile?.basic_information.notice_period || ""}
-                    onValueChange={(value) => onFieldChange("basic_information", "notice_period", value)}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select notice period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {NOTICE_PERIOD_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>
-                                {option}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground mt-1">
-                    How much notice do you need to give your current employer?
-                </p>
-            </FormControl>
+            </div>
         </div>
     );
 } 

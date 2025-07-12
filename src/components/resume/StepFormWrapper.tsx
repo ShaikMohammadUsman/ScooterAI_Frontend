@@ -238,7 +238,7 @@ export default function StepFormWrapper({
             />
 
             {/* Enhanced Form Content */}
-            <Card className="w-full overflow-hidden border-0 shadow-xl bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30">
+            <Card className="w-full overflow-hidden border-2 shadow-xl py-2 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30">
                 <CardHeader className="block md:hidden text-center">
                     <div className="flex items-center justify-center gap-2 mb-4">
                         <Sparkles className="w-6 h-6 text-blue-500" />
@@ -247,12 +247,12 @@ export default function StepFormWrapper({
                         </h1>
                     </div>
                 </CardHeader>
-                <CardContent className="p-8">
+                <CardContent className=" items-center justify-center p-0">
                     <AnimatedFormContainer
                         direction={direction}
                         stepKey={currentStep}
                     >
-                        <div className="min-h-[500px]">
+                        <div className="">
                             {steps[currentStep].component}
                         </div>
                     </AnimatedFormContainer>
