@@ -18,6 +18,7 @@ interface MultiSelectProps {
     onChange: (selected: string[]) => void;
     placeholder?: string;
     className?: string;
+    size?: "sm" | "md" | "lg";
 }
 
 type OptionType = { value: string; label: string };
@@ -77,6 +78,7 @@ export function MultiSelect({
     onChange,
     placeholder = "Select options...",
     className,
+    size = "md",
 }: MultiSelectProps) {
     const selectOptions = options.map(option => ({
         value: option,
@@ -88,20 +90,29 @@ export function MultiSelect({
         label: option
     }));
 
+    const sizeStyles = {
+        sm: { minHeight: 36, fontSize: '0.9rem', borderRadius: 6 },
+        md: { minHeight: 44, fontSize: '1rem', borderRadius: 8 },
+        lg: { minHeight: 52, fontSize: '1.1rem', borderRadius: 10 },
+    };
+
     const customStyles: StylesConfig<OptionType, true, GroupBase<OptionType>> = {
         control: (base: CSSObjectWithLabel, state: ControlProps<OptionType, true, GroupBase<OptionType>>) => ({
             ...base,
-            backgroundColor: 'white',
-            borderColor: state.isFocused ? '#cbd5e1' : '#e2e8f0', // slate-300 or slate-200
+            backgroundColor: state.isFocused ? 'white' : '#f8fafc',
+            borderColor: state.isFocused ? 'transparent' : '#e2e8f0',
             borderWidth: '2px',
-            borderRadius: '8px',
-            minHeight: '44px',
-            boxShadow: state.isFocused ? '0 0 0 2px rgba(203, 213, 225, 0.08)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-            '&:hover': {
-                borderColor: '#94a3b8' // slate-400
-            },
-            transition: 'all 0.2s ease-in-out',
-            fontSize: '1rem',
+            borderRadius: sizeStyles[size].borderRadius,
+            minHeight: sizeStyles[size].minHeight,
+            fontSize: sizeStyles[size].fontSize,
+            boxShadow: state.isFocused
+                ? '0 0 0 3px rgba(99,102,241,0.18), 0 2px 8px 0 rgba(59,130,246,0.08)'
+                : '0 1px 2px 0 rgba(0,0,0,0.05)',
+            backgroundImage: state.isFocused
+                ? 'linear-gradient(90deg, #3b82f6 0%, #6366f1 100%)'
+                : 'none',
+            backgroundClip: state.isFocused ? 'padding-box, border-box' : 'border-box',
+            transition: 'all 0.2s cubic-bezier(.4,0,.2,1)',
         }),
         menuPortal: (base: CSSObjectWithLabel) => ({
             ...base,
@@ -132,20 +143,20 @@ export function MultiSelect({
             whiteSpace: 'normal',
             fontSize: '0.8rem',
             backgroundColor: state.isSelected
-                ? '#cbd5e1' // slate-300
+                ? '#6366f1'
                 : state.isFocused
-                    ? '#f8fafc' // slate-50
+                    ? '#f1f5ff'
                     : 'white',
-            color: state.isSelected ? '#475569' : '#475569', // slate-600 for better contrast
+            color: state.isSelected ? 'white' : '#475569',
             padding: '8px 12px',
             borderRadius: '6px',
             margin: '2px 4px',
             fontWeight: state.isSelected ? 600 : 400,
             '&:hover': {
-                backgroundColor: state.isSelected ? '#94a3b8' : '#f1f5f9', // slate-400 or slate-100
-                color: state.isSelected ? 'white' : '#475569', // slate-600
+                backgroundColor: state.isSelected ? '#4f46e5' : '#f3f4f6',
+                color: state.isSelected ? 'white' : '#475569',
             },
-            transition: 'all 0.2s ease-in-out',
+            transition: 'all 0.2s cubic-bezier(.4,0,.2,1)',
         }),
         multiValue: (base: CSSObjectWithLabel) => ({
             ...base,
