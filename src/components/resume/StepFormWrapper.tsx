@@ -1,13 +1,15 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
     Contact,
     DollarSign,
     Briefcase,
     TrendingUp,
     Target,
-    Settings
+    Settings,
+    Sparkles,
+    CheckCircle2
 } from "lucide-react";
 import FormProgressBar from "./FormProgressBar";
 import StepNavigation from "./StepNavigation";
@@ -36,6 +38,7 @@ import {
 interface FormStep {
     id: string;
     title: string;
+    subtitle: string;
     icon: React.ReactNode;
     component: React.ReactNode;
     completed: boolean;
@@ -66,25 +69,28 @@ export default function StepFormWrapper({
     const [direction, setDirection] = useState<"left" | "right">("right");
     const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
-    // Define form steps with icons and components - memoized to prevent infinite re-renders
+    // Define form steps with enhanced icons and descriptions - memoized to prevent infinite re-renders
     const steps: FormStep[] = useMemo(() => [
         {
             id: "contact-info",
-            title: "Contact",
+            title: "Contact Information",
+            subtitle: "Let's get to know you",
             icon: <Contact className="w-5 h-5" />,
             component: <ContactInformationForm profile={profile} onFieldChange={onFieldChange} />,
             completed: false
         },
         {
             id: "salary",
-            title: "Salary",
+            title: "Salary Expectations",
+            subtitle: "Your compensation preferences",
             icon: <DollarSign className="w-5 h-5" />,
             component: <SalaryExpectationsForm profile={profile} onFieldChange={onFieldChange} />,
             completed: false
         },
         {
             id: "work-history",
-            title: "Experience",
+            title: "Work Experience",
+            subtitle: "Your professional journey",
             icon: <Briefcase className="w-5 h-5" />,
             component: (
                 <WorkHistoryForm
@@ -98,14 +104,16 @@ export default function StepFormWrapper({
         },
         {
             id: "sales-context",
-            title: "Sales Type",
+            title: "Sales Context",
+            subtitle: "Your sales expertise",
             icon: <TrendingUp className="w-5 h-5" />,
             component: <SalesContextForm profile={profile} onArrayChange={onArrayChange} />,
             completed: false
         },
         {
             id: "role-process",
-            title: "Process",
+            title: "Role & Process",
+            subtitle: "Your sales methodology",
             icon: <Target className="w-5 h-5" />,
             component: (
                 <RoleProcessExposureForm
@@ -118,7 +126,8 @@ export default function StepFormWrapper({
         },
         {
             id: "tools",
-            title: "Tools",
+            title: "Tools & Platforms",
+            subtitle: "Your tech stack",
             icon: <Settings className="w-5 h-5" />,
             component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
             completed: false
@@ -126,8 +135,6 @@ export default function StepFormWrapper({
     ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory]);
 
     // Update completed steps based on form data
-    // Note: steps is not included in dependencies to prevent infinite re-renders
-    // since steps is memoized and only changes when its dependencies change
     useEffect(() => {
         const newCompletedSteps = new Set<number>();
 
@@ -189,10 +196,8 @@ export default function StepFormWrapper({
     };
 
     const handleStepClick = (stepIndex: number) => {
-        if (stepIndex <= currentStep || completedSteps.has(stepIndex)) {
-            setDirection(stepIndex > currentStep ? "left" : "right");
-            setCurrentStep(stepIndex);
-        }
+        setDirection(stepIndex > currentStep ? "left" : "right");
+        setCurrentStep(stepIndex);
     };
 
     // Check if current step can proceed
@@ -211,6 +216,20 @@ export default function StepFormWrapper({
 
     return (
         <div className="w-full">
+            {/* Enhanced Header */}
+            <div className="text-center mb-8">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                    <Sparkles className="w-6 h-6 text-blue-500" />
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        Complete Your Profile
+                    </h1>
+                    <Sparkles className="w-6 h-6 text-purple-500" />
+                </div>
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                    Let's capture your sales superpowers and match you with the perfect opportunities
+                </p>
+            </div>
+
             {/* Progress Bar */}
             <FormProgressBar
                 currentStep={currentStep}
@@ -218,14 +237,22 @@ export default function StepFormWrapper({
                 onStepClick={handleStepClick}
             />
 
-            {/* Form Content */}
-            <Card className="w-full overflow-hidden">
-                <CardContent className="p-6">
+            {/* Enhanced Form Content */}
+            <Card className="w-full overflow-hidden border-0 shadow-xl bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30">
+                <CardHeader className="block md:hidden text-center">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        <Sparkles className="w-6 h-6 text-blue-500" />
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            {steps[currentStep].title}
+                        </h1>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-8">
                     <AnimatedFormContainer
                         direction={direction}
                         stepKey={currentStep}
                     >
-                        <div className="min-h-[400px]">
+                        <div className="min-h-[500px]">
                             {steps[currentStep].component}
                         </div>
                     </AnimatedFormContainer>

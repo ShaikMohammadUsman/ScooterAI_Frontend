@@ -361,7 +361,7 @@ export default function ResumePage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
-            <div className="container mx-auto py-8 px-2 sm:px-4">
+            <div className="mx-auto py-8 px-2 sm:px-4">
                 {/* Success Screen */}
                 {showSuccessScreen ? (
                     <ProfileSuccessScreen handleStartInterview={handleStartInterview} />
@@ -428,12 +428,12 @@ export default function ResumePage() {
 
                         {
                             (loading || !resumeParsed) && (
-                                <div className="flex flex-col justify-center items-center border-2 border-blue-500">
+                                <div className="flex flex-col justify-center items-center">
                                     {loading && (<ParsingMessage />)}
 
                                     {/* Loading State - Show when resume parsing is in progress */}
                                     {!resumeParsed && (
-                                        <div className="w-full lg:w-2/3 mx-auto border-2 border-red-500">
+                                        <div className="w-full lg:w-2/3 mx-auto">
                                             <div className="text-center">
                                                 {/* <LoadingSpinner /> */}
                                                 {/* Message when resume hasn't been parsed yet */}
@@ -460,7 +460,7 @@ export default function ResumePage() {
 
                         {/* Step-by-Step Form */}
                         {resumeParsed && !loading && (
-                            <div className="w-full lg:w-2/3 mx-auto mt-8">
+                            <div className="w-full xl:w-3/4 max-w-6xl mx-auto mt-8">
                                 <StepFormWrapper
                                     profile={profile}
                                     onFieldChange={handleFieldChange}
