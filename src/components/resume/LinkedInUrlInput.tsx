@@ -65,8 +65,9 @@ export default function LinkedInUrlInput({ linkedInUrl, onLinkedInUrlChange }: L
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    disabled={!linkedInUrl || linkedInUrl.length === 0 || !isValidLinkedInUrl(linkedInUrl)}
-                                    onClick={() => window.open(`${linkedInUrl}`, "_blank")}
+                                    // disabled={!linkedInUrl || linkedInUrl.length === 0 || !isValidLinkedInUrl(linkedInUrl)}
+                                    // onClick={() => window.open(`${linkedInUrl}`, "_blank")}
+                                    onClick={() => window.open("https://www.linkedin.com/in/", "_blank")}
                                 >
                                     <Linkedin className="h-4 w-4 mr-2" />
                                     See Profile

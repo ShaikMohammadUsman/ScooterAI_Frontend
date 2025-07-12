@@ -255,11 +255,12 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                disabled={!profile?.basic_information.linkedin_url}
-                                onClick={() => window.open(profile?.basic_information.linkedin_url || "", "_blank")}
+                                // disabled={!profile?.basic_information.linkedin_url}
+                                // onClick={() => window.open(profile?.basic_information.linkedin_url || "", "_blank")}
+                                onClick={() => window.open("https://www.linkedin.com/in/", "_blank")}
                             >
                                 <Linkedin className="w-4 h-4 mr-1" />
-                                View
+                                Check Profile
                             </Button>
                         </div>
                     </div>
