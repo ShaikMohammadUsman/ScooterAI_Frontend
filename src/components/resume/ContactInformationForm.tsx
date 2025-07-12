@@ -128,6 +128,7 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                         <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                             <User className="w-4 h-4 text-blue-400" />
                             Name
+                            <span className="text-red-500">*</span>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -152,6 +153,7 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                         <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                             <Mail className="w-4 h-4 text-blue-400" />
                             Email
+                            <span className="text-red-500">*</span>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -177,6 +179,7 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                         <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                             <Phone className="w-4 h-4 text-blue-400" />
                             Phone
+                            <span className="text-red-500">*</span>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -205,6 +208,7 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                         <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                             <MapPin className="w-4 h-4 text-blue-400" />
                             Location
+                            <span className="text-red-500">*</span>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -216,12 +220,12 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                                 </Tooltip>
                             </TooltipProvider>
                         </Label>
-                        <SingleSelect
-                            options={INDIAN_CITIES}
-                            selected={profile?.basic_information.current_location || ""}
-                            onChange={(value: string) => onFieldChange("basic_information", "current_location", value)}
+                        <Input
+                            value={profile?.basic_information.current_location || ""}
+                            onChange={e => onFieldChange("basic_information", "current_location", e.target.value)}
                             placeholder="City"
                             className="h-9 text-sm"
+                            autoComplete="address-level2"
                         />
                     </div>
                     {/* LinkedIn */}

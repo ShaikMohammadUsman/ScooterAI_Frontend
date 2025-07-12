@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InfoIcon, X, Briefcase } from "lucide-react";
 import { CompanyHistory, ResumeProfile } from "@/lib/resumeService";
+import dayjs from "dayjs";
 
 // Simple form components
 const FormLabel = ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -23,24 +24,77 @@ interface WorkHistoryFormProps {
     onCompanyHistoryChange: (index: number, field: keyof CompanyHistory, value: any) => void;
     onAddCompanyHistory: () => void;
     onRemoveCompanyHistory: (index: number) => void;
+    forceExpandIndex?: number | null;
 }
 
 export default function WorkHistoryForm({
     profile,
     onCompanyHistoryChange,
     onAddCompanyHistory,
-    onRemoveCompanyHistory
+    onRemoveCompanyHistory,
+    forceExpandIndex
 }: WorkHistoryFormProps) {
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-    const count = useRef(0)
+    const count = useRef(-1)
     // Auto-expand the last company when a new one is added
+
     useEffect(() => {
-        if (profile?.career_overview?.company_history?.length && count.current !== 0) {
+        count.current = 0;
+    }, []);
+
+    useEffect(() => {
+        if (profile?.career_overview?.company_history?.length && count.current !== 0 && count.current !== -1) {
             setExpandedIndex(profile.career_overview.company_history.length - 1);
         } else {
             count.current = count.current + 1;
         }
     }, [profile?.career_overview?.company_history?.length]);
+
+    // Auto-expand invalid company if forceExpandIndex is provided
+    useEffect(() => {
+        if (typeof forceExpandIndex === 'number' && forceExpandIndex !== expandedIndex) {
+            setExpandedIndex(forceExpandIndex);
+        }
+    }, [forceExpandIndex]);
+
+    // Helper to calculate duration in months
+    const calculateDurationMonths = (start: string, end: string) => {
+        if (!start || !end) return 0;
+        const startDate = dayjs(start);
+        const endDate = dayjs(end);
+        return Math.max(0, endDate.diff(startDate, 'month'));
+    };
+
+    // Handler to update company fields and auto-calculate duration
+    const endDateRefs = useRef<Array<HTMLInputElement | null>>([]);
+    const handleCompanyChange = (index: number, field: keyof CompanyHistory, value: any) => {
+        const company = profile.career_overview.company_history[index];
+        let updated = { ...company, [field]: value };
+        if (field === 'start_date' || field === 'end_date' || field === 'is_current') {
+            const start = field === 'start_date' ? value : company.start_date;
+            let end = field === 'end_date' ? value : company.end_date;
+            let isCurrent = field === 'is_current' ? value : company.is_current;
+            if (isCurrent) {
+                end = dayjs().format('YYYY-MM-DD');
+                updated.end_date = ""; // keep end_date blank for current
+            }
+            // Do NOT clear or set end_date when toggling is_current to false
+            updated.duration_months = calculateDurationMonths(start, end);
+        }
+        onCompanyHistoryChange(index, field, value);
+        if (field === 'start_date' || field === 'end_date' || field === 'is_current') {
+            onCompanyHistoryChange(index, 'duration_months', updated.duration_months);
+            // Only clear end_date if toggling to current
+            if (field === 'is_current' && value) {
+                onCompanyHistoryChange(index, 'end_date', "");
+            }
+            // Auto-focus end date if toggling to not current
+            if (field === 'is_current' && !value && endDateRefs.current[index]) {
+                setTimeout(() => endDateRefs.current[index]?.focus(), 0);
+            }
+        }
+    };
+
     return (
         <div className="flex items-center justify-center p-2">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-6 w-full max-w-3xl">
@@ -88,6 +142,7 @@ export default function WorkHistoryForm({
                                                 <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                                                     <Briefcase className="w-4 h-4 text-blue-400" />
                                                     Company
+                                                    <span className="text-red-500">*</span>
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger>
@@ -101,7 +156,7 @@ export default function WorkHistoryForm({
                                                 </Label>
                                                 <Input
                                                     value={company.company_name}
-                                                    onChange={e => onCompanyHistoryChange(index, "company_name", e.target.value)}
+                                                    onChange={e => handleCompanyChange(index, "company_name", e.target.value)}
                                                     placeholder="Company name"
                                                     className="h-9 text-sm"
                                                 />
@@ -111,6 +166,7 @@ export default function WorkHistoryForm({
                                                 <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                                                     <Briefcase className="w-4 h-4 text-blue-400" />
                                                     Position
+                                                    <span className="text-red-500">*</span>
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger>
@@ -124,7 +180,7 @@ export default function WorkHistoryForm({
                                                 </Label>
                                                 <Input
                                                     value={company.position}
-                                                    onChange={e => onCompanyHistoryChange(index, "position", e.target.value)}
+                                                    onChange={e => handleCompanyChange(index, "position", e.target.value)}
                                                     placeholder="Position"
                                                     className="h-9 text-sm"
                                                 />
@@ -133,6 +189,7 @@ export default function WorkHistoryForm({
                                             <div className="flex flex-col gap-1">
                                                 <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                                                     Start Date
+                                                    <span className="text-red-500">*</span>
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger>
@@ -147,7 +204,7 @@ export default function WorkHistoryForm({
                                                 <Input
                                                     type="date"
                                                     value={company.start_date}
-                                                    onChange={e => onCompanyHistoryChange(index, "start_date", e.target.value)}
+                                                    onChange={e => handleCompanyChange(index, "start_date", e.target.value)}
                                                     className="h-9 text-sm"
                                                 />
                                             </div>
@@ -155,6 +212,7 @@ export default function WorkHistoryForm({
                                             <div className="flex flex-col gap-1">
                                                 <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                                                     End Date
+                                                    {!company.is_current && <span className="text-red-500">*</span>}
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger>
@@ -169,9 +227,10 @@ export default function WorkHistoryForm({
                                                 <Input
                                                     type="date"
                                                     value={company.end_date}
-                                                    onChange={e => onCompanyHistoryChange(index, "end_date", e.target.value)}
+                                                    onChange={e => handleCompanyChange(index, "end_date", e.target.value)}
                                                     disabled={company.is_current}
                                                     className="h-9 text-sm"
+                                                    ref={el => { endDateRefs.current[index] = el; }}
                                                 />
                                             </div>
                                             {/* Duration */}
@@ -202,7 +261,7 @@ export default function WorkHistoryForm({
                                             <div className="flex items-center gap-2 mt-2">
                                                 <Switch
                                                     checked={company.is_current}
-                                                    onCheckedChange={v => onCompanyHistoryChange(index, "is_current", v)}
+                                                    onCheckedChange={v => handleCompanyChange(index, "is_current", v)}
                                                     id={`current-${index}`}
                                                 />
                                                 <Label htmlFor={`current-${index}`} className="text-sm font-medium">

@@ -283,11 +283,19 @@ export default function RoleProcessExposureForm({ profile, onFieldChange, onArra
                                     onChange={e => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, amount: Number(e.target.value) })}
                                     placeholder="Quota amount"
                                 />
-                                <Input
+                                <Select
                                     value={profile.role_process_exposure.quota_ownership.cadence || ""}
-                                    onChange={e => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, cadence: e.target.value })}
-                                    placeholder="Quota cadence (e.g. monthly, quarterly)"
-                                />
+                                    onValueChange={value => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, cadence: value })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select cadence..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                                        <SelectItem value="annual">Annual</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <Input
                                     value={profile.role_process_exposure.quota_ownership.attainment_history || ""}
                                     onChange={e => onFieldChange("role_process_exposure", "quota_ownership", { ...profile.role_process_exposure.quota_ownership, attainment_history: e.target.value })}

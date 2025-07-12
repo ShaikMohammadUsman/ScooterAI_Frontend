@@ -134,6 +134,45 @@ export default function StepFormWrapper({
         }
     ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory]);
 
+    // Move salaryError and salaryStepIndex below steps definition
+    const [salaryError, setSalaryError] = useState("");
+    const salaryStepIndex = steps.findIndex(s => s.id === "salary");
+
+    // Helper to validate contact info fields
+    const isContactValid = () => {
+        const name = profile?.basic_information?.full_name?.trim();
+        const email = profile?.basic_information?.email?.trim();
+        const phone = profile?.basic_information?.phone_number?.trim();
+        const location = profile?.basic_information?.current_location?.trim();
+        if (!name || !email || !phone || !location) {
+            setContactError("Please fill in your name, email, phone number, and location.");
+            return false;
+        }
+        setContactError("");
+        return true;
+    };
+    const [contactError, setContactError] = useState("");
+    const contactStepIndex = steps.findIndex(s => s.id === "contact-info");
+
+    // Helper to validate work history fields
+    const [workError, setWorkError] = useState("");
+    const workStepIndex = steps.findIndex(s => s.id === "work-history");
+    const [workInvalidIndex, setWorkInvalidIndex] = useState<number | null>(null);
+    const isWorkValid = () => {
+        const companies = profile?.career_overview?.company_history || [];
+        for (let i = 0; i < companies.length; i++) {
+            const c = companies[i];
+            if (!c.company_name?.trim() || !c.position?.trim() || !c.start_date?.trim() || (!c.is_current && !c.end_date?.trim())) {
+                setWorkError("Please fill all required fields for each work experience.");
+                setWorkInvalidIndex(i);
+                return false;
+            }
+        }
+        setWorkError("");
+        setWorkInvalidIndex(null);
+        return true;
+    };
+
     // Update completed steps based on form data
     useEffect(() => {
         const newCompletedSteps = new Set<number>();
@@ -149,7 +188,7 @@ export default function StepFormWrapper({
                         profile?.basic_information?.phone_number);
                     break;
                 case "salary":
-                    isCompleted = true; // Optional step
+                    isCompleted = isSalaryValid(); // Optional step
                     break;
                 case "work-history":
                     isCompleted = profile?.career_overview?.company_history?.length > 0;
@@ -181,7 +220,39 @@ export default function StepFormWrapper({
         completed: completedSteps.has(index)
     }));
 
+    // Helper to validate salary fields
+    const isSalaryValid = () => {
+        const currentStr = profile?.basic_information?.current_ctc?.value;
+        const expectedStr = profile?.basic_information?.expected_ctc?.value;
+        const current = currentStr === "" ? NaN : Number(currentStr);
+        const expected = expectedStr === "" ? NaN : Number(expectedStr);
+        const validCurrent = !isNaN(current) && current >= 0;
+        const validExpected = !isNaN(expected) && expected >= current;
+        if (!validCurrent) {
+            setSalaryError("Please enter a valid Current CTC (0 or more).");
+            return false;
+        }
+        if (!validExpected) {
+            setSalaryError("Expected CTC must be greater than or equal to Current CTC.");
+            return false;
+        }
+        setSalaryError("");
+        return true;
+    };
+
     const handleNext = () => {
+        // If on contact step, validate before moving forward
+        if (steps[currentStep].id === "contact-info" && !isContactValid()) {
+            return;
+        }
+        // If on salary step, validate before moving forward
+        if (steps[currentStep].id === "salary" && !isSalaryValid()) {
+            return;
+        }
+        // If on work-history step, validate before moving forward
+        if (steps[currentStep].id === "work-history" && !isWorkValid()) {
+            return;
+        }
         if (currentStep < steps.length - 1) {
             setDirection("left");
             setCurrentStep(currentStep + 1);
@@ -196,6 +267,30 @@ export default function StepFormWrapper({
     };
 
     const handleStepClick = (stepIndex: number) => {
+        // If leaving contact step or skipping over it, validate contact first
+        const goingFromContact = steps[currentStep].id === "contact-info";
+        const skippingContact = steps[stepIndex].id !== "contact-info" && currentStep < contactStepIndex && stepIndex > contactStepIndex;
+        if ((goingFromContact || skippingContact) && !isContactValid()) {
+            setCurrentStep(contactStepIndex);
+            setDirection("right");
+            return;
+        }
+        // If leaving salary step or skipping over it, validate salary first
+        const goingFromSalary = steps[currentStep].id === "salary";
+        const skippingSalary = steps[stepIndex].id !== "salary" && currentStep < salaryStepIndex && stepIndex > salaryStepIndex;
+        if ((goingFromSalary || skippingSalary) && !isSalaryValid()) {
+            setCurrentStep(salaryStepIndex);
+            setDirection("right");
+            return;
+        }
+        // If leaving work-history step or skipping over it, validate work first
+        const goingFromWork = steps[currentStep].id === "work-history";
+        const skippingWork = steps[stepIndex].id !== "work-history" && currentStep < workStepIndex && stepIndex > workStepIndex;
+        if ((goingFromWork || skippingWork) && !isWorkValid()) {
+            setCurrentStep(workStepIndex);
+            setDirection("right");
+            return;
+        }
         setDirection(stepIndex > currentStep ? "left" : "right");
         setCurrentStep(stepIndex);
     };
@@ -212,6 +307,32 @@ export default function StepFormWrapper({
             default:
                 return true; // Other steps are optional or have different validation
         }
+    };
+
+    const handleSave = (e?: React.FormEvent) => {
+        // Validate contact fields before submit
+        if (!isContactValid()) {
+            setCurrentStep(contactStepIndex);
+            setDirection("right");
+            return;
+        }
+        // Validate salary fields before submit
+        if (!isSalaryValid()) {
+            setCurrentStep(salaryStepIndex);
+            setDirection("right");
+            return;
+        }
+        // Validate work fields before submit
+        if (!isWorkValid()) {
+            setCurrentStep(workStepIndex);
+            setDirection("right");
+            return;
+        }
+        // If you add more step validations, check them here in order
+        setSalaryError("");
+        setContactError("");
+        setWorkError("");
+        onSave && onSave(e);
     };
 
     return (
@@ -253,7 +374,19 @@ export default function StepFormWrapper({
                         stepKey={currentStep}
                     >
                         <div className="">
-                            {steps[currentStep].component}
+                            {contactError && currentStep === contactStepIndex && (
+                                <div className="text-red-500 text-center mb-4 font-medium">{contactError}</div>
+                            )}
+                            {salaryError && currentStep === salaryStepIndex && (
+                                <div className="text-red-500 text-center mb-4 font-medium">{salaryError}</div>
+                            )}
+                            {workError && currentStep === workStepIndex && (
+                                <div className="text-red-500 text-center mb-4 font-medium">{workError}</div>
+                            )}
+                            {steps[currentStep].component && currentStep === workStepIndex && workInvalidIndex !== null ?
+                                React.cloneElement(steps[currentStep].component as React.ReactElement<any>, { forceExpandIndex: workInvalidIndex }) :
+                                steps[currentStep].component
+                            }
                         </div>
                     </AnimatedFormContainer>
                 </CardContent>
@@ -265,7 +398,7 @@ export default function StepFormWrapper({
                 totalSteps={steps.length}
                 onPrevious={handlePrevious}
                 onNext={handleNext}
-                onSave={onSave}
+                onSave={handleSave}
                 isSubmitting={isSubmitting}
                 canProceed={canProceed()}
             />
