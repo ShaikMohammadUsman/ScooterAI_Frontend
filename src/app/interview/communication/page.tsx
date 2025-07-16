@@ -173,7 +173,7 @@ function CommunicationInterview() {
             }
 
             // Start with a test question for camera check
-            const testQuestion = "Hi, how are you? Please click 'Start Interview' to begin. I’ll be asking you some questions that will look a lot like the situations you’ll actually encounter as the Founding BDR at TestZeus.";
+            const testQuestion = "Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will look a lot like the situations you'll actually encounter as the Sales Manager at Sai Marketing in Chennai.";
             setCurrentQuestion(testQuestion);
             setMessages([{
                 own: false,

@@ -46,7 +46,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, loading = false 
                         </CardTitle>
                         <p className="text-blue-100 text-lg max-w-2xl mx-auto">
                             Thank you for taking the time to record this async interview for the{" "}
-                            <span className="font-semibold">Founding BDR role at TestZeus</span>
+                            <span className="font-semibold">Sales Manager, Sai Marketing (Chennai)</span>
                         </p>
                     </motion.div>
                 </div>
@@ -68,11 +68,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, loading = false 
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                                        Your Role as Founding BDR
+                                        Your Role as Sales Manager
                                     </h3>
                                     <p className="text-gray-600 leading-relaxed">
-                                        You'll reach out to VP Engineering and CTOs, craft clear outbound messaging,
-                                        and adapt to a fast-moving environment.
+                                        You'll be responsible for building Sai Marketing's presence in Chennai through
+                                        field-heavy, client-facing activities and driving sales growth.
                                     </p>
                                 </div>
                             </div>
@@ -85,11 +85,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, loading = false 
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                                        Target Audience
+                                        Target Market
                                     </h3>
                                     <p className="text-gray-600 leading-relaxed">
-                                        VP Engineering and CTOs at technology companies who need
-                                        robust testing solutions for their engineering teams.
+                                        Building Sai Marketing's presence in Chennai through direct client engagement,
+                                        relationship building, and expanding market reach in the region.
                                     </p>
                                 </div>
                             </div>
@@ -102,11 +102,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, loading = false 
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                                        Fast-Moving Environment
+                                        Field-Heavy & Client-Facing
                                     </h3>
                                     <p className="text-gray-600 leading-relaxed">
-                                        Adapt quickly to changing priorities and craft compelling
-                                        messaging that resonates with technical decision-makers.
+                                        This role requires extensive field work, direct client interactions,
+                                        and building strong relationships with customers in the Chennai market.
                                     </p>
                                 </div>
                             </div>
