@@ -78,8 +78,8 @@ export default function VoiceInterviewPage() {
             setLoading(false);
             return;
         }
-        console.log("profile_id", profile_id);
-        console.log("searchParams", searchParams?.get('role'));
+        // console.log("profile_id", profile_id);
+        // console.log("searchParams", searchParams?.get('role'));
         try {
             const res = await generateInterviewQuestions({
                 posting_title: searchParams?.get('role') as string || "",
@@ -336,7 +336,7 @@ export default function VoiceInterviewPage() {
         }
 
         setIsSubmitting(true);
-        console.log("Evaluating qaPairs:", qaPairsToEvaluate);
+        // console.log("Evaluating qaPairs:", qaPairsToEvaluate);
         try {
             const res = await evaluateInterview({
                 qa_pairs: qaPairsToEvaluate,
