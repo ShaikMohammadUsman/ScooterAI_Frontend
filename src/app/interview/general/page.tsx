@@ -72,7 +72,7 @@ export default function VoiceInterviewPage() {
     const handleStart = async () => {
         setLoading(true);
         setError(null);
-        const profile_id = localStorage.getItem('profile_id');
+        const profile_id = localStorage.getItem('scooterUserId');
         if (!profile_id) {
             setError("No profile ID found");
             setLoading(false);
@@ -329,7 +329,7 @@ export default function VoiceInterviewPage() {
 
     // Evaluate interview results and upload audio
     const evaluateInterviewResults = async (qaPairsToEvaluate: QAPair[] = qaPairs) => {
-        const profile_id = localStorage.getItem('profile_id');
+        const profile_id = localStorage.getItem('scooterUserId');
         if (!profile_id) {
             setError("No profile ID found");
             return;

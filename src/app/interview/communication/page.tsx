@@ -157,7 +157,7 @@ function CommunicationInterview() {
         setShowWelcomeScreen(false);
         setLoading(true);
         setError(null);
-        const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
+        const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
         if (!userId) {
             setError("No profile ID found");
             setLoading(false);
@@ -304,7 +304,7 @@ function CommunicationInterview() {
         setLoading(true);
         setIsProcessingResponse(true);
         setError(null);
-        const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
+        const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
         if (!userId) {
             setError("No profile ID found");
             setLoading(false);
@@ -482,7 +482,7 @@ function CommunicationInterview() {
 
                 // Stop recording and get final video
                 const videoBlob = await stopRecording();
-                const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
+                const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
                 if (userId) {
                     // Upload the complete video
@@ -595,7 +595,7 @@ function CommunicationInterview() {
 
             // Stop recording
             const videoBlob = await stopRecording();
-            const userId = verifiedUser?.user_id || localStorage.getItem('profile_id');
+            const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
             if (userId) {
                 // Upload the complete video
