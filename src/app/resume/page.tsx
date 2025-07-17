@@ -293,6 +293,18 @@ export default function ResumePage() {
     // Handle continue with previous job
     const handleContinueWithJob = () => {
         setShowPreviousApplication(false);
+
+        // Check if user has already attended the audio interview
+        if (userLoginData?.data?.audio_interview_attended) {
+            // Show a message that interview is already completed
+            toast({
+                title: "Interview Already Completed",
+                description: "You have already completed the audio interview for this position. Your application is being reviewed.",
+                variant: "default",
+            });
+            return;
+        }
+
         // Redirect to interview with the job data
         if (userLoginData?.job_data?.job_id) {
             router.push(`/interview/general?role=${userLoginData.job_data.job_title}&job_id=${userLoginData.job_data.job_id}`);

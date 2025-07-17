@@ -33,9 +33,13 @@ export default function UserLoginSection({ onLoginSuccess, onContinueWithoutLogi
             const response = await userLogin(email.trim());
 
             if (response.status) {
+                const message = response.data.audio_interview_attended
+                    ? `Found your previous application for ${response.job_data?.job_title || 'the position'} (Interview completed)`
+                    : `Found your previous application for ${response.job_data?.job_title || 'the position'}`;
+
                 toast({
                     title: "Welcome back!",
-                    description: `Found your previous application for ${response.job_data?.job_title || 'the position'}`,
+                    description: message,
                 });
                 onLoginSuccess(response);
             } else {

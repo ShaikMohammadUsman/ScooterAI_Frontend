@@ -72,22 +72,48 @@ export default function PreviousApplicationModal({
 
                     {/* Action Buttons */}
                     <div className="space-y-3">
-                        <Button
-                            onClick={onContinueWithJob}
-                            className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                            <ArrowRight className="w-4 h-4 mr-2" />
-                            Continue with This Application
-                        </Button>
+                        {userData.data.audio_interview_attended ? (
+                            <>
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <CheckCircle className="w-5 h-5 text-green-600" />
+                                        <span className="font-semibold text-green-800">Audio Interview Completed</span>
+                                    </div>
+                                    <p className="text-sm text-green-700">
+                                        You have already completed the audio interview for this position.
+                                        Your application is being reviewed by our team.
+                                    </p>
+                                </div>
 
-                        <Button
-                            onClick={onPracticeInterview}
-                            variant="outline"
-                            className="w-full h-12"
-                        >
-                            <Play className="w-4 h-4 mr-2" />
-                            Practice Interview (Mock)
-                        </Button>
+                                <Button
+                                    onClick={onPracticeInterview}
+                                    variant="outline"
+                                    className="w-full h-12"
+                                >
+                                    <Play className="w-4 h-4 mr-2" />
+                                    Practice Interview (Mock)
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    onClick={onContinueWithJob}
+                                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    <ArrowRight className="w-4 h-4 mr-2" />
+                                    Continue with This Application
+                                </Button>
+
+                                <Button
+                                    onClick={onPracticeInterview}
+                                    variant="outline"
+                                    className="w-full h-12"
+                                >
+                                    <Play className="w-4 h-4 mr-2" />
+                                    Practice Interview (Mock)
+                                </Button>
+                            </>
+                        )}
 
                         <Button
                             onClick={onGoBack}

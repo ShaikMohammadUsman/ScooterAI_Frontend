@@ -12,6 +12,8 @@ export interface GenerateInterviewQuestionsRequest {
   profile_id: string;
 }
 export interface GenerateInterviewQuestionsResponse {
+  status?: boolean;
+  message?: string;
   questions: string[];
 }
 

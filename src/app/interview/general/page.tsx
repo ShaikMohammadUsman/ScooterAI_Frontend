@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
 import { AnimatedPlaceholder } from "./AnimatedPlaceholder";
+import { toast } from "@/hooks/use-toast";
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
@@ -86,9 +87,29 @@ export default function VoiceInterviewPage() {
                 profile_id: profile_id
             });
 
+
             if (!res.questions || res.questions.length === 0) {
-                throw new Error("No questions were generated");
+                if (!res.status) {
+                    setError(res.message || "Failed to generate interview questions");
+                    toast({
+                        title: "Alert",
+                        description: res.message || "Failed to generate interview questions",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+
+                setError("No questions were generated");
+                toast({
+                    title: "Error",
+                    description: "No questions were generated",
+                    variant: "destructive",
+                });
+                return;
             }
+
+
+
 
             // Initialize audio recorder
             audioRecorderRef.current = new InterviewAudioRecorder();

@@ -61,6 +61,7 @@ export interface UserLoginResponse {
         name: string;
         phone: string;
         last_application_id?: string;
+        audio_interview_attended?: boolean;
     };
     job_data?: {
         job_id: string;
