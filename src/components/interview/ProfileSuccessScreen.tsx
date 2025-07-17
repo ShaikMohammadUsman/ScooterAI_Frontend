@@ -1,8 +1,10 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Clock, Headphones, Mic, RotateCcw } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: () => void }) {
+    const router = useRouter();
     return (
         <div className="text-center py-12">
             <div className="max-w-2xl mx-auto">
@@ -49,13 +51,23 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                     </div>
                 </div>
 
-                {/* CTA Button */}
-                <Button
-                    onClick={handleStartInterview}
-                    className="h-14 px-12 text-xl font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
-                    Start Now
-                </Button>
+                {/* CTA Buttons */}
+                <div className="space-y-4">
+                    <Button
+                        onClick={handleStartInterview}
+                        className="h-14 px-12 text-xl font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                    >
+                        Start Real Interview
+                    </Button>
+
+                    <Button
+                        onClick={() => router.push('/interview/practice')}
+                        variant="outline"
+                        className="h-12 px-8 text-lg font-medium"
+                    >
+                        Practice First (Mock Interview)
+                    </Button>
+                </div>
             </div>
         </div>
     )

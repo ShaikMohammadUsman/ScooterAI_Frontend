@@ -14,4 +14,6 @@ export { default as FormProgressBar } from './FormProgressBar';
 export { default as StepNavigation } from './StepNavigation';
 export { default as AnimatedFormContainer } from './AnimatedFormContainer';
 export { default as StepFormWrapper } from './StepFormWrapper';
-export { default as ModernHeader } from './ModernHeader'; 
+export { default as ModernHeader } from './ModernHeader';
+export { default as UserLoginSection } from './UserLoginSection';
+export { default as PreviousApplicationModal } from './PreviousApplicationModal'; 

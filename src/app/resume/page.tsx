@@ -9,6 +9,8 @@ import { FiUploadCloud } from "react-icons/fi";
 import { useRouter, useSearchParams } from "next/navigation";
 import ResumeSuggestionBox from "@/components/interview/ResumeSuggestionBox";
 import ProfileSuccessScreen from "@/components/interview/ProfileSuccessScreen";
+import UserLoginSection from "@/components/resume/UserLoginSection";
+import PreviousApplicationModal from "@/components/resume/PreviousApplicationModal";
 
 // Import modular components
 import {
@@ -99,6 +101,9 @@ export default function ResumePage() {
     const [linkedInUrl, setLinkedInUrl] = useState<string>("");
     const [resumeParsed, setResumeParsed] = useState<boolean>(false);
     const [showSuggestion, setShowSuggestion] = useState(false);
+    const [showUserLogin, setShowUserLogin] = useState<boolean>(true);
+    const [userLoginData, setUserLoginData] = useState<any>(null);
+    const [showPreviousApplication, setShowPreviousApplication] = useState<boolean>(false);
 
     // Handle file upload and parse
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,6 +278,42 @@ export default function ResumePage() {
         router.push(`/interview/general?role=${searchParams.get('role')}`);
     };
 
+    // Handle user login success
+    const handleUserLoginSuccess = (userData: any) => {
+        setUserLoginData(userData);
+        setShowUserLogin(false);
+        setShowPreviousApplication(true);
+    };
+
+    // Handle continue without login
+    const handleContinueWithoutLogin = () => {
+        setShowUserLogin(false);
+    };
+
+    // Handle continue with previous job
+    const handleContinueWithJob = () => {
+        setShowPreviousApplication(false);
+        // Redirect to interview with the job data
+        if (userLoginData?.job_data?.job_id) {
+            router.push(`/interview/general?role=${userLoginData.job_data.job_title}&job_id=${userLoginData.job_data.job_id}`);
+        } else {
+            router.push(`/interview/general?role=${searchParams.get('role')}`);
+        }
+    };
+
+    // Handle practice interview
+    const handlePracticeInterview = () => {
+        setShowPreviousApplication(false);
+        router.push('/interview/practice');
+    };
+
+    // Handle go back from previous application modal
+    const handleGoBackFromModal = () => {
+        setShowPreviousApplication(false);
+        setShowUserLogin(true);
+        setUserLoginData(null);
+    };
+
     // Handle form submit
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -283,6 +324,7 @@ export default function ResumePage() {
         try {
             // Get user_id from localStorage
             const userId = localStorage.getItem('scooterUserId');
+            // console.log(userId);
             if (!userId) {
                 throw new Error("User ID not found. Please try uploading your resume again.");
             }
@@ -346,10 +388,10 @@ export default function ResumePage() {
             };
 
             const res = await addResumeProfile(transformedProfile);
-            console.log(res);
-            localStorage.setItem('profile_id', res.profile_id);
-            setSuccess("Profile saved! ID: " + res.profile_id);
-            toast({ title: "Profile saved!", description: `ID: ${res.profile_id}` });
+            // console.log(res);
+            localStorage.setItem('scooterUserId', res.profile_id);
+            setSuccess("Profile saved successfully!");
+            toast({ title: "Profile saved!", description: "Your can move to next step now." });
             setShowSuccessScreen(true);
         } catch (err: any) {
             setError(err.message || "Failed to save profile.\nCheck your internet connection.");
@@ -362,13 +404,33 @@ export default function ResumePage() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
             <div className="mx-auto py-8 px-2 sm:px-4">
+                {/* Previous Application Modal */}
+                {showPreviousApplication && userLoginData && (
+                    <PreviousApplicationModal
+                        userData={userLoginData}
+                        onContinueWithJob={handleContinueWithJob}
+                        onPracticeInterview={handlePracticeInterview}
+                        onGoBack={handleGoBackFromModal}
+                    />
+                )}
+
                 {/* Success Screen */}
                 {showSuccessScreen ? (
                     <ProfileSuccessScreen handleStartInterview={handleStartInterview} />
                 ) : (
                     <>
+                        {/* User Login Section */}
+                        {showUserLogin && !resumeParsed && !loading && (
+                            <div className="flex items-center justify-center min-h-screen">
+                                <UserLoginSection
+                                    onLoginSuccess={handleUserLoginSuccess}
+                                    onContinueWithoutLogin={handleContinueWithoutLogin}
+                                />
+                            </div>
+                        )}
+
                         {/* Initial Form Sections - Hidden after resume parsing */}
-                        {!resumeParsed && !loading && (
+                        {!showUserLogin && !resumeParsed && !loading && (
                             <div className="transition-all duration-500 ease-in-out">
                                 {/* Side-by-side layout for larger screens */}
                                 <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
