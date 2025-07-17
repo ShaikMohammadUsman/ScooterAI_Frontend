@@ -432,7 +432,7 @@ export default function PublicCandidatesPage() {
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                                 <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
                                                     <Clock className="h-5 w-5 text-blue-600" />
                                                     <div>
@@ -457,9 +457,18 @@ export default function PublicCandidatesPage() {
                                                 <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
                                                     <Target className="h-5 w-5 text-orange-600" />
                                                     <div>
-                                                        <p className="text-xs text-orange-600 font-medium">CTC</p>
+                                                        <p className="text-xs text-orange-600 font-medium">Current CTC</p>
                                                         <p className="font-bold text-orange-900">
-                                                            {showSensitiveInfo ? formatCTC(selectedCandidate.basic_information.current_ctc) : '***'} | {showSensitiveInfo ? formatCTC(selectedCandidate.basic_information.expected_ctc) : '***'}
+                                                            {showSensitiveInfo ? formatCTC(selectedCandidate.basic_information.current_ctc) : '***'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                                    <TrendingUp className="h-5 w-5 text-green-600" />
+                                                    <div>
+                                                        <p className="text-xs text-green-600 font-medium">Expected CTC</p>
+                                                        <p className="font-bold text-green-900">
+                                                            {showSensitiveInfo ? formatCTC(selectedCandidate.basic_information.expected_ctc) : '***'}
                                                         </p>
                                                     </div>
                                                 </div>
