@@ -28,6 +28,7 @@ import {
     ModernHeader
 } from "@/components/resume";
 import { ParsingMessage } from "@/components/ui/parsing-message";
+import { UserLoginResponse } from "@/lib/userService";
 
 interface CompanyHistory {
     company_name: string;
@@ -102,7 +103,7 @@ export default function ResumePage() {
     const [resumeParsed, setResumeParsed] = useState<boolean>(false);
     const [showSuggestion, setShowSuggestion] = useState(false);
     const [showUserLogin, setShowUserLogin] = useState<boolean>(true);
-    const [userLoginData, setUserLoginData] = useState<any>(null);
+    const [userLoginData, setUserLoginData] = useState<UserLoginResponse | null>(null);
     const [showPreviousApplication, setShowPreviousApplication] = useState<boolean>(false);
 
     // Handle file upload and parse
@@ -293,7 +294,6 @@ export default function ResumePage() {
     // Handle continue with previous job
     const handleContinueWithJob = () => {
         setShowPreviousApplication(false);
-
         // Check if user has already attended the audio interview
         if (userLoginData?.data?.audio_interview_attended) {
             // Show a message that interview is already completed
@@ -303,11 +303,14 @@ export default function ResumePage() {
                 variant: "default",
             });
             return;
+        } else {
+            localStorage.setItem('scooterUserId', userLoginData?.data?.last_application_id || "");
+            // console.log("saved new profile id");
         }
 
         // Redirect to interview with the job data
         if (userLoginData?.job_data?.job_id) {
-            router.push(`/interview/general?role=${userLoginData.job_data.job_title}&job_id=${userLoginData.job_data.job_id}`);
+            router.push(`/interview/general?role=${userLoginData?.job_data?.job_title}&job_id=${userLoginData?.data?.last_application_id}`);
         } else {
             router.push(`/interview/general?role=${searchParams.get('role')}`);
         }
