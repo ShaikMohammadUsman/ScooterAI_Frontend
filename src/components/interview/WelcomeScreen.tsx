@@ -24,9 +24,11 @@ import {
 interface WelcomeScreenProps {
     onStart: () => void;
     loading?: boolean;
+    jobTitle?: string | null;
+    jobDescription?: string | null;
 }
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, loading = false }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, loading = false, jobTitle, jobDescription }) => {
     return (
         <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
             <Card className="w-full max-w-4xl shadow-2xl border-0 bg-white/95 backdrop-blur-sm overflow-hidden">
@@ -46,7 +48,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, loading = false 
                         </CardTitle>
                         <p className="text-blue-100 text-lg max-w-2xl mx-auto">
                             Thank you for taking the time to record this async interview for the{" "}
-                            <span className="font-semibold">Sales Manager, Sai Marketing (Chennai)</span>
+                            <span className="font-semibold">{jobTitle || "the position"}</span>
                         </p>
                     </motion.div>
                 </div>
@@ -68,11 +70,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, loading = false 
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                                        Your Role as Sales Manager
+                                        {jobTitle ? `Your Role: ${jobTitle}` : "Your Role"}
                                     </h3>
                                     <p className="text-gray-600 leading-relaxed">
-                                        You'll be responsible for building Sai Marketing's presence in Chennai through
-                                        field-heavy, client-facing activities and driving sales growth.
+                                        {jobDescription || "Role description will appear here."}
                                     </p>
                                 </div>
                             </div>

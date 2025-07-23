@@ -66,6 +66,8 @@ function CommunicationInterview() {
     const [isVerifying, setIsVerifying] = useState(false);
     const [verificationError, setVerificationError] = useState<string | null>(null);
     const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string; resume_status: boolean } | null>(null);
+    const [jobTitle, setJobTitle] = useState<string | null>(null);
+    const [jobDescription, setJobDescription] = useState<string | null>(null);
 
     // Resume upload states
     const [showResumeUploadModal, setShowResumeUploadModal] = useState(false);
@@ -125,6 +127,8 @@ function CommunicationInterview() {
                     full_name: response.full_name!,
                     resume_status: response.resume_status || false
                 });
+                setJobTitle(response.job_title || null);
+                setJobDescription(response.job_description || null);
                 setShowVerification(false);
 
                 // Check if resume needs to be updated
@@ -173,7 +177,8 @@ function CommunicationInterview() {
             }
 
             // Start with a test question for camera check
-            const testQuestion = "Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will look a lot like the situations you'll actually encounter as the Sales Manager at Sai Marketing in Chennai.";
+            // const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in the role${jobTitle ? ` of ${jobTitle}` : ""}${jobTitle && jobDescription ? ` at ${jobDescription}` : ""}.`;
+            const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in your role${jobTitle ? ` of ${jobTitle}` : ""}.`;
             setCurrentQuestion(testQuestion);
             setMessages([{
                 own: false,
@@ -842,6 +847,8 @@ function CommunicationInterview() {
                         <WelcomeScreen
                             onStart={handleStart}
                             loading={loading}
+                            jobTitle={jobTitle}
+                            jobDescription={jobDescription}
                         />
                     ) : (
                         <>
