@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { getAllJobs, Job, JobsResponse } from "@/lib/userService"
 import LoadingSpinner from "@/components/ui/loadingSpinner"
 import ErrorBox from "@/components/ui/error"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Mic, ArrowRight, X } from "lucide-react"
 
 function CareersPage() {
     const router = useRouter();
@@ -16,11 +16,20 @@ function CareersPage() {
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<JobsResponse['pagination'] | null>(null);
+    const [showFloatingComponent, setShowFloatingComponent] = useState(false);
     const pageSize = 6; // Number of jobs per page
 
     useEffect(() => {
         fetchJobs(currentPage);
     }, [currentPage]);
+
+    // Check for scooterUserId in localStorage
+    useEffect(() => {
+        const scooterUserId = localStorage.getItem('scooterUserId');
+        if (scooterUserId) {
+            setShowFloatingComponent(true);
+        }
+    }, []);
 
     const fetchJobs = async (page: number) => {
         setLoading(true);
@@ -164,6 +173,38 @@ function CareersPage() {
                     </div>
                 )}
             </main>
+
+            {/* Floating Component for Users with Audio Session */}
+            {showFloatingComponent && (
+                <div className="fixed bottom-6 right-6 z-50">
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl shadow-2xl p-6 max-w-sm animate-pulse relative">
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowFloatingComponent(false)}
+                            className="absolute -top-2 -right-2 bg-white text-gray-600 hover:text-gray-800 rounded-full p-1 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="bg-white/20 rounded-full p-2">
+                                <Mic className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-lg">Have an audio session to continue?</h3>
+                                <p className="text-sm text-blue-100">Come on, let's finish what you started!</p>
+                            </div>
+                        </div>
+                        <Button
+                            onClick={() => router.push('/resume')}
+                            className="w-full bg-white text-blue-600 hover:bg-blue-50 font-semibold"
+                        >
+                            Continue Application
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

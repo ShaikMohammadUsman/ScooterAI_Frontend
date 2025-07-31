@@ -12,6 +12,8 @@ export interface GenerateInterviewQuestionsRequest {
   profile_id: string;
 }
 export interface GenerateInterviewQuestionsResponse {
+  status?: boolean;
+  message?: string;
   questions: string[];
 }
 
@@ -281,7 +283,9 @@ export interface VideoInterviewLoginResponse {
   message: string;
   user_id: string | null;
   full_name: string | null;
-  resume_status:boolean;
+  resume_status: boolean;
+  job_title: string | null;
+  job_description: string | null;
 }
 
 export async function videoInterviewLogin(

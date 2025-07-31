@@ -5,31 +5,43 @@ import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight, FaUploa
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingDots } from "@/components/ui/loadingDots";
-import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio } from "@/lib/interviewService";
 import { textInAudioOut } from "@/lib/voiceBot";
 import { InterviewAudioRecorder } from "@/lib/audioRecorder";
 import Penguine from "@/../public/assets/icons/penguin_2273664.png";
 import Image from "next/image";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
-import { AnimatedPlaceholder } from "./AnimatedPlaceholder";
-import { toast } from "@/hooks/use-toast";
+import { AnimatedPlaceholder } from "../general/AnimatedPlaceholder";
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
 const SPEECH_REGION = process.env.NEXT_PUBLIC_AZURE_REGION;
 
-export default function VoiceInterviewPage() {
+// Mock questions for practice
+const MOCK_QUESTIONS = [
+    "Tell me about a time when you exceeded your sales quota. What strategies did you use?",
+    "How do you handle objections from potential customers? Can you give me a specific example?",
+    "Describe your sales process from prospecting to closing. What tools do you typically use?",
+    "What metrics do you track to measure your sales performance?",
+    "How do you stay motivated during slow periods or when facing rejection?"
+];
+
+interface QAPair {
+    question: string;
+    answer: string;
+    evaluation?: string;
+}
+
+export default function PracticeInterviewPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const [started, setStarted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [questions, setQuestions] = useState<string[]>([]);
-    const questionsRef = useRef<string[]>([]);
+    const [questions] = useState<string[]>(MOCK_QUESTIONS);
+    const questionsRef = useRef<string[]>(MOCK_QUESTIONS);
     const [currentQ, setCurrentQ] = useState(0);
     const [qaPairs, setQaPairs] = useState<QAPair[]>([]);
     const [messages, setMessages] = useState<{ own: boolean; text: string; icon: React.ReactNode; status?: 'completed' | 'retaken' }[]>([]);
@@ -43,7 +55,6 @@ export default function VoiceInterviewPage() {
     const recognizerRef = useRef<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
-    const [passed, setPassed] = useState(false);
     const [recognizing, setRecognizing] = useState(false);
 
     // Audio recording states
@@ -69,48 +80,12 @@ export default function VoiceInterviewPage() {
         };
     }, []);
 
-    // Start interview: fetch questions
+    // Start practice interview
     const handleStart = async () => {
         setLoading(true);
         setError(null);
-        const profile_id = localStorage.getItem('scooterUserId');
-        if (!profile_id) {
-            setError("No profile ID found");
-            setLoading(false);
-            return;
-        }
-        // console.log("profile_id", profile_id);
-        // console.log("searchParams", searchParams?.get('role'));
+
         try {
-            const res = await generateInterviewQuestions({
-                posting_title: searchParams?.get('role') as string || "",
-                profile_id: profile_id
-            });
-
-
-            if (!res.questions || res.questions.length === 0) {
-                if (!res.status) {
-                    setError(res.message || "Failed to generate interview questions");
-                    toast({
-                        title: "Alert",
-                        description: res.message || "Failed to generate interview questions",
-                        variant: "destructive",
-                    });
-                    return;
-                }
-
-                setError("No questions were generated");
-                toast({
-                    title: "Error",
-                    description: "No questions were generated",
-                    variant: "destructive",
-                });
-                return;
-            }
-
-
-
-
             // Initialize audio recorder
             audioRecorderRef.current = new InterviewAudioRecorder();
 
@@ -120,18 +95,14 @@ export default function VoiceInterviewPage() {
             setQaPairs([]);
             setMessages([]);
             setShowResults(false);
-            setRetakeCount(new Array(res.questions.length).fill(0));
-
-            // Set questions
-            setQuestions(res.questions);
-            questionsRef.current = res.questions;
+            setRetakeCount(new Array(questions.length).fill(0));
 
             // Start the interview
             setStarted(true);
             await askQuestion(0);
         } catch (err: any) {
-            console.error("Error starting interview:", err);
-            setError(err.message || "Failed to start interview");
+            console.error("Error starting practice interview:", err);
+            setError(err.message || "Failed to start practice interview");
         } finally {
             setLoading(false);
         }
@@ -205,7 +176,6 @@ export default function VoiceInterviewPage() {
                 try {
                     await recognizerRef.current.stopContinuousRecognitionAsync();
                     setIsListening(false);
-                    // Keep recognizing true until we get the final result
                     setLoading(false);
                 } catch (error) {
                     console.error("Error stopping recognition:", error);
@@ -220,203 +190,122 @@ export default function VoiceInterviewPage() {
         setIsListening(true);
         setRecognizedText("");
         setRecognizing(true);
-        // Remove loading state when starting recording
-        setLoading(false);
-
-        // Start audio recording for user response
-        if (audioRecorderRef.current) {
-            try {
-                await audioRecorderRef.current.startUserRecording();
-            } catch (error) {
-                console.error("Error starting audio recording:", error);
-                // Continue with speech recognition even if audio recording fails
-            }
-        }
 
         try {
             const speechConfig = speechsdk.SpeechConfig.fromSubscription(SPEECH_KEY, SPEECH_REGION);
             speechConfig.speechRecognitionLanguage = "en-US";
-            const audioConfig = speechsdk.AudioConfig.fromDefaultMicrophoneInput();
-            const recognizer = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
-            recognizerRef.current = recognizer;
 
-            recognizer.recognized = (s, e) => {
+            const audioConfig = speechsdk.AudioConfig.fromDefaultMicrophoneInput();
+            recognizerRef.current = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
+
+            recognizerRef.current.recognizing = (s: any, e: any) => {
+                setRecognizedText(e.result.text);
+            };
+
+            recognizerRef.current.recognized = (s: any, e: any) => {
                 if (e.result.reason === speechsdk.ResultReason.RecognizedSpeech) {
-                    const answer = e.result.text;
-                    // Append new text to existing response
-                    setRecognizedText(prev => prev ? `${prev} ${answer}` : answer);
+                    setRecognizedText(e.result.text);
+                    setRecognizing(false);
+                    setIsListening(false);
+                    setLoading(false);
                 }
             };
 
-            recognizer.canceled = (s, e) => {
+            recognizerRef.current.canceled = (s: any, e: any) => {
+                setRecognizing(false);
                 setIsListening(false);
                 setLoading(false);
                 if (e.reason === speechsdk.CancellationReason.Error) {
-                    setError(`Speech recognition error: ${e.errorDetails}`);
+                    setError(`Recognition canceled: ${e.errorDetails}`);
                 }
-                // Only set recognizing to false when recognition is completely stopped
-                setRecognizing(false);
             };
 
-            // Add session stopped event handler
-            recognizer.sessionStopped = (s, e) => {
-                // Set recognizing to false when the session is completely stopped
-                setRecognizing(false);
-            };
-
-            await recognizer.startContinuousRecognitionAsync();
-        } catch (err: any) {
-            console.error("Speech recognition error:", err);
-            setError(err.message || "Speech recognition failed");
+            await recognizerRef.current.startContinuousRecognitionAsync();
+        } catch (error) {
+            console.error("Error starting recognition:", error);
+            setError("Failed to start recording");
+            setRecognizing(false);
             setIsListening(false);
             setLoading(false);
-            setRecognizing(false);
         }
     };
 
     // Submit answer
     const submitAnswer = async () => {
-        if (!recognizedText.trim()) return;
+        if (!recognizedText.trim()) {
+            setError("Please provide an answer before submitting");
+            return;
+        }
 
-        const isLastQuestion = currentQ === questionsRef.current.length - 1;
         setIsSubmitting(true);
+        setError(null);
 
-        // Stop audio recording for user response
-        if (audioRecorderRef.current) {
-            audioRecorderRef.current.stopUserRecording();
-        }
+        try {
+            // Add user's answer to chat
+            setMessages((prev) => [...prev, {
+                own: true,
+                text: recognizedText,
+                icon: <FaUser className="text-blue-600 w-6 h-6" />,
+                status: 'completed'
+            }]);
 
-        // Create the new QA pair
-        const newQAPair = {
-            question: questionsRef.current[currentQ],
-            answer: recognizedText
-        };
+            // Note: Audio recording is not implemented for practice sessions
+            // In a real interview, this would record the user's audio
 
-        // Update messages
-        setMessages((prev) => [...prev, {
-            own: true,
-            text: recognizedText,
-            icon: <FaUser className="text-secondary w-6 h-6" />,
-            status: retakeCount[currentQ] > 0 ? 'retaken' : 'completed'
-        }]);
+            // Create QA pair
+            const qaPair: QAPair = {
+                question: questions[currentQ],
+                answer: recognizedText
+            };
 
-        // Update QA pairs and wait for the update
-        await new Promise<void>((resolve) => {
-            setQaPairs((prev) => {
-                const updated = [...prev, newQAPair];
-                resolve();
-                return updated;
-            });
-        });
+            setQaPairs((prev) => [...prev, qaPair]);
+            setRecognizedText("");
 
-        setRecognizedText("");
-        setIsListening(false);
-        if (recognizerRef.current) {
-            recognizerRef.current.stopContinuousRecognitionAsync();
-        }
-
-        // Show submission success briefly
-        setSubmissionSuccess(true);
-
-        // Move to next question immediately after submission
-        if (!isLastQuestion) {
-            const nextQ = currentQ + 1;
-            setCurrentQ(nextQ);
-            // The loading state will be shown during askQuestion
-            askQuestion(nextQ);
-        } else {
-            // For last question, proceed to evaluation and audio upload
-            setSubmissionSuccess(false);
+            // Move to next question or finish
+            if (currentQ < questions.length - 1) {
+                setCurrentQ(currentQ + 1);
+                setTimeout(() => askQuestion(currentQ + 1), 1000);
+            } else {
+                // Practice interview completed
+                setSubmissionSuccess(true);
+                setTimeout(() => {
+                    setShowResults(true);
+                }, 2000);
+            }
+        } catch (error) {
+            console.error("Error submitting answer:", error);
+            setError("Failed to submit answer");
+        } finally {
             setIsSubmitting(false);
-            // Get the latest qaPairs before evaluation
-            const currentQAPairs = [...qaPairs, newQAPair];
-            await evaluateInterviewResults(currentQAPairs);
         }
     };
 
     // Retake answer
     const retakeAnswer = () => {
-        if (retakeCount[currentQ] >= 1) return;
-
-        setRetakeCount(prev => {
+        setRecognizedText("");
+        setRetakeCount((prev) => {
             const newCount = [...prev];
-            newCount[currentQ] = 1;
+            newCount[currentQ] = (newCount[currentQ] || 0) + 1;
             return newCount;
         });
-
-        setRecognizedText("");
-        setMicEnabled(true);
-    };
-
-    // Evaluate interview results and upload audio
-    const evaluateInterviewResults = async (qaPairsToEvaluate: QAPair[] = qaPairs) => {
-        const profile_id = localStorage.getItem('scooterUserId');
-        if (!profile_id) {
-            setError("No profile ID found");
-            return;
-        }
-
-        setIsSubmitting(true);
-        // console.log("Evaluating qaPairs:", qaPairsToEvaluate);
-        try {
-            const res = await evaluateInterview({
-                qa_pairs: qaPairsToEvaluate,
-                user_id: profile_id,
-            });
-            if (res && res.status) {
-                setIsSubmitting(false);
-                setSubmissionSuccess(true);
-
-                // Upload audio file
-                await uploadAudioFile(profile_id);
-
-                setShowResults(true);
-                if (res.qualified_for_video_round) {
-                    setPassed(res.qualified_for_video_round);
-                }
+        setMessages((prev) => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage && lastMessage.own) {
+                lastMessage.status = 'retaken';
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to evaluate interview");
-        } finally {
-            setLoading(false);
-            setIsListening(false);
-            setIsSubmitting(false);
-        }
+            return newMessages;
+        });
     };
 
-    // Upload audio file
-    const uploadAudioFile = async (profile_id: string) => {
-        if (!audioRecorderRef.current) {
-            console.warn("No audio recorder available");
-            return;
-        }
-
-        try {
-            setIsUploadingAudio(true);
-            setShowUploadModal(true);
-            setUploadProgress(0);
-
-            // Combine audio segments
-            const audioFile = await audioRecorderRef.current.combineAudioSegments();
-
-            // Upload the audio file
-            await uploadInterviewAudio({
-                file: audioFile,
-                user_id: profile_id,
-                onProgress: (progress) => {
-                    setUploadProgress(Math.round(progress * 100));
-                }
-            });
-
-            console.log("Audio file uploaded successfully");
-        } catch (error) {
-            console.error("Error uploading audio file:", error);
-            setError("Failed to upload audio file");
-        } finally {
-            setIsUploadingAudio(false);
-            setShowUploadModal(false);
-            setUploadProgress(0);
-        }
+    // Mock evaluation for practice
+    const evaluatePracticeResults = () => {
+        return {
+            overall_score: Math.floor(Math.random() * 30) + 70, // Random score between 70-100
+            feedback: "This was a great practice session! Your responses showed good understanding of sales concepts. Keep practicing to improve your delivery and confidence.",
+            strengths: ["Good structure in responses", "Shows relevant experience", "Clear communication"],
+            areas_for_improvement: ["Could provide more specific examples", "Work on response timing", "Practice more concise answers"]
+        };
     };
 
     return (
@@ -437,12 +326,12 @@ export default function VoiceInterviewPage() {
                             className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl"
                         >
                             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                            <h3 className="text-xl font-semibold text-primary">Uploading Interview Audio...</h3>
-                            <p className="text-muted-foreground">Please wait while we upload your interview recording</p>
+                            <h3 className="text-xl font-semibold text-primary">Processing Practice Session...</h3>
+                            <p className="text-muted-foreground">Please wait while we process your practice recording</p>
                             <div className="w-full max-w-xs">
                                 <Progress value={uploadProgress} className="h-2" />
                                 <p className="text-sm text-gray-500 mt-2 text-center">
-                                    {uploadProgress}% uploaded
+                                    {uploadProgress}% processed
                                 </p>
                             </div>
                         </motion.div>
@@ -469,12 +358,12 @@ export default function VoiceInterviewPage() {
                                 <>
                                     <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                                     <h3 className="text-xl font-semibold text-primary">
-                                        {showResults ? "Evaluating Interview..." : "Loading Question..."}
+                                        {showResults ? "Evaluating Practice Session..." : "Loading Question..."}
                                     </h3>
                                     <p className="text-muted-foreground">
                                         {showResults
-                                            ? "Please wait while we evaluate your interview"
-                                            : `Please wait while we prepare ${questionsRef.current && questionsRef.current.length > 0 ? `the next question` : `the interview`}`}
+                                            ? "Please wait while we evaluate your practice session"
+                                            : `Please wait while we prepare ${questionsRef.current && questionsRef.current.length > 0 ? `the next question` : `the practice session`}`}
                                     </p>
                                 </>
                             ) : isSubmitting ? (
@@ -497,7 +386,7 @@ export default function VoiceInterviewPage() {
                                         animate={{ y: 0, opacity: 1 }}
                                         className="text-xl font-semibold text-green-600"
                                     >
-                                        Answers Submitted!
+                                        Practice Session Complete!
                                     </motion.h3>
                                     <motion.button
                                         initial={{ y: 20, opacity: 0 }}
@@ -525,8 +414,8 @@ export default function VoiceInterviewPage() {
                     className="h-12 w-12 rounded-full border-2 border-indigo-200 shadow-sm"
                 />
                 <div>
-                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Voice Assistant</div>
-                    <div className="text-xs text-muted-foreground">Voice Conversation Simulation</div>
+                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Practice Interview</div>
+                    <div className="text-xs text-muted-foreground">Mock Interview Session</div>
                 </div>
 
                 {started && (
@@ -542,21 +431,85 @@ export default function VoiceInterviewPage() {
                 )}
             </div>
 
-
             {/* Main Content */}
             {
                 showResults ? (
-                    <AnimatedPlaceholder
-                        onStart={() => {
-                            router.push("/");
-                        }}
-                        title="Thank you for completing the interview!"
-                        description="We will reach out to you soon."
-                        buttonText="Continue to home"
+                    <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
+                        <div className="h-full flex flex-col items-center justify-center p-8">
+                            <Card className="w-full max-w-2xl p-8">
+                                <div className="text-center mb-8">
+                                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                        <FaCheck className="w-8 h-8 text-green-600" />
+                                    </div>
+                                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Practice Session Complete!</h1>
+                                    <p className="text-gray-600">Here's your practice evaluation:</p>
+                                </div>
 
-                    />
+                                {(() => {
+                                    const evaluation = evaluatePracticeResults();
+                                    return (
+                                        <div className="space-y-6">
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div className="bg-blue-50 rounded-lg p-6">
+                                                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Overall Score</h3>
+                                                    <div className="text-4xl font-bold text-blue-600 mb-2">{evaluation.overall_score}%</div>
+                                                    <p className="text-sm text-gray-600">Great job on your practice session!</p>
+                                                </div>
+
+                                                <div className="bg-green-50 rounded-lg p-6">
+                                                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Feedback</h3>
+                                                    <p className="text-gray-700">{evaluation.feedback}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div className="bg-yellow-50 rounded-lg p-6">
+                                                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Strengths</h3>
+                                                    <ul className="space-y-2">
+                                                        {evaluation.strengths.map((strength, index) => (
+                                                            <li key={index} className="flex items-center text-gray-700">
+                                                                <FaCheck className="w-4 h-4 text-green-600 mr-2" />
+                                                                {strength}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+
+                                                <div className="bg-orange-50 rounded-lg p-6">
+                                                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Areas for Improvement</h3>
+                                                    <ul className="space-y-2">
+                                                        {evaluation.areas_for_improvement.map((area, index) => (
+                                                            <li key={index} className="flex items-center text-gray-700">
+                                                                <FaRedo className="w-4 h-4 text-orange-600 mr-2" />
+                                                                {area}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
+                                                <Button
+                                                    onClick={() => router.push('/resume')}
+                                                    className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white"
+                                                >
+                                                    Start Real Interview
+                                                </Button>
+                                                <Button
+                                                    onClick={() => window.location.reload()}
+                                                    variant="outline"
+                                                    className="h-12 px-8"
+                                                >
+                                                    Practice Again
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </Card>
+                        </div>
+                    </div>
                 ) : (
-
                     <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
                         <div className="h-full flex flex-col sm:flex-row">
 
@@ -589,13 +542,12 @@ export default function VoiceInterviewPage() {
                                 <div className="flex justify-center items-center h-full">
                                     <AnimatedPlaceholder
                                         onStart={handleStart}
-                                        title="Ready to Say Hello?"
-                                        description="Click the button below to share a little about yourself"
-                                        buttonText="Let's Go"
+                                        title="Ready to Practice?"
+                                        description="Click the button below to start your practice interview session"
+                                        buttonText="Start Practice"
                                     />
                                 </div>
                             )}
-
 
                             {/* Chat Area */}
                             <div className="flex-1 overflow-y-auto p-6 space-y-2">
@@ -628,31 +580,6 @@ export default function VoiceInterviewPage() {
                                                 )}
                                             </div>
                                         </motion.div>
-
-                                        // <motion.div
-                                        //     key={i}
-                                        //     initial={{ opacity: 0, y: 20 }}
-                                        //     animate={{ opacity: 1, y: 0 }}
-                                        //     exit={{ opacity: 0, y: -20 }}
-                                        //     className={`flex items-start gap-3 mb-3 justify-start`}
-                                        // >
-                                        //     {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
-                                        //     <div
-                                        //         className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"}`}
-                                        //     >
-                                        //         {!msg.own && msg.text}
-                                        //         {msg.status && (
-                                        //             // <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                                        //             <div className="">
-                                        //                 {msg.status === "completed" ? (
-                                        //                     <FaCheck className="text-green-500" />
-                                        //                 ) : (
-                                        //                     <FaRedo className="text-blue-500" />
-                                        //                 )}
-                                        //             </div>
-                                        //         )}
-                                        //     </div>
-                                        // </motion.div>
                                     ))}
                                 </AnimatePresence>
 
@@ -666,20 +593,9 @@ export default function VoiceInterviewPage() {
             {/* Controls */}
             <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
                 {!started ? (
-                    // <div className="flex justify-center">
-                    //     <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
-                    //         Start Interview
-                    //     </Button>
-                    // </div>
                     <></>
                 ) : !showResults && (
                     <div className="flex flex-col items-center gap-6 w-full">
-                        {/* {recognizedText && (
-                            <div className="w-full max-w-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 px-6 py-3 rounded-2xl text-sm text-indigo-800 border border-indigo-200 shadow-sm">
-                                <span className="font-semibold text-indigo-600">You:</span> {recognizedText}
-                            </div>
-                        )} */}
-
                         <div className="flex flex-wrap justify-center gap-4">
                             {(!recognizedText || isListening || recognizing) && (
                                 <TooltipProvider>
@@ -690,7 +606,6 @@ export default function VoiceInterviewPage() {
                                                 className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-colors shadow-sm ${recognizing ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" : "bg-primary text-white hover:bg-primary/90"}`}
                                                 disabled={isSpeaking || (!micEnabled && !recognizing)}
                                             >
-
                                                 {recognizing ? "Stop" : "Answer"}
                                                 {recognizing &&
                                                     <div className="relative flex items-center justify-center m-2">
@@ -740,5 +655,4 @@ export default function VoiceInterviewPage() {
             </div>
         </div>
     );
-}
-
+} 

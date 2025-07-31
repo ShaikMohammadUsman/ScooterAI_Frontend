@@ -43,7 +43,7 @@ export async function textInAudioOut(
     onTextReceived: (text: string) => void,
     setLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    console.log("Starting text-to-speech for:", text);
+    // console.log("Starting text-to-speech for:", text);
     
     if (!process.env.NEXT_PUBLIC_AZURE_API_KEY || !process.env.NEXT_PUBLIC_AZURE_REGION) {
         console.error("Missing Azure Speech Services configuration");
@@ -68,7 +68,7 @@ export async function textInAudioOut(
                 return;
             }
 
-            console.log("Starting speech synthesis for:", text);
+            // console.log("Starting speech synthesis for:", text);
             synthesizer.speakTextAsync(
                 text,
                 result => {
