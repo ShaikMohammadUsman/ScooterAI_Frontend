@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import UpdateStatusModal from "@/components/UpdateStatusModal";
 import CandidateFilters from "@/components/CandidateFilters";
 import { FilterState } from '@/types/filter';
-import ShortlistModal from '@/components/UpdateStatusModal';
+import ShortlistModal from '@/components/ShortlistModal';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -33,11 +33,15 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const resolvedParams = use(params);
     const jobId = resolvedParams.id;
     const [filters, setFilters] = useState<FilterState>({
-        // Application Status Filters
-        applicationStatus: 'all', // 'all', 'approved', 'rejected', 'pending'
+        // Location filter
+        location: 'all',
+
+        // Application Status filters
+        audioAttended: false,
+        videoInterviewSent: false,
         videoAttended: false,
-        shortlisted: false,
-        callForInterview: false,
+        sendToHiringManager: false,
+
         // Experience Filters
         experienceRange: 'all', // 'all', '0-2', '3-5', '5-10', '10+'
         salesExperienceRange: 'all', // 'all', '0-1', '1-3', '3-5', '5+'
@@ -52,26 +56,81 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20); // Default page size
     const [pagination, setPagination] = useState<CandidatesResponse['pagination'] | null>(null);
     const [pageLoading, setPageLoading] = useState(false);
 
+    // Smart filtering state
+    const [hasActiveFilters, setHasActiveFilters] = useState(false);
+    const [filteredCount, setFilteredCount] = useState(0);
+    const [showNoResultsMessage, setShowNoResultsMessage] = useState(false);
+    const [showLoadMoreButton, setShowLoadMoreButton] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+    // Debounce search term
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+    // Smart page size calculation
+    const getSmartPageSize = () => {
+        const hasBasicFilters = filters.location !== 'all' ||
+            filters.experienceRange !== 'all' ||
+            filters.salesExperienceRange !== 'all' ||
+            debouncedSearchTerm.trim() !== '';
+
+        const hasAdvancedFilters = filters.audioAttended ||
+            filters.videoInterviewSent ||
+            filters.videoAttended ||
+            filters.sendToHiringManager;
+
+        // Use larger page size for basic filters, smaller for advanced filters
+        if (hasBasicFilters && !hasAdvancedFilters) {
+            return Math.max(pageSize, 50); // At least 50 for basic filters
+        } else if (hasAdvancedFilters) {
+            return Math.min(pageSize, 20); // Max 20 for advanced filters
+        } else {
+            return pageSize; // Use user-selected page size
+        }
+    };
+
+    useEffect(() => {
+        // Set debounced search term after a short delay
+        const handler = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [searchTerm]);
+
     useEffect(() => {
         fetchCandidates();
-    }, [jobId, filters, currentPage]);
+    }, [jobId, filters, currentPage, debouncedSearchTerm, pageSize]);
 
     const fetchCandidates = async () => {
         try {
             setPageLoading(true);
+
+            // Map filters to API parameters
+            let applicationStatus: boolean | string | undefined;
+
+            // If any of the new status filters are active, we'll use them
+            if (filters.videoInterviewSent) {
+                applicationStatus = 'SendVideoLink';
+            }
+
+            const smartPageSize = getSmartPageSize();
+
             const response = await getJobCandidates(
                 jobId,
-                currentPage, // Use current page
-                pageSize,
-                filters.applicationStatus === 'approved' ? true :
-                    filters.applicationStatus === 'rejected' ? false : undefined, // application_status
-                filters.videoAttended || undefined, // videoAttended
-                filters.shortlisted || undefined, // shortlisted
-                filters.callForInterview || undefined // callForInterview
+                currentPage,
+                smartPageSize,
+                applicationStatus, // application_status - can be boolean or string
+                filters.videoAttended || undefined, // video_attended
+                filters.sendToHiringManager || undefined, // shortlisted (for "Send to hiring manager")
+                undefined, // call_for_interview - not used in current filters
+                filters.audioAttended || undefined, // audio_attended
+                filters.videoInterviewSent || undefined, // video_interview_sent
             );
             setCandidates(response.candidates);
             setJobDetails(response.job_details);
@@ -89,64 +148,153 @@ export default function JobCandidatesPage({ params }: PageProps) {
         }
     };
 
-    const filteredCandidates = candidates?.filter(candidate => {
-        // Search filter
-        const matchesSearch = candidate?.basic_information?.full_name?.toLowerCase().includes(searchTerm?.toLowerCase());
+    const loadMoreCandidates = async () => {
+        if (isLoadingMore) return;
 
-        // Application status filter
-        let matchesApplicationStatus = true;
-        if (filters.applicationStatus !== 'all') {
-            if (filters.applicationStatus === 'pending') {
-                matchesApplicationStatus = candidate?.application_status === undefined || candidate?.application_status === null;
-            } else if (filters.applicationStatus === 'approved') {
-                matchesApplicationStatus = candidate?.application_status === true; // Moved to video round
-            } else if (filters.applicationStatus === 'rejected') {
-                matchesApplicationStatus = candidate?.application_status === false; // Rejected from video round
-            }
+        setIsLoadingMore(true);
+        try {
+            const nextPage = currentPage + 1;
+            const response = await getJobCandidates(
+                jobId,
+                nextPage,
+                pageSize,
+                undefined, // application_status
+                undefined, // video_attended
+                undefined, // shortlisted
+                undefined, // call_for_interview
+                undefined, // audio_attended
+                undefined, // video_interview_sent
+            );
+
+            // Append new candidates to existing ones
+            setCandidates(prev => [...prev, ...response.candidates]);
+            setCurrentPage(nextPage);
+
+            toast({
+                title: "Success",
+                description: `Loaded ${response.candidates.length} more candidates`,
+            });
+        } catch (error) {
+            console.error('Error loading more candidates:', error);
+            toast({
+                title: "Error",
+                description: "Failed to load more candidates",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoadingMore(false);
         }
+    };
 
-        // Experience range filter
-        let matchesExperience = true;
-        if (filters.experienceRange !== 'all') {
-            const totalExp = candidate?.career_overview?.total_years_experience || 0;
-            switch (filters.experienceRange) {
-                case '0-2':
-                    matchesExperience = totalExp >= 0 && totalExp <= 2;
-                    break;
-                case '3-5':
-                    matchesExperience = totalExp >= 3 && totalExp <= 5;
-                    break;
-                case '5-10':
-                    matchesExperience = totalExp >= 5 && totalExp <= 10;
-                    break;
-                case '10+':
-                    matchesExperience = totalExp >= 10;
-                    break;
+    // Memoized filtered candidates to prevent unnecessary recalculations
+    const filteredCandidates = useMemo(() => {
+        if (!candidates) return [];
+
+        const filtered = candidates.filter(candidate => {
+            // Search filter - search by full name (using debounced search term)
+            const matchesSearch = candidate?.basic_information?.full_name?.toLowerCase().includes(debouncedSearchTerm?.toLowerCase());
+
+            // Location filter - Frontend-based filtering for Indian cities
+            let matchesLocation = true;
+            if (filters.location !== 'all') {
+                const candidateLocation = candidate?.basic_information?.current_location?.toLowerCase() || '';
+
+                if (filters.location === 'remote') {
+                    // Check if candidate is open to remote work or location indicates remote
+                    matchesLocation = candidate?.basic_information?.open_to_relocation === true ||
+                        candidateLocation.includes('remote') ||
+                        candidateLocation.includes('work from home');
+                } else {
+                    // Check for specific city match
+                    matchesLocation = candidateLocation.includes(filters.location.toLowerCase());
+                }
             }
-        }
 
-        // Sales experience range filter
-        let matchesSalesExperience = true;
-        if (filters.salesExperienceRange !== 'all') {
-            const salesExp = candidate?.career_overview?.years_sales_experience || 0;
-            switch (filters.salesExperienceRange) {
-                case '0-1':
-                    matchesSalesExperience = salesExp >= 0 && salesExp <= 1;
-                    break;
-                case '1-3':
-                    matchesSalesExperience = salesExp >= 1 && salesExp <= 3;
-                    break;
-                case '3-5':
-                    matchesSalesExperience = salesExp >= 3 && salesExp <= 5;
-                    break;
-                case '5+':
-                    matchesSalesExperience = salesExp >= 5;
-                    break;
+            // Audio attended filter
+            let matchesAudioAttended = true;
+            if (filters.audioAttended) {
+                matchesAudioAttended = candidate?.interview_status?.audio_interview_attended === true;
             }
-        }
 
-        return matchesSearch && matchesApplicationStatus && matchesExperience && matchesSalesExperience;
-    });
+            // Video interview sent filter (check if application status indicates video link sent)
+            let matchesVideoInterviewSent = true;
+            if (filters.videoInterviewSent) {
+                // Check if application_status is "SendVideoLink" or if video interview URL exists
+                matchesVideoInterviewSent = candidate?.application_status === 'SendVideoLink' ||
+                    candidate?.interview_status?.video_interview_url !== null;
+            }
+
+            // Video attended filter
+            let matchesVideoAttended = true;
+            if (filters.videoAttended) {
+                matchesVideoAttended = candidate?.interview_status?.video_interview_attended === true;
+            }
+
+            // Send to hiring manager filter (using shortlisted)
+            let matchesSendToHiringManager = true;
+            if (filters.sendToHiringManager) {
+                matchesSendToHiringManager = candidate?.final_shortlist === true;
+            }
+
+            // Experience range filter
+            let matchesExperience = true;
+            if (filters.experienceRange !== 'all') {
+                const totalExp = candidate?.career_overview?.total_years_experience || 0;
+                switch (filters.experienceRange) {
+                    case '0-2':
+                        matchesExperience = totalExp >= 0 && totalExp <= 2;
+                        break;
+                    case '3-5':
+                        matchesExperience = totalExp >= 3 && totalExp <= 5;
+                        break;
+                    case '5-10':
+                        matchesExperience = totalExp >= 5 && totalExp <= 10;
+                        break;
+                    case '10+':
+                        matchesExperience = totalExp >= 10;
+                        break;
+                }
+            }
+
+            // Sales experience range filter
+            let matchesSalesExperience = true;
+            if (filters.salesExperienceRange !== 'all') {
+                const salesExp = candidate?.career_overview?.years_sales_experience || 0;
+                switch (filters.salesExperienceRange) {
+                    case '0-1':
+                        matchesSalesExperience = salesExp >= 0 && salesExp <= 1;
+                        break;
+                    case '1-3':
+                        matchesSalesExperience = salesExp >= 1 && salesExp <= 3;
+                        break;
+                    case '3-5':
+                        matchesSalesExperience = salesExp >= 3 && salesExp <= 5;
+                        break;
+                    case '5+':
+                        matchesSalesExperience = salesExp >= 5;
+                        break;
+                }
+            }
+
+            return matchesSearch && matchesLocation && matchesAudioAttended && matchesVideoInterviewSent && matchesVideoAttended && matchesSendToHiringManager && matchesExperience && matchesSalesExperience;
+        });
+
+        // Update smart filtering state
+        const hasFilters = filters.location !== 'all' ||
+            filters.audioAttended ||
+            filters.videoInterviewSent ||
+            filters.videoAttended ||
+            filters.sendToHiringManager ||
+            filters.experienceRange !== 'all' ||
+            filters.salesExperienceRange !== 'all' ||
+            debouncedSearchTerm.trim() !== '';
+
+        setHasActiveFilters(hasFilters);
+        setFilteredCount(filtered.length);
+        setShowNoResultsMessage(hasFilters && filtered.length === 0 && candidates.length > 0);
+
+        return filtered;
+    }, [candidates, debouncedSearchTerm, filters]);
 
     const getCommunicationChartData = (scores: any) => {
         return [
@@ -160,19 +308,42 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const handleApplicationStatus = async (candidateId: string, status: string, note: string) => {
         setUpdatingStatus(candidateId);
         try {
-            const isApproved = status === 'approve';
-            const reason = note || (isApproved ? 'Seems a good fit for the role' : 'Candidate did not meet requirements');
+            // Map the new status values to the API format
+            let applicationStatus: string;
+            let reason: string;
+
+            switch (status) {
+                case 'SendVideoLink':
+                    applicationStatus = 'SendVideoLink';
+                    reason = note || 'Video interview link sent to candidate';
+                    break;
+                case 'NudgeForAudio':
+                    applicationStatus = 'NudgeForAudio';
+                    reason = note || 'Nudge sent for audio interview completion';
+                    break;
+                case 'NudgeForVideo':
+                    applicationStatus = 'NudgeForVideo';
+                    reason = note || 'Nudge sent for video interview completion';
+                    break;
+                case 'Rejected':
+                    applicationStatus = 'Rejected';
+                    reason = note || 'Candidate rejected';
+                    break;
+                default:
+                    applicationStatus = 'Rejected';
+                    reason = note || 'Status updated';
+            }
 
             const response = await updateApplicationStatus({
                 user_id: candidateId,
-                application_status: isApproved,
+                application_status: applicationStatus,
                 reason: reason
             });
 
             if (response.status || response?.user_id) {
                 toast({
                     title: "Success",
-                    description: isApproved ? 'Candidate approved successfully' : 'Candidate rejected successfully'
+                    description: `Status updated to: ${status}`
                 });
                 // Close modal and refresh the candidates list
                 setIsStatusModalOpen(false);
@@ -357,6 +528,8 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     pageLoading={pageLoading}
                     candidatesCount={candidates.length}
                     filteredCount={filteredCandidates.length}
+                    pageSize={pageSize}
+                    setPageSize={setPageSize}
                 />
 
                 {/* Candidates List */}
@@ -463,7 +636,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                     Updating...
                                                 </>
                                             ) : (
-                                                'Shortlist'
+                                                'Final Shortlist'
                                             )}
                                         </Button>
                                         {candidate?.interview_status?.resume_url && (
@@ -1002,9 +1175,77 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     </div>
                 )}
 
-                {filteredCandidates.length === 0 && !pageLoading && (
+                {showNoResultsMessage && (
+                    <div className="text-center py-12">
+                        <div className="max-w-md mx-auto">
+                            <div className="text-gray-400 mb-4">
+                                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">No candidates match your filters</h3>
+                            <p className="text-gray-500 mb-4">
+                                We found {candidates.length} candidates but none match your current filters.
+                                Try adjusting your search criteria.
+                            </p>
+                            <div className="space-y-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setFilters({
+                                            location: 'all',
+                                            audioAttended: false,
+                                            videoInterviewSent: false,
+                                            videoAttended: false,
+                                            sendToHiringManager: false,
+                                            experienceRange: 'all',
+                                            salesExperienceRange: 'all',
+                                        });
+                                        setSearchTerm('');
+                                    }}
+                                    className="w-full"
+                                >
+                                    Clear All Filters
+                                </Button>
+                                <p className="text-xs text-gray-400">
+                                    Showing {filteredCount} of {candidates.length} candidates on this page
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {filteredCandidates.length === 0 && !pageLoading && !showNoResultsMessage && (
                     <div className="text-center py-12">
                         <p className="text-gray-500">No candidates found</p>
+                    </div>
+                )}
+
+                {/* Load More Button */}
+                {hasActiveFilters && filteredCount < 5 && candidates.length > 0 && !pageLoading && (
+                    <div className="text-center py-6">
+                        <div className="max-w-md mx-auto">
+                            <p className="text-gray-600 mb-4">
+                                Only {filteredCount} candidates match your filters on this page.
+                            </p>
+                            <Button
+                                onClick={loadMoreCandidates}
+                                disabled={isLoadingMore}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                {isLoadingMore ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        Loading...
+                                    </>
+                                ) : (
+                                    'Load More Candidates'
+                                )}
+                            </Button>
+                            <p className="text-xs text-gray-400 mt-2">
+                                This will fetch more candidates to find better matches
+                            </p>
+                        </div>
                     </div>
                 )}
 
@@ -1023,7 +1264,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     }}
                     candidateName={selectedCandidateForStatus?.basic_information?.full_name || ''}
                     isLoading={updatingStatus === selectedCandidateForStatus?.profile_id}
-                    currentStatus={typeof selectedCandidateForStatus?.application_status === 'boolean' ? selectedCandidateForStatus.application_status : (selectedCandidateForStatus?.application_status === 'string' ? null : undefined)}
+                    currentStatus={typeof selectedCandidateForStatus?.application_status === 'string' ? selectedCandidateForStatus.application_status : typeof selectedCandidateForStatus?.application_status === 'boolean' ? selectedCandidateForStatus.application_status.toString() : null}
                     currentNote={selectedCandidateForStatus?.application_status_reason}
                 />
                 {/* Shortlist Modal */}
@@ -1040,7 +1281,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     }}
                     candidateName={selectedCandidateForShortlist?.basic_information?.full_name || ''}
                     isLoading={updatingShortlist === selectedCandidateForShortlist?.profile_id}
-                    currentStatus={typeof selectedCandidateForShortlist?.final_shortlist === 'boolean' ? selectedCandidateForShortlist.final_shortlist : (selectedCandidateForShortlist?.final_shortlist === 'string' ? null : undefined)}
+                    currentStatus={typeof selectedCandidateForShortlist?.final_shortlist === 'boolean' ? selectedCandidateForShortlist.final_shortlist : null}
                     currentNote={selectedCandidateForShortlist?.shortlist_status_reason}
                 />
             </div>

@@ -1,8 +1,14 @@
 export interface FilterState {
-    applicationStatus: string;
+    // Location filter
+    location: string;
+    
+    // Application Status filters
+    audioAttended: boolean;
+    videoInterviewSent: boolean;
     videoAttended: boolean;
-    shortlisted: boolean;
-    callForInterview: boolean;
+    sendToHiringManager: boolean;
+    
+    // Experience Filters
     experienceRange: string;
     salesExperienceRange: string;
 } 

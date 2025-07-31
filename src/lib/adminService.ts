@@ -44,7 +44,7 @@ export interface Candidate {
         languages_spoken?: string[];
     };
     short_summary:string;
-    application_status: boolean;
+    application_status: boolean | string;
     application_status_reason: string;
     final_shortlist: boolean;
     shortlist_status_reason: string;
@@ -332,7 +332,7 @@ export interface AuthResponse{
 
 export interface UpdateApplicationStatusRequest {
     user_id: string;
-    application_status: boolean;
+    application_status: boolean | string;
     reason: string;
 }
 
@@ -340,7 +340,7 @@ export interface UpdateApplicationStatusResponse {
     status: boolean;
     message: string;
     user_id?: string;
-    application_status?: boolean;
+    application_status?: boolean | string;
     reason?:string;
 }
 
@@ -384,12 +384,12 @@ export const getJobCandidates = async (
     jobId: string,
     page: number = 1,
     pageSize: number = 20,
-    // audioPassed?: boolean,
-    // audioUploaded?: boolean,
-    application_status?: boolean,
+    application_status?: boolean | string,
     videoAttended?: boolean,
     shortlisted?: boolean,
     callForInterview?: boolean,
+    audioAttended?: boolean,
+    videoInterviewSent?: boolean,
 ): Promise<CandidatesResponse> => {
     try {
         const params = new URLSearchParams({
@@ -397,13 +397,31 @@ export const getJobCandidates = async (
             page_size: pageSize.toString(),
         });
 
-        // if (audioPassed !== undefined) params.append('audio_passed', audioPassed.toString());
-        if (application_status !== undefined) params.append('application_status', application_status.toString()); // Moved to video round; application accepted
-        if (videoAttended !== undefined) params.append('video_attended', videoAttended.toString()); // Attended video round or not
-        // if (audioUploaded !== undefined) params.append('audio_uploaded', audioUploaded.toString());
-        if (shortlisted !== undefined) params.append('shortlisted', shortlisted.toString()); // Passed video round and moved to company selection
-        if (callForInterview !== undefined) params.append('call_for_interview', callForInterview.toString()); // Shortlisted by company for final interview
+        // Application status can be boolean or string (for new status values)
+        if (application_status !== undefined) {
+            if (typeof application_status === 'boolean') {
+                params.append('application_status', application_status.toString());
+            } else {
+                params.append('application_status', application_status);
+            }
+        }
+        
+        // Video attended filter
+        if (videoAttended !== undefined) params.append('video_attended', videoAttended.toString());
+        
+        // Shortlisted filter (for "Send to hiring manager")
+        if (shortlisted !== undefined) params.append('shortlisted', shortlisted.toString());
+        
+        // Call for interview filter
+        if (callForInterview !== undefined) params.append('call_for_interview', callForInterview.toString());
+        
+        // Audio attended filter
+        if (audioAttended !== undefined) params.append('audio_attended', audioAttended.toString());
+        
+        // Video interview sent filter
+        if (videoInterviewSent !== undefined) params.append('video_interview_sent', videoInterviewSent.toString());
 
+        console.log(params.toString());
         const response = await axios.get(`${BASE_URL}/job-candidates/${jobId}?${params.toString()}`);
         return response.data;
     } catch (error) {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FaFilter, FaTimes, FaSearch, FaUserCheck, FaUserTimes, FaClock, FaGraduationCap, FaBriefcase, FaMicrophone, FaVideo, FaBars } from 'react-icons/fa';
+import { FaFilter, FaTimes, FaSearch, FaUserCheck, FaUserTimes, FaClock, FaGraduationCap, FaBriefcase, FaMicrophone, FaVideo, FaBars, FaMapMarkerAlt, FaEnvelope, FaCheckCircle } from 'react-icons/fa';
 import { FilterState } from '@/types/filter';
 
 interface CandidateFiltersProps {
@@ -17,6 +17,8 @@ interface CandidateFiltersProps {
     pageLoading: boolean;
     candidatesCount: number;
     filteredCount: number;
+    pageSize: number;
+    setPageSize: (size: number) => void;
 }
 
 export default function CandidateFilters({
@@ -26,16 +28,19 @@ export default function CandidateFilters({
     setSearchTerm,
     pageLoading,
     candidatesCount,
-    filteredCount
+    filteredCount,
+    pageSize,
+    setPageSize
 }: CandidateFiltersProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const clearAllFilters = () => {
         setFilters({
-            applicationStatus: 'all',
+            location: 'all',
+            audioAttended: false,
+            videoInterviewSent: false,
             videoAttended: false,
-            shortlisted: false,
-            callForInterview: false,
+            sendToHiringManager: false,
             experienceRange: 'all',
             salesExperienceRange: 'all',
         });
@@ -43,10 +48,11 @@ export default function CandidateFilters({
     };
 
     const hasActiveFilters = () => {
-        return filters.applicationStatus !== 'all' ||
+        return filters.location !== 'all' ||
+            filters.audioAttended ||
+            filters.videoInterviewSent ||
             filters.videoAttended ||
-            filters.shortlisted ||
-            filters.callForInterview ||
+            filters.sendToHiringManager ||
             filters.experienceRange !== 'all' ||
             filters.salesExperienceRange !== 'all' ||
             searchTerm.trim() !== '';
@@ -54,48 +60,105 @@ export default function CandidateFilters({
 
     const FilterContent = () => (
         <>
-            {/* Search Bar - Only for Desktop */}
-            <div className="mb-6 hidden md:block">
-                <div className="relative">
-                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                        placeholder="Search candidates by name..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        disabled={pageLoading}
-                        className="pl-10 pr-4 py-3 border-2 border-gray-200 focus:border-blue-500 transition-colors"
-                    />
-                    {pageLoading && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
             {/* Filter Categories */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Application Status Filter */}
+                {/* Location Filter */}
                 <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <FaUserCheck className="h-4 w-4 text-blue-600" />
-                        Video Round Status
+                        <FaMapMarkerAlt className="h-4 w-4 text-blue-600" />
+                        Location
                     </Label>
                     <Select
-                        value={filters.applicationStatus}
-                        onValueChange={(value) => setFilters({ ...filters, applicationStatus: value })}
+                        value={filters.location}
+                        onValueChange={(value) => setFilters({ ...filters, location: value })}
                         disabled={pageLoading}
                     >
                         <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500">
-                            <SelectValue placeholder="All Statuses" />
+                            <SelectValue placeholder="Select City" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="pending">Pending Review</SelectItem>
-                            <SelectItem value="approved">Moved to Video Round</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
+                            <SelectItem value="all">All Cities</SelectItem>
+                            <SelectItem value="bangalore">Bangalore</SelectItem>
+                            <SelectItem value="hyderabad">Hyderabad</SelectItem>
+                            <SelectItem value="mumbai">Mumbai</SelectItem>
+                            <SelectItem value="delhi">Delhi</SelectItem>
+                            <SelectItem value="pune">Pune</SelectItem>
+                            <SelectItem value="chennai">Chennai</SelectItem>
+                            <SelectItem value="kolkata">Kolkata</SelectItem>
+                            <SelectItem value="ahmedabad">Ahmedabad</SelectItem>
+                            <SelectItem value="noida">Noida</SelectItem>
+                            <SelectItem value="gurgaon">Gurgaon</SelectItem>
+                            <SelectItem value="chandigarh">Chandigarh</SelectItem>
+                            <SelectItem value="coimbatore">Coimbatore</SelectItem>
+                            <SelectItem value="indore">Indore</SelectItem>
+                            <SelectItem value="lucknow">Lucknow</SelectItem>
+                            <SelectItem value="jaipur">Jaipur</SelectItem>
+                            <SelectItem value="vadodara">Vadodara</SelectItem>
+                            <SelectItem value="nagpur">Nagpur</SelectItem>
+                            <SelectItem value="mysore">Mysore</SelectItem>
+                            <SelectItem value="visakhapatnam">Visakhapatnam</SelectItem>
+                            <SelectItem value="kochi">Kochi</SelectItem>
+                            <SelectItem value="bhubaneswar">Bhubaneswar</SelectItem>
+                            <SelectItem value="guwahati">Guwahati</SelectItem>
+                            <SelectItem value="patna">Patna</SelectItem>
+                            <SelectItem value="amritsar">Amritsar</SelectItem>
+                            <SelectItem value="dehradun">Dehradun</SelectItem>
+                            <SelectItem value="raipur">Raipur</SelectItem>
+                            <SelectItem value="jabalpur">Jabalpur</SelectItem>
+                            <SelectItem value="udaipur">Udaipur</SelectItem>
+                            <SelectItem value="remote">Remote Work</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+
+                {/* Application Status Filter */}
+                <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <FaUserCheck className="h-4 w-4 text-green-600" />
+                        Application Status
+                    </Label>
+                    <div className="space-y-2">
+                        <Button
+                            variant={filters.audioAttended ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilters({ ...filters, audioAttended: !filters.audioAttended })}
+                            disabled={pageLoading}
+                            className="w-full justify-start"
+                        >
+                            <FaMicrophone className="h-3 w-3 mr-2" />
+                            Audio Completed
+                        </Button>
+                        <Button
+                            variant={filters.videoInterviewSent ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilters({ ...filters, videoInterviewSent: !filters.videoInterviewSent })}
+                            disabled={pageLoading}
+                            className="w-full justify-start"
+                        >
+                            <FaEnvelope className="h-3 w-3 mr-2" />
+                            Video Interview Sent
+                        </Button>
+                        <Button
+                            variant={filters.videoAttended ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilters({ ...filters, videoAttended: !filters.videoAttended })}
+                            disabled={pageLoading}
+                            className="w-full justify-start"
+                        >
+                            <FaVideo className="h-3 w-3 mr-2" />
+                            Video Attended
+                        </Button>
+                        <Button
+                            variant={filters.sendToHiringManager ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilters({ ...filters, sendToHiringManager: !filters.sendToHiringManager })}
+                            disabled={pageLoading}
+                            className="w-full justify-start"
+                        >
+                            <FaCheckCircle className="h-3 w-3 mr-2" />
+                            Send to Hiring Manager
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Total Experience Filter */}
@@ -145,46 +208,6 @@ export default function CandidateFilters({
                         </SelectContent>
                     </Select>
                 </div>
-
-                {/* Interview Status Filters */}
-                <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                        <FaClock className="h-4 w-4 text-orange-600" />
-                        Interview Stages
-                    </Label>
-                    <div className="space-y-2">
-                        <Button
-                            variant={filters.videoAttended ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setFilters({ ...filters, videoAttended: !filters.videoAttended })}
-                            disabled={pageLoading}
-                            className="w-full justify-start"
-                        >
-                            <FaVideo className="h-3 w-3 mr-2" />
-                            Video Attended
-                        </Button>
-                        <Button
-                            variant={filters.shortlisted ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setFilters({ ...filters, shortlisted: !filters.shortlisted })}
-                            disabled={pageLoading}
-                            className="w-full justify-start"
-                        >
-                            <FaUserCheck className="h-3 w-3 mr-2" />
-                            Passed Video Round
-                        </Button>
-                        <Button
-                            variant={filters.callForInterview ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setFilters({ ...filters, callForInterview: !filters.callForInterview })}
-                            disabled={pageLoading}
-                            className="w-full justify-start"
-                        >
-                            <FaMicrophone className="h-3 w-3 mr-2" />
-                            Final Interview Call
-                        </Button>
-                    </div>
-                </div>
             </div>
 
             {/* Active Filters Display */}
@@ -203,13 +226,61 @@ export default function CandidateFilters({
                                 </button>
                             </span>
                         )}
-                        {filters.applicationStatus !== 'all' && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                                <FaUserCheck className="h-3 w-3" />
-                                {filters.applicationStatus.charAt(0).toUpperCase() + filters.applicationStatus.slice(1)}
+                        {filters.location !== 'all' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                <FaMapMarkerAlt className="h-3 w-3" />
+                                {filters.location.charAt(0).toUpperCase() + filters.location.slice(1)}
                                 <button
-                                    onClick={() => setFilters({ ...filters, applicationStatus: 'all' })}
+                                    onClick={() => setFilters({ ...filters, location: 'all' })}
+                                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                                >
+                                    <FaTimes className="h-3 w-3" />
+                                </button>
+                            </span>
+                        )}
+                        {filters.audioAttended && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                                <FaMicrophone className="h-3 w-3" />
+                                Audio Completed
+                                <button
+                                    onClick={() => setFilters({ ...filters, audioAttended: false })}
                                     className="ml-1 hover:bg-green-200 rounded-full p-0.5"
+                                >
+                                    <FaTimes className="h-3 w-3" />
+                                </button>
+                            </span>
+                        )}
+                        {filters.videoInterviewSent && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                <FaEnvelope className="h-3 w-3" />
+                                Video Interview Sent
+                                <button
+                                    onClick={() => setFilters({ ...filters, videoInterviewSent: false })}
+                                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                                >
+                                    <FaTimes className="h-3 w-3" />
+                                </button>
+                            </span>
+                        )}
+                        {filters.videoAttended && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                                <FaVideo className="h-3 w-3" />
+                                Video Attended
+                                <button
+                                    onClick={() => setFilters({ ...filters, videoAttended: false })}
+                                    className="ml-1 hover:bg-indigo-200 rounded-full p-0.5"
+                                >
+                                    <FaTimes className="h-3 w-3" />
+                                </button>
+                            </span>
+                        )}
+                        {filters.sendToHiringManager && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                                <FaCheckCircle className="h-3 w-3" />
+                                Send to Hiring Manager
+                                <button
+                                    onClick={() => setFilters({ ...filters, sendToHiringManager: false })}
+                                    className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
                                 >
                                     <FaTimes className="h-3 w-3" />
                                 </button>
@@ -239,42 +310,6 @@ export default function CandidateFilters({
                                 </button>
                             </span>
                         )}
-                        {filters.videoAttended && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                                <FaVideo className="h-3 w-3" />
-                                Video Attended
-                                <button
-                                    onClick={() => setFilters({ ...filters, videoAttended: false })}
-                                    className="ml-1 hover:bg-indigo-200 rounded-full p-0.5"
-                                >
-                                    <FaTimes className="h-3 w-3" />
-                                </button>
-                            </span>
-                        )}
-                        {filters.shortlisted && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                <FaUserCheck className="h-3 w-3" />
-                                Passed Video Round
-                                <button
-                                    onClick={() => setFilters({ ...filters, shortlisted: false })}
-                                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                    <FaTimes className="h-3 w-3" />
-                                </button>
-                            </span>
-                        )}
-                        {filters.callForInterview && (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-                                <FaMicrophone className="h-3 w-3" />
-                                Final Interview Call
-                                <button
-                                    onClick={() => setFilters({ ...filters, callForInterview: false })}
-                                    className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
-                                >
-                                    <FaTimes className="h-3 w-3" />
-                                </button>
-                            </span>
-                        )}
                     </div>
                 </div>
             )}
@@ -287,6 +322,24 @@ export default function CandidateFilters({
                         {' '}(filtered)
                     </span>
                 )}
+                {hasActiveFilters() && filteredCount === 0 && candidatesCount > 0 && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-yellow-800 text-xs">
+                            💡 <strong>Tip:</strong> No candidates match your filters on this page.
+                            Try adjusting your criteria or check other pages.
+                        </p>
+                    </div>
+                )}
+                {/* Smart Page Size Indicator */}
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-blue-800 text-xs">
+                        📊 <strong>Smart Loading:</strong>
+                        {pageSize >= 50 ? ' Using larger page size (50+) for better filtering' :
+                            pageSize === 20 ? ' Using default page size (20) for normal filtering' :
+                                pageSize < 20 ? ' Using smaller page size (<20) for advanced filters' :
+                                    ' Using standard page size for optimal performance'}
+                    </p>
+                </div>
             </div>
         </>
     );
@@ -302,17 +355,59 @@ export default function CandidateFilters({
                             <FaFilter className="text-blue-600 text-xl" />
                             <h2 className="text-lg font-semibold text-gray-900">Filters & Search</h2>
                         </div>
-                        {hasActiveFilters() && (
-                            <Button
-                                variant="outline"
-                                onClick={clearAllFilters}
-                                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                        <div className="flex items-center gap-3">
+                            {/* Page Size Control */}
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm text-gray-600">Page Size:</Label>
+                                <Select
+                                    value={pageSize.toString()}
+                                    onValueChange={(value) => setPageSize(parseInt(value))}
+                                    disabled={pageLoading}
+                                >
+                                    <SelectTrigger className="w-20 h-8 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="10">10</SelectItem>
+                                        <SelectItem value="20">20</SelectItem>
+                                        <SelectItem value="50">50</SelectItem>
+                                        <SelectItem value="100">100</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <div className="text-xs text-gray-500">
+                                    💡 Smart sizing based on filters
+                                </div>
+                            </div>
+                            {hasActiveFilters() && (
+                                <Button
+                                    variant="outline"
+                                    onClick={clearAllFilters}
+                                    className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                                    disabled={pageLoading}
+                                >
+                                    <FaTimes className="h-4 w-4" />
+                                    Clear All
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                    {/* Search Bar - Only for Desktop */}
+                    <div className="mb-6">
+                        <div className="relative">
+                            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <Input
+                                placeholder="Search candidates by full name..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                                 disabled={pageLoading}
-                            >
-                                <FaTimes className="h-4 w-4" />
-                                Clear All
-                            </Button>
-                        )}
+                                className="pl-10 pr-4 py-3 border-2 border-gray-200 focus:border-blue-500 transition-colors"
+                            />
+                            {pageLoading && (
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <FilterContent />
                 </Card>
@@ -331,24 +426,42 @@ export default function CandidateFilters({
                             </span>
                         )}
                     </div>
-                    <Button
-                        variant="outline"
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="flex items-center gap-2"
-                        disabled={pageLoading}
-                    >
-                        {isMobileMenuOpen ? (
-                            <>
-                                <FaTimes className="h-4 w-4" />
-                                Hide
-                            </>
-                        ) : (
-                            <>
-                                <FaBars className="h-4 w-4" />
-                                Show
-                            </>
-                        )}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {/* Mobile Page Size Control */}
+                        <Select
+                            value={pageSize.toString()}
+                            onValueChange={(value) => setPageSize(parseInt(value))}
+                            disabled={pageLoading}
+                        >
+                            <SelectTrigger className="w-16 h-8 text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="20">20</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                                <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="flex items-center gap-2"
+                            disabled={pageLoading}
+                        >
+                            {isMobileMenuOpen ? (
+                                <>
+                                    <FaTimes className="h-4 w-4" />
+                                    Hide
+                                </>
+                            ) : (
+                                <>
+                                    <FaBars className="h-4 w-4" />
+                                    Show
+                                </>
+                            )}
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Mobile Filter Menu */}
@@ -376,7 +489,7 @@ export default function CandidateFilters({
                 <div className="relative mb-4">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
-                        placeholder="Search candidates..."
+                        placeholder="Search candidates by name..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         disabled={pageLoading}

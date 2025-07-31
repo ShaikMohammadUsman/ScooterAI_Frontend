@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FaCheck, FaTimes } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaVideo, FaMicrophone, FaEnvelope, FaUserTimes } from 'react-icons/fa';
 
 interface UpdateStatusModalProps {
     isOpen: boolean;
@@ -14,7 +14,7 @@ interface UpdateStatusModalProps {
     onSubmit: (status: string, note: string) => void;
     candidateName: string;
     isLoading: boolean;
-    currentStatus?: boolean | null;
+    currentStatus?: string | null;
     currentNote?: string;
 }
 
@@ -33,11 +33,7 @@ export default function UpdateStatusModal({
     // Initialize form with current values when modal opens
     useEffect(() => {
         if (isOpen) {
-            if (currentStatus !== null && currentStatus !== undefined) {
-                setStatus(currentStatus ? 'approve' : 'reject');
-            } else {
-                setStatus('');
-            }
+            setStatus(currentStatus || '');
             setNote(currentNote || '');
         }
     }, [isOpen, currentStatus, currentNote]);
@@ -58,7 +54,29 @@ export default function UpdateStatusModal({
         onClose();
     };
 
+    const getStatusDisplay = (status: string) => {
+        switch (status) {
+            case 'SendVideoLink':
+                return { text: 'Send Video Link', icon: <FaVideo className="h-3 w-3" />, color: 'bg-blue-100 text-blue-800' };
+            case 'NudgeForAudio':
+                return { text: 'Nudge for Audio', icon: <FaMicrophone className="h-3 w-3" />, color: 'bg-yellow-100 text-yellow-800' };
+            case 'NudgeForVideo':
+                return { text: 'Nudge for Video', icon: <FaEnvelope className="h-3 w-3" />, color: 'bg-orange-100 text-orange-800' };
+            case 'Rejected':
+                return { text: 'Rejected', icon: <FaUserTimes className="h-3 w-3" />, color: 'bg-red-100 text-red-800' };
+            // Handle legacy boolean values for backward compatibility
+            case 'true':
+                return { text: 'Approved', icon: <FaCheck className="h-3 w-3" />, color: 'bg-green-100 text-green-800' };
+            case 'false':
+                return { text: 'Rejected', icon: <FaUserTimes className="h-3 w-3" />, color: 'bg-red-100 text-red-800' };
+            default:
+                return { text: 'No Status', icon: <div className="w-3 h-3 bg-gray-400 rounded-full"></div>, color: 'bg-gray-100 text-gray-800' };
+        }
+    };
+
     if (!isOpen) return null;
+
+    const currentStatusDisplay = currentStatus ? getStatusDisplay(currentStatus) : null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -87,22 +105,10 @@ export default function UpdateStatusModal({
                         <p className="text-sm text-gray-600">Candidate:</p>
                         <p className="font-medium text-gray-900 mb-2">{candidateName}</p>
 
-                        {currentStatus !== null && currentStatus !== undefined ? (
-                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${currentStatus
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                                }`}>
-                                {currentStatus ? (
-                                    <>
-                                        <FaCheck className="h-3 w-3" />
-                                        Currently Approved
-                                    </>
-                                ) : (
-                                    <>
-                                        <FaTimes className="h-3 w-3" />
-                                        Currently Rejected
-                                    </>
-                                )}
+                        {currentStatusDisplay ? (
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${currentStatusDisplay.color}`}>
+                                {currentStatusDisplay.icon}
+                                {currentStatusDisplay.text}
                             </div>
                         ) : (
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
@@ -125,8 +131,30 @@ export default function UpdateStatusModal({
                                 <SelectValue placeholder="Select status..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="approve">Approve</SelectItem>
-                                <SelectItem value="reject">Reject</SelectItem>
+                                <SelectItem value="SendVideoLink">
+                                    <div className="flex items-center gap-2">
+                                        <FaVideo className="h-3 w-3" />
+                                        Send Video Link
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="NudgeForAudio">
+                                    <div className="flex items-center gap-2">
+                                        <FaMicrophone className="h-3 w-3" />
+                                        Nudge for Audio
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="NudgeForVideo">
+                                    <div className="flex items-center gap-2">
+                                        <FaEnvelope className="h-3 w-3" />
+                                        Nudge for Video
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="Rejected">
+                                    <div className="flex items-center gap-2">
+                                        <FaUserTimes className="h-3 w-3" />
+                                        Rejected
+                                    </div>
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
