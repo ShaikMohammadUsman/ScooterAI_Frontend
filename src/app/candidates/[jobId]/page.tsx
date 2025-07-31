@@ -130,8 +130,8 @@ export default function PublicCandidatesPage() {
                 jobId,
                 currentPage,
                 10,
-                true, // application_status
-                true, // videoAttended
+                undefined, // application_status
+                undefined, // videoAttended
                 true,// shortlisted
                 undefined  // callForInterview
             );
