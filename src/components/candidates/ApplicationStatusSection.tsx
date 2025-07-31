@@ -47,7 +47,7 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
             description: candidate.application_status ? 'Moved to video round' : 'Application rejected',
             icon: <Video className="h-5 w-5" />,
             status: candidate.application_status ? 'completed' : 'failed',
-            isActive: candidate.application_status,
+            isActive: Boolean(candidate.application_status),
         },
         {
             id: 'video_attended',
@@ -55,7 +55,7 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
             description: candidate.interview_status?.video_interview_attended ? 'Interview completed' : 'Interview pending',
             icon: <Play className="h-5 w-5" />,
             status: candidate.interview_status?.video_interview_attended ? 'completed' : 'pending',
-            isActive: candidate.application_status && candidate.interview_status?.video_interview_attended,
+            isActive: Boolean(candidate.application_status) && candidate.interview_status?.video_interview_attended,
         },
         {
             id: 'shortlisted',
@@ -63,7 +63,7 @@ export default function ApplicationStatusSection({ candidate, onStatusUpdate }: 
             description: candidate.final_shortlist ? 'Passed video round' : 'Not shortlisted',
             icon: <Award className="h-5 w-5" />,
             status: candidate.final_shortlist ? 'completed' : 'pending',
-            isActive: candidate.application_status && candidate.interview_status?.video_interview_attended,
+            isActive: Boolean(candidate.application_status) && candidate.interview_status?.video_interview_attended,
         },
         {
             id: 'final_call',
