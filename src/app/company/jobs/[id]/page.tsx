@@ -114,9 +114,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
             // Map filters to API parameters
             let applicationStatus: boolean | string | undefined;
 
-            // If any of the new status filters are active, we'll use them
-            if (filters.videoInterviewSent) {
-                applicationStatus = 'SendVideoLink';
+            // Only set application_status if videoInterviewSent is NOT active
+            // When videoInterviewSent is active, we use video_interview_sent parameter instead
+            if (!filters.videoInterviewSent) {
+                // Handle other application status filters here if needed
+                // For now, we don't set applicationStatus when videoInterviewSent is active
             }
 
             const smartPageSize = getSmartPageSize();
