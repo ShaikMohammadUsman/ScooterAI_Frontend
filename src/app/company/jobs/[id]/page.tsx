@@ -54,6 +54,10 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [isShortlistModalOpen, setIsShortlistModalOpen] = useState(false);
     const [selectedCandidateForShortlist, setSelectedCandidateForShortlist] = useState<Candidate | null>(null);
 
+    // Media player toggle states
+    const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+    const [showAudioPlayer, setShowAudioPlayer] = useState(false);
+
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(20); // Default page size
@@ -419,6 +423,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
         setSelectedCandidateForShortlist(candidate);
         setIsShortlistModalOpen(true);
     };
+
+    // Reset media player states when candidate changes
+    useEffect(() => {
+        if (selectedCandidate) {
+            setShowVideoPlayer(false);
+            setShowAudioPlayer(false);
+        }
+    }, [selectedCandidate]);
 
 
 
@@ -876,34 +888,6 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                                 {/* Action Buttons */}
                                 <div className="flex flex-col md:flex-row gap-4">
-                                    {selectedCandidate?.interview_status?.video_interview_url && (
-                                        <Button
-                                            variant="default"
-                                            className="flex-1"
-                                            onClick={() => {
-                                                if (selectedCandidate?.interview_status?.video_interview_url) {
-                                                    window.open(selectedCandidate?.interview_status?.video_interview_url, '_blank');
-                                                }
-                                            }}
-                                        >
-                                            <FaVideo className="mr-2" />
-                                            Watch Video Interview
-                                        </Button>
-                                    )}
-                                    {selectedCandidate?.interview_status?.audio_interview_url && (
-                                        <Button
-                                            variant="default"
-                                            className="flex-1"
-                                            onClick={() => {
-                                                if (selectedCandidate?.interview_status?.audio_interview_url) {
-                                                    window.open(selectedCandidate?.interview_status?.audio_interview_url, '_blank');
-                                                }
-                                            }}
-                                        >
-                                            <FaMicrophone className="mr-2" />
-                                            Listen to Audio Interview
-                                        </Button>
-                                    )}
                                     {selectedCandidate?.interview_status?.resume_url && (
                                         <Button
                                             variant="outline"
@@ -922,7 +906,73 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 {/* Audio Interview Q&A */}
                                 {selectedCandidate?.audio_interview_details && (
                                     <div className="mt-8">
-                                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Audio Interview Evaluation</h4>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-lg font-semibold text-gray-900">Audio Interview Evaluation</h4>
+                                            {selectedCandidate?.interview_status?.audio_interview_url && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setShowAudioPlayer(!showAudioPlayer)}
+                                                    className={`flex items-center gap-2 transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg ${showAudioPlayer
+                                                        ? 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white border-0 shadow-xl hover:shadow-2xl'
+                                                        : 'bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 border-slate-300 text-slate-700 hover:text-slate-900 shadow-lg hover:shadow-xl border-0'
+                                                        }`}
+                                                >
+                                                    <FaMicrophone className={`text-sm ${showAudioPlayer ? 'animate-pulse' : ''}`} />
+                                                    {showAudioPlayer ? 'Hide Audio' : 'Listen to Audio Interview'}
+                                                </Button>
+                                            )}
+                                        </div>
+
+                                        {/* Audio Player */}
+                                        {showAudioPlayer && selectedCandidate?.interview_status?.audio_interview_url && (
+                                            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+                                                <div className="bg-white p-4 rounded-lg shadow-lg">
+                                                    <audio
+                                                        className="w-full"
+                                                        controls
+                                                        preload="metadata"
+                                                        autoPlay
+                                                    >
+                                                        <source src={selectedCandidate.interview_status.audio_interview_url} type="audio/mpeg" />
+                                                        <source src={selectedCandidate.interview_status.audio_interview_url} type="audio/ogg" />
+                                                        <source src={selectedCandidate.interview_status.audio_interview_url} type="audio/wav" />
+                                                        Your browser does not support the audio tag.
+                                                    </audio>
+                                                </div>
+
+                                                {/* Download Button */}
+                                                <div className="mt-4 flex justify-center">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            const candidateName = selectedCandidate?.basic_information?.full_name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Unknown';
+                                                            const jobRole = jobDetails?.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'Unknown_Role';
+                                                            const audioDate = new Date().toISOString().split('T')[0];
+
+                                                            const fileName = `${candidateName}_${jobRole}_${audioDate}.mp3`;
+
+                                                            if (selectedCandidate?.interview_status?.audio_interview_url) {
+                                                                const link = document.createElement('a');
+                                                                link.href = selectedCandidate.interview_status.audio_interview_url;
+                                                                link.download = fileName;
+                                                                link.target = '_blank';
+                                                                document.body.appendChild(link);
+                                                                link.click();
+                                                                document.body.removeChild(link);
+                                                            }
+                                                        }}
+                                                        className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                        </svg>
+                                                        Download Audio
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Summary */}
                                         <div className="mb-6">
@@ -1022,7 +1072,74 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 {/* Video Interview Q&A */}
                                 {selectedCandidate?.interview_details && (
                                     <div className="mt-8">
-                                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Video Interview Evaluation</h4>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-lg font-semibold text-gray-900">Video Interview Evaluation</h4>
+                                            {selectedCandidate?.interview_status?.video_interview_url && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setShowVideoPlayer(!showVideoPlayer)}
+                                                    className={`flex items-center gap-2 transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg ${showVideoPlayer
+                                                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl'
+                                                        : 'bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 border-slate-300 text-slate-700 hover:text-slate-900 shadow-lg hover:shadow-xl border-0'
+                                                        }`}
+                                                >
+                                                    <FaVideo className={`text-sm ${showVideoPlayer ? 'animate-pulse' : ''}`} />
+                                                    {showVideoPlayer ? 'Hide Video' : 'Watch Video Interview'}
+                                                </Button>
+                                            )}
+                                        </div>
+
+                                        {/* Video Player */}
+                                        {showVideoPlayer && selectedCandidate?.interview_status?.video_interview_url && (
+                                            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+                                                <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                                                    <video
+                                                        className="w-full h-full rounded-lg shadow-lg"
+                                                        controls
+                                                        preload="metadata"
+                                                        poster="/public/assets/images/scooterLogo.png"
+                                                        autoPlay
+                                                    >
+                                                        <source src={selectedCandidate.interview_status.video_interview_url} type="video/mp4" />
+                                                        <source src={selectedCandidate.interview_status.video_interview_url} type="video/webm" />
+                                                        <source src={selectedCandidate.interview_status.video_interview_url} type="video/ogg" />
+                                                        Your browser does not support the video tag.
+                                                    </video>
+                                                </div>
+
+                                                {/* Download Button */}
+                                                <div className="mt-4 flex justify-center">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            const candidateName = selectedCandidate?.basic_information?.full_name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Unknown';
+                                                            const jobRole = jobDetails?.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'Unknown_Role';
+                                                            const videoDate = new Date().toISOString().split('T')[0];
+
+                                                            const fileName = `${candidateName}_${jobRole}_${videoDate}.mp4`;
+
+                                                            if (selectedCandidate?.interview_status?.video_interview_url) {
+                                                                const link = document.createElement('a');
+                                                                link.href = selectedCandidate.interview_status.video_interview_url;
+                                                                link.download = fileName;
+                                                                link.target = '_blank';
+                                                                document.body.appendChild(link);
+                                                                link.click();
+                                                                document.body.removeChild(link);
+                                                            }
+                                                        }}
+                                                        className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                        </svg>
+                                                        Download Video
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Communication Evaluation */}
                                         {selectedCandidate?.interview_details?.communication_evaluation && Object.keys(selectedCandidate?.interview_details?.communication_evaluation).length > 0 && (
