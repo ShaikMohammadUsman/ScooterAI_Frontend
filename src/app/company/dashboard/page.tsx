@@ -12,10 +12,10 @@ import {
     selectTotalCandidates,
     selectTotalAudioAttended,
     selectTotalVideoAttended,
-    selectTotalMovedToVideo,
+    selectTotalVideoInvites,
     selectAudioConversionRate,
-    selectVideoConversionRate,
-    selectOverallConversionRate
+    selectVideoInviteConversionRate,
+    selectVideoCompletionConversionRate
 } from '@/features/jobRoles/selectors';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,19 +75,19 @@ const FunnelTooltip = ({ active, payload }: any) => {
 const ConversionRateTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         const audio = payload.find((p: any) => p.dataKey === 'audioRate');
-        const video = payload.find((p: any) => p.dataKey === 'videoRate');
-        const overall = payload.find((p: any) => p.dataKey === 'overallRate');
+        const videoInvite = payload.find((p: any) => p.dataKey === 'videoInviteRate');
+        const videoCompletion = payload.find((p: any) => p.dataKey === 'videoCompletionRate');
         return (
             <div className="bg-white p-3 rounded shadow text-sm border border-gray-200 min-w-[140px]">
                 <div className="font-semibold text-gray-800 mb-1">{label}</div>
                 {audio && (
                     <div className="text-green-500">Audio Rate: {audio.value.toFixed(1)}%</div>
                 )}
-                {video && (
-                    <div className="text-yellow-500">Video Rate: {video.value.toFixed(1)}%</div>
+                {videoInvite && (
+                    <div className="text-yellow-500">Video Invite Rate: {videoInvite.value.toFixed(1)}%</div>
                 )}
-                {overall && (
-                    <div className="text-orange-500">Overall Rate: {overall.value.toFixed(1)}%</div>
+                {videoCompletion && (
+                    <div className="text-orange-500">Video Completion Rate: {videoCompletion.value.toFixed(1)}%</div>
                 )}
             </div>
         );
@@ -104,10 +104,10 @@ export default function DashboardPage() {
     const totalCandidates = useSelector(selectTotalCandidates);
     const totalAudioAttended = useSelector(selectTotalAudioAttended);
     const totalVideoAttended = useSelector(selectTotalVideoAttended);
-    const totalMovedToVideo = useSelector(selectTotalMovedToVideo);
+    const totalVideoInvites = useSelector(selectTotalVideoInvites);
     const audioConversionRate = useSelector(selectAudioConversionRate);
-    const videoConversionRate = useSelector(selectVideoConversionRate);
-    const overallConversionRate = useSelector(selectOverallConversionRate);
+    const videoInviteConversionRate = useSelector(selectVideoInviteConversionRate);
+    const videoCompletionConversionRate = useSelector(selectVideoCompletionConversionRate);
     const [showAddJob, setShowAddJob] = useState(false);
 
     useEffect(() => {
@@ -136,9 +136,9 @@ export default function DashboardPage() {
     const prepareConversionFunnelData = () => {
         return [
             { stage: 'Total Candidates', count: totalCandidates, color: '#8884d8' },
-            { stage: 'Audio Attended', count: totalAudioAttended, color: '#82ca9d' },
-            { stage: 'Video Attended', count: totalVideoAttended, color: '#ffc658' },
-            { stage: 'Moved to Video Round', count: totalMovedToVideo, color: '#ff7300' }
+            { stage: 'Audio Interviews', count: totalAudioAttended, color: '#82ca9d' },
+            { stage: 'Final Round Invites', count: totalVideoInvites, color: '#ffc658' },
+            { stage: 'Video Interviews', count: totalVideoAttended, color: '#ff7300' }
         ];
     };
 
@@ -166,8 +166,8 @@ export default function DashboardPage() {
         return jobRoles.map(job => ({
             name: job.title.length > 12 ? job.title.substring(0, 12) + '...' : job.title,
             audioRate: job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100) : 0,
-            videoRate: job.audio_attended_count > 0 ? ((job.video_attended_count / job.audio_attended_count) * 100) : 0,
-            overallRate: job.total_candidates > 0 ? ((job.moved_to_video_round_count / job.total_candidates) * 100) : 0
+            videoInviteRate: job.audio_attended_count > 0 ? ((job.moved_to_video_round_count / job.audio_attended_count) * 100) : 0,
+            videoCompletionRate: job.moved_to_video_round_count > 0 ? ((job.video_attended_count / job.moved_to_video_round_count) * 100) : 0
         }));
     };
 
@@ -256,26 +256,26 @@ export default function DashboardPage() {
                     <Card className="p-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-purple-100 text-sm font-medium">Video Interviews</p>
-                                <p className="text-3xl font-bold">{totalVideoAttended.toLocaleString()}</p>
+                                <p className="text-purple-100 text-sm font-medium">Final Round Invites</p>
+                                <p className="text-3xl font-bold">{totalVideoInvites.toLocaleString()}</p>
                                 <p className="text-purple-200 text-sm mt-1">
-                                    {videoConversionRate}% from audio
+                                    {videoInviteConversionRate}% from audio
                                 </p>
                             </div>
-                            <FaVideo className="h-8 w-8 text-purple-200" />
+                            <FaArrowUp className="h-8 w-8 text-purple-200" />
                         </div>
                     </Card>
 
                     <Card className="p-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-orange-100 text-sm font-medium">Final Round</p>
-                                <p className="text-3xl font-bold">{totalMovedToVideo.toLocaleString()}</p>
+                                <p className="text-orange-100 text-sm font-medium">Video Interviews</p>
+                                <p className="text-3xl font-bold">{totalVideoAttended.toLocaleString()}</p>
                                 <p className="text-orange-200 text-sm mt-1">
-                                    {overallConversionRate}% overall rate
+                                    {videoCompletionConversionRate}% from invites
                                 </p>
                             </div>
-                            <FaArrowUp className="h-8 w-8 text-orange-200" />
+                            <FaVideo className="h-8 w-8 text-orange-200" />
                         </div>
                     </Card>
                 </div>
@@ -342,8 +342,8 @@ export default function DashboardPage() {
                                     <Tooltip content={<ConversionRateTooltip />} />
                                     <Legend />
                                     <Bar dataKey="audioRate" fill="#82ca9d" name="Audio Rate" />
-                                    <Bar dataKey="videoRate" fill="#ffc658" name="Video Rate" />
-                                    <Bar dataKey="overallRate" fill="#ff7300" name="Overall Rate" />
+                                    <Bar dataKey="videoInviteRate" fill="#ffc658" name="Video Invite Rate" />
+                                    <Bar dataKey="videoCompletionRate" fill="#ff7300" name="Video Completion Rate" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -405,20 +405,20 @@ export default function DashboardPage() {
                                 <tr className="border-b border-gray-200">
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Job Role</th>
                                     <th className="text-center py-3 px-4 font-semibold text-gray-700">Total Candidates</th>
-                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Audio Attended</th>
-                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Video Attended</th>
-                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Final Round</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Audio Interviews</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Final Round Invites</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Video Interviews</th>
                                     <th className="text-center py-3 px-4 font-semibold text-gray-700">Audio Rate</th>
-                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Video Rate</th>
-                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Overall Rate</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Invite Rate</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Completion Rate</th>
                                     <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {jobRoles.map((job, index) => {
                                     const audioRate = job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100).toFixed(1) : '0';
-                                    const videoRate = job.audio_attended_count > 0 ? ((job.video_attended_count / job.audio_attended_count) * 100).toFixed(1) : '0';
-                                    const overallRate = job.total_candidates > 0 ? ((job.moved_to_video_round_count / job.total_candidates) * 100).toFixed(1) : '0';
+                                    const inviteRate = job.audio_attended_count > 0 ? ((job.moved_to_video_round_count / job.audio_attended_count) * 100).toFixed(1) : '0';
+                                    const completionRate = job.moved_to_video_round_count > 0 ? ((job.video_attended_count / job.moved_to_video_round_count) * 100).toFixed(1) : '0';
                                     return (
                                         <tr
                                             key={job._id}
@@ -428,21 +428,21 @@ export default function DashboardPage() {
                                             <td className="py-3 px-4 font-medium text-gray-900">{job.title}</td>
                                             <td className="py-3 px-4 text-center text-gray-700">{job.total_candidates}</td>
                                             <td className="py-3 px-4 text-center text-gray-700">{job.audio_attended_count}</td>
-                                            <td className="py-3 px-4 text-center text-gray-700">{job.video_attended_count}</td>
                                             <td className="py-3 px-4 text-center text-gray-700">{job.moved_to_video_round_count}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{job.video_attended_count}</td>
                                             <td className="py-3 px-4 text-center">
                                                 <Badge variant={parseFloat(audioRate) > 50 ? "default" : "secondary"}>
                                                     {audioRate}%
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-4 text-center">
-                                                <Badge variant={parseFloat(videoRate) > 30 ? "default" : "secondary"}>
-                                                    {videoRate}%
+                                                <Badge variant={parseFloat(inviteRate) > 30 ? "default" : "secondary"}>
+                                                    {inviteRate}%
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-4 text-center">
-                                                <Badge variant={parseFloat(overallRate) > 10 ? "default" : "secondary"}>
-                                                    {overallRate}%
+                                                <Badge variant={parseFloat(completionRate) > 50 ? "default" : "secondary"}>
+                                                    {completionRate}%
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-4 text-center">

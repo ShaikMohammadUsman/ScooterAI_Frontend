@@ -12,10 +12,10 @@ import {
     selectTotalCandidates,
     selectTotalAudioAttended,
     selectTotalVideoAttended,
-    selectTotalMovedToVideo,
+    selectTotalVideoInvites,
     selectAudioConversionRate,
-    selectVideoConversionRate,
-    selectOverallConversionRate
+    selectVideoInviteConversionRate,
+    selectVideoCompletionConversionRate
 } from '@/features/jobRoles/selectors';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,10 @@ export default function JobsPage() {
     const totalCandidates = useSelector(selectTotalCandidates);
     const totalAudioAttended = useSelector(selectTotalAudioAttended);
     const totalVideoAttended = useSelector(selectTotalVideoAttended);
-    const totalMovedToVideo = useSelector(selectTotalMovedToVideo);
+    const totalMovedToVideo = useSelector(selectTotalVideoInvites);
     const audioConversionRate = useSelector(selectAudioConversionRate);
-    const videoConversionRate = useSelector(selectVideoConversionRate);
-    const overallConversionRate = useSelector(selectOverallConversionRate);
+    const videoConversionRate = useSelector(selectVideoInviteConversionRate);
+    const overallConversionRate = useSelector(selectVideoCompletionConversionRate);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddJob, setShowAddJob] = useState(false);
 
@@ -112,16 +112,16 @@ export default function JobsPage() {
                             <span className="text-2xl font-bold">{totalAudioAttended}</span>
                         </div>
                     </Card>
+                    <Card className="p-4 bg-gradient-to-r from-orange-400 to-orange-500 text-white">
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-orange-100">Video Round Invites</span>
+                            <span className="text-2xl font-bold">{totalMovedToVideo}</span>
+                        </div>
+                    </Card>
                     <Card className="p-4 bg-gradient-to-r from-purple-400 to-purple-500 text-white">
                         <div className="flex flex-col items-center">
                             <span className="text-xs text-purple-100">Video Attended</span>
                             <span className="text-2xl font-bold">{totalVideoAttended}</span>
-                        </div>
-                    </Card>
-                    <Card className="p-4 bg-gradient-to-r from-orange-400 to-orange-500 text-white">
-                        <div className="flex flex-col items-center">
-                            <span className="text-xs text-orange-100">Final Round</span>
-                            <span className="text-2xl font-bold">{totalMovedToVideo}</span>
                         </div>
                     </Card>
                 </div>
@@ -132,11 +132,11 @@ export default function JobsPage() {
                         <Badge variant={parseFloat(audioConversionRate) > 50 ? "default" : "secondary"} className="mt-1 text-lg">{audioConversionRate}%</Badge>
                     </Card>
                     <Card className="p-4 flex flex-col items-center">
-                        <span className="text-xs text-gray-500">Video Conversion Rate</span>
+                        <span className="text-xs text-gray-500">Video Invite Rate</span>
                         <Badge variant={parseFloat(videoConversionRate) > 30 ? "default" : "secondary"} className="mt-1 text-lg">{videoConversionRate}%</Badge>
                     </Card>
                     <Card className="p-4 flex flex-col items-center">
-                        <span className="text-xs text-gray-500">Overall Conversion Rate</span>
+                        <span className="text-xs text-gray-500">Video Completion Rate</span>
                         <Badge variant={parseFloat(overallConversionRate) > 10 ? "default" : "secondary"} className="mt-1 text-lg">{overallConversionRate}%</Badge>
                     </Card>
                 </div>
@@ -145,8 +145,8 @@ export default function JobsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredJobs.map((job) => {
                         const audioRate = job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100).toFixed(1) : '0';
-                        const videoRate = job.audio_attended_count > 0 ? ((job.video_attended_count / job.audio_attended_count) * 100).toFixed(1) : '0';
-                        const overallRate = job.total_candidates > 0 ? ((job.moved_to_video_round_count / job.total_candidates) * 100).toFixed(1) : '0';
+                        const videoInviteRate = job.audio_attended_count > 0 ? ((job.moved_to_video_round_count / job.audio_attended_count) * 100).toFixed(1) : '0';
+                        const videoCompleteRate = job.moved_to_video_round_count > 0 ? ((job.video_attended_count / job.moved_to_video_round_count) * 100).toFixed(1) : '0';
                         return (
                             <Card key={job._id} className="p-6">
                                 <div className="flex items-center justify-between mb-2">
@@ -179,23 +179,23 @@ export default function JobsPage() {
                                         <span className="font-bold text-green-700">{job.audio_attended_count}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
-                                        <span className="text-xs text-gray-500">Video Attended</span>
-                                        <span className="font-bold text-purple-700">{job.video_attended_count}</span>
+                                        <span className="text-xs text-gray-500">Video Round Invites</span>
+                                        <span className="font-bold text-orange-700">{job.moved_to_video_round_count}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
-                                        <span className="text-xs text-gray-500">Final Round</span>
-                                        <span className="font-bold text-orange-700">{job.moved_to_video_round_count}</span>
+                                        <span className="text-xs text-gray-500">Video Attended</span>
+                                        <span className="font-bold text-purple-700">{job.video_attended_count}</span>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     <Badge variant={parseFloat(audioRate) > 50 ? "default" : "secondary"}>
                                         Audio: {audioRate}%
                                     </Badge>
-                                    <Badge variant={parseFloat(videoRate) > 30 ? "default" : "secondary"}>
-                                        Video: {videoRate}%
+                                    <Badge variant={parseFloat(videoInviteRate) > 30 ? "default" : "secondary"}>
+                                        Video Invite: {videoInviteRate}%
                                     </Badge>
-                                    <Badge variant={parseFloat(overallRate) > 10 ? "default" : "secondary"}>
-                                        Overall: {overallRate}%
+                                    <Badge variant={parseFloat(videoCompleteRate) > 10 ? "default" : "secondary"}>
+                                        Video Complete: {videoCompleteRate}%
                                     </Badge>
                                 </div>
                                 <div className="flex flex-1 grow-1 items-center justify-between mt-2 p-2 mt-auto">

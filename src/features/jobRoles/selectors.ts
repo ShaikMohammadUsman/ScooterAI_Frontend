@@ -15,7 +15,7 @@ export const selectTotalAudioAttended = (state: RootState) =>
 export const selectTotalVideoAttended = (state: RootState) =>
   (state.jobRoles as JobRoleState).jobRoles.reduce((acc: number, job: any) => acc + (job.video_attended_count || 0), 0);
 
-export const selectTotalMovedToVideo = (state: RootState) =>
+export const selectTotalVideoInvites = (state: RootState) =>
   (state.jobRoles as JobRoleState).jobRoles.reduce((acc: number, job: any) => acc + (job.moved_to_video_round_count || 0), 0);
 
 export const selectAudioConversionRate = (state: RootState) => {
@@ -24,14 +24,14 @@ export const selectAudioConversionRate = (state: RootState) => {
   return total > 0 ? ((audio / total) * 100).toFixed(1) : '0';
 };
 
-export const selectVideoConversionRate = (state: RootState) => {
+export const selectVideoInviteConversionRate = (state: RootState) => {
   const audio = selectTotalAudioAttended(state);
-  const video = selectTotalVideoAttended(state);
-  return audio > 0 ? ((video / audio) * 100).toFixed(1) : '0';
+  const videoInvites = selectTotalVideoInvites(state);
+  return audio > 0 ? ((videoInvites / audio) * 100).toFixed(1) : '0';
 };
 
-export const selectOverallConversionRate = (state: RootState) => {
-  const total = selectTotalCandidates(state);
-  const moved = selectTotalMovedToVideo(state);
-  return total > 0 ? ((moved / total) * 100).toFixed(1) : '0';
+export const selectVideoCompletionConversionRate = (state: RootState) => {
+  const videoInvites = selectTotalVideoInvites(state);
+  const videoCompleted = selectTotalVideoAttended(state);
+  return videoInvites > 0 ? ((videoCompleted / videoInvites) * 100).toFixed(1) : '0';
 }; 
