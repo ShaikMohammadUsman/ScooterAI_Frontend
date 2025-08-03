@@ -81,7 +81,7 @@ function CommunicationInterview() {
 
         if (!verifyCode) {
             setShowUnauthorized(true);
-        } else if (!/^[A-Z0-9]{5}$/.test(verifyCode)) {
+        } else if (!/^[A-Za-z0-9]{5}$/.test(verifyCode)) {
             setShowUnauthorized(true);
         } else {
             setVerificationCode(verifyCode);
@@ -804,7 +804,7 @@ function CommunicationInterview() {
                                             id="code"
                                             type="text"
                                             value={verificationCode}
-                                            onChange={(e) => setVerificationCode(e.target.value.toUpperCase())}
+                                            onChange={(e) => setVerificationCode(e.target.value)}
                                             placeholder="XXXXX"
                                             className="h-12 text-base font-mono text-center tracking-widest"
                                             maxLength={5}
