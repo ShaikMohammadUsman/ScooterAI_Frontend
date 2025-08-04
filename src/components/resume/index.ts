@@ -16,4 +16,5 @@ export { default as AnimatedFormContainer } from './AnimatedFormContainer';
 export { default as StepFormWrapper } from './StepFormWrapper';
 export { default as ModernHeader } from './ModernHeader';
 export { default as UserLoginSection } from './UserLoginSection';
-export { default as PreviousApplicationModal } from './PreviousApplicationModal'; 
+export { default as PreviousApplicationModal } from './PreviousApplicationModal';
+export { default as JobChatbot } from './JobChatbot'; 

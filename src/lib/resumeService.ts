@@ -177,6 +177,17 @@ export interface ResumeProfile {
   };
 }
 
+// Chatbot API Types
+export interface ChatbotRequest {
+  question: string;
+  job_id: string;
+}
+
+export interface ChatbotResponse {
+  status: boolean;
+  answer: string;
+}
+
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 // const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
@@ -291,5 +302,24 @@ export async function updateResume(updateData: UpdateResumeRequest): Promise<Upd
     return res.data;
   } catch (err: any) {
     throw new Error(err.response?.data?.message || "Failed to update resume");
+  }
+}
+
+/**
+ * Sends a job-related question to the chatbot service
+ * @param chatbotData - Object containing question and job_id
+ * @returns Promise with chatbot response
+ */
+export async function askJobQuestion(chatbotData: ChatbotRequest): Promise<ChatbotResponse> {
+  try {
+    const res = await axios.post(`${API_BASE}/ask-job`, chatbotData, {
+      headers: { 
+        "accept": "application/json",
+        "Content-Type": "application/json" 
+      },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to get answer from chatbot");
   }
 } 

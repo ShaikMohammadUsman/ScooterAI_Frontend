@@ -11,6 +11,7 @@ import ResumeSuggestionBox from "@/components/interview/ResumeSuggestionBox";
 import ProfileSuccessScreen from "@/components/interview/ProfileSuccessScreen";
 import UserLoginSection from "@/components/resume/UserLoginSection";
 import PreviousApplicationModal from "@/components/resume/PreviousApplicationModal";
+import JobChatbot from "@/components/resume/JobChatbot";
 
 // Import modular components
 import {
@@ -429,6 +430,12 @@ export default function ResumePage() {
             <div className="absolute inset-0 -z-10">
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100"></div>
             </div>
+
+            {/* Job Chatbot */}
+            <JobChatbot
+                jobId={searchParams.get('job_id') || ""}
+                jobTitle={searchParams.get('role') || ""}
+            />
 
             <div className="mx-auto py-8 px-2 sm:px-4 relative z-10">
                 {/* Previous Application Modal */}
