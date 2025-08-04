@@ -327,20 +327,20 @@ export default function ResumePage() {
 
         try {
             // Auto-save summary if not saved by user
-            const userId = localStorage.getItem('scooterUserId');
-            if (userId && profile?.basic_information?.full_name) {
-                try {
-                    // Try to auto-save the summary if it exists but hasn't been saved
-                    // This is a fallback in case the user didn't explicitly save it
-                    await saveCandidateSummary({
-                        user_id: userId,
-                        summary_content: "Auto-saved summary from profile completion"
-                    });
-                } catch (summaryError) {
-                    // Ignore summary save errors as it's optional
-                    console.log("Summary auto-save failed:", summaryError);
-                }
-            }
+            // const userId = localStorage.getItem('scooterUserId');
+            // if (userId && profile?.basic_information?.full_name) {
+            //     try {
+            //         // Try to auto-save the summary if it exists but hasn't been saved
+            //         // This is a fallback in case the user didn't explicitly save it
+            //         await saveCandidateSummary({
+            //             user_id: userId,
+            //             summary_content: "Auto-saved summary from profile completion"
+            //         });
+            //     } catch (summaryError) {
+            //         // Ignore summary save errors as it's optional
+            //         console.log("Summary auto-save failed:", summaryError);
+            //     }
+            // }
 
             // Transform profile data for API
             const transformedProfile = {
