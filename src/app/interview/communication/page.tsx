@@ -19,6 +19,7 @@ import { SubmissionModal } from "./components/SubmissionModal";
 import { ResumeUploadModal } from "./components/ResumeUploadModal";
 import { toast } from "@/hooks/use-toast";
 import WelcomeScreen from "@/components/interview/WelcomeScreen";
+import ProctoringSystem from "@/components/interview/ProctoringSystem";
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
@@ -75,6 +76,10 @@ function CommunicationInterview() {
     // Welcome screen state
     const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
 
+    // Proctoring states
+    const [proctoringActive, setProctoringActive] = useState(false);
+    const [proctoringViolations, setProctoringViolations] = useState<string[]>([]);
+
     // Check for verification parameter on mount
     useEffect(() => {
         const verifyCode = searchParams.get('verify');
@@ -101,8 +106,20 @@ function CommunicationInterview() {
             if (recognizerRef.current) {
                 recognizerRef.current.stopContinuousRecognitionAsync();
             }
+            // Deactivate proctoring on unmount
+            setProctoringActive(false);
         };
     }, []);
+
+    // Handle proctoring violations
+    const handleProctoringViolation = (violation: string) => {
+        setProctoringViolations(prev => [...prev, violation]);
+        toast({
+            title: "Proctoring Alert",
+            description: violation,
+            variant: "destructive",
+        });
+    };
 
     // Handle verification
     const handleVerification = async (e: React.FormEvent) => {
@@ -176,6 +193,9 @@ function CommunicationInterview() {
                 return;
             }
 
+            // Activate proctoring when camera check starts
+            setProctoringActive(true);
+
             // Start with a test question for camera check
             // const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in the role${jobTitle ? ` of ${jobTitle}` : ""}${jobTitle && jobDescription ? ` at ${jobDescription}` : ""}.`;
             const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in your role${jobTitle ? ` of ${jobTitle}` : ""}.`;
@@ -207,6 +227,8 @@ function CommunicationInterview() {
         } catch (err: any) {
             console.error("Error starting interview:", err);
             setError(err.message || "Failed to start interview");
+            // Deactivate proctoring on error
+            setProctoringActive(false);
         } finally {
             setLoading(false);
         }
@@ -368,10 +390,14 @@ function CommunicationInterview() {
             }
 
             setMicEnabled(true);
+
+            // Proctoring is already active from camera check
         } catch (err: any) {
             console.error("Error starting actual interview:", err);
             setError(err.message || "Failed to start interview");
             cleanupRecording();
+            // Deactivate proctoring on error
+            setProctoringActive(false);
         } finally {
             setLoading(false);
             setIsProcessingResponse(false);
@@ -521,6 +547,9 @@ function CommunicationInterview() {
 
                 cleanupRecording();
                 setShowCompletionScreen(true);
+
+                // Deactivate proctoring when interview completes normally
+                setProctoringActive(false);
                 return;
             }
 
@@ -566,6 +595,8 @@ function CommunicationInterview() {
             console.error("Error submitting answer:", err);
             setError(err.message || "Failed to submit answer");
             cleanupRecording();
+            // Deactivate proctoring on error
+            setProctoringActive(false);
         } finally {
             setLoading(false);
             setIsProcessingResponse(false);
@@ -623,9 +654,14 @@ function CommunicationInterview() {
             }
 
             setShowCompletionScreen(true);
+
+            // Deactivate proctoring when interview ends
+            setProctoringActive(false);
         } catch (err: any) {
             console.error("Error ending interview:", err);
             setError(err.message || "Failed to end interview");
+            // Deactivate proctoring on error
+            setProctoringActive(false);
         } finally {
             setIsEndingInterview(false);
             setLoading(false);
@@ -921,6 +957,17 @@ function CommunicationInterview() {
                                                 "Start Interview"
                                             )}
                                         </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                setShowWelcomeScreen(true);
+                                                setStarted(false);
+                                                setProctoringActive(false); // Deactivate proctoring when going back
+                                            }}
+                                            className="w-full max-w-xs text-base py-3 rounded-xl"
+                                        >
+                                            Back to Welcome
+                                        </Button>
                                     </div>
                                 ) : !showCompletionScreen && (
                                     <div className="flex flex-col items-center gap-6 w-full">
@@ -1186,6 +1233,12 @@ function CommunicationInterview() {
                 onOpenChange={setShowResumeUploadModal}
                 userId={verifiedUser?.user_id || ""}
                 onResumeUploaded={handleResumeUploaded}
+            />
+
+            {/* Proctoring System */}
+            <ProctoringSystem
+                isActive={proctoringActive}
+                onViolation={handleProctoringViolation}
             />
         </div>
     );
