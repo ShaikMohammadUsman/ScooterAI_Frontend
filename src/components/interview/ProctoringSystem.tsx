@@ -64,6 +64,22 @@ export default function ProctoringSystem({ isActive, onViolation }: ProctoringSy
     // Enter fullscreen
     const enterFullscreen = async () => {
         try {
+            // Check if already in fullscreen
+            if (document.fullscreenElement ||
+                (document as any).webkitFullscreenElement ||
+                (document as any).mozFullScreenElement ||
+                (document as any).msFullscreenElement) {
+                setIsFullscreen(true);
+                return;
+            }
+
+            // Check if fullscreen is supported and enabled
+            if (!isFullscreenSupported()) {
+                console.log("Fullscreen not supported or disabled");
+                return;
+            }
+
+            // Try to enter fullscreen with proper error handling
             if (document.documentElement.requestFullscreen) {
                 await document.documentElement.requestFullscreen();
             } else if ((document.documentElement as any).webkitRequestFullscreen) {
@@ -72,11 +88,23 @@ export default function ProctoringSystem({ isActive, onViolation }: ProctoringSy
                 await (document.documentElement as any).mozRequestFullScreen();
             } else if ((document.documentElement as any).msRequestFullscreen) {
                 await (document.documentElement as any).msRequestFullscreen();
+            } else {
+                console.log("No fullscreen API available");
+                return;
             }
+
             setIsFullscreen(true);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to enter fullscreen:", error);
-            addViolation("fullscreen", "Failed to enter fullscreen mode", "warning");
+
+            // Don't add violation for common fullscreen failures
+            if (error.name === 'NotAllowedError' ||
+                error.name === 'TypeError' ||
+                error.message?.includes('user gesture')) {
+                console.log("Fullscreen blocked - requires user gesture or not allowed");
+            } else {
+                addViolation("fullscreen", "Failed to enter fullscreen mode", "warning");
+            }
         }
     };
 
@@ -492,11 +520,12 @@ export default function ProctoringSystem({ isActive, onViolation }: ProctoringSy
         if (isActive && !isWatching) {
             setIsWatching(true);
 
-            // Auto-enter fullscreen if supported
+            // Auto-enter fullscreen if supported (with better timing)
             if (isFullscreenSupported() && !isFullscreen) {
+                // Use a longer delay to ensure DOM is ready and user gesture context is established
                 setTimeout(() => {
                     enterFullscreen();
-                }, 1000);
+                }, 1500);
             }
 
             toast({
