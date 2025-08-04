@@ -4,24 +4,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserLoginResponse } from "@/lib/userService";
-import { CheckCircle, Play, ArrowRight, User, Phone, Mail } from "lucide-react";
+import { CheckCircle, Play, ArrowRight, User, Phone, Mail, X } from "lucide-react";
 
 interface PreviousApplicationModalProps {
     userData: UserLoginResponse;
     onContinueWithJob: () => void;
     onPracticeInterview: () => void;
     onGoBack: () => void;
+    onClose: () => void;
 }
 
 export default function PreviousApplicationModal({
     userData,
     onContinueWithJob,
     onPracticeInterview,
-    onGoBack
+    onGoBack,
+    onClose
 }: PreviousApplicationModalProps) {
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+                {/* Close Button */}
+                <Button
+                    onClick={onClose}
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-4 right-4 z-10 h-8 w-8 p-0 rounded-full hover:bg-gray-100"
+                >
+                    <X className="w-4 h-4" />
+                </Button>
+
                 <CardHeader className="text-center">
                     <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                         <CheckCircle className="w-8 h-8 text-green-600" />
@@ -125,7 +137,7 @@ export default function PreviousApplicationModal({
                     </div>
 
                     <div className="text-center text-sm text-gray-500">
-                        <p>Choose to continue with your previous application or practice with a mock interview</p>
+                        <p>Choose to continue with your previous application, practice with a mock interview, or start fresh</p>
                     </div>
                 </CardContent>
             </Card>

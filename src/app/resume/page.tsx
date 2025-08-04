@@ -329,6 +329,13 @@ export default function ResumePage() {
         setUserLoginData(null);
     };
 
+    // Handle close modal and continue with fresh application
+    const handleCloseModal = () => {
+        setShowPreviousApplication(false);
+        setShowUserLogin(false);
+        setUserLoginData(null);
+    };
+
     // Handle form submit
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -417,8 +424,13 @@ export default function ResumePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
-            <div className="mx-auto py-8 px-2 sm:px-4">
+        <div className="min-h-screen bg-gradient-to-b from-background to-background/80 relative overflow-hidden">
+            {/* Subtle background gradient */}
+            <div className="absolute inset-0 -z-10">
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100"></div>
+            </div>
+
+            <div className="mx-auto py-8 px-2 sm:px-4 relative z-10">
                 {/* Previous Application Modal */}
                 {showPreviousApplication && userLoginData && (
                     <PreviousApplicationModal
@@ -426,6 +438,7 @@ export default function ResumePage() {
                         onContinueWithJob={handleContinueWithJob}
                         onPracticeInterview={handlePracticeInterview}
                         onGoBack={handleGoBackFromModal}
+                        onClose={handleCloseModal}
                     />
                 )}
 
@@ -467,7 +480,7 @@ export default function ResumePage() {
                                     </div>
 
                                     {/* Right Column - Form Sections */}
-                                    <div className="space-y-6 bg-card py-12 rounded-3xl">
+                                    <div className="space-y-6 bg-white shadow-2xl py-12 px-8 rounded-3xl border border-gray-100">
                                         {/* User Details Form - Required for Resume Parsing */}
                                         <UserDetailsForm
                                             profile={profile}
@@ -537,17 +550,19 @@ export default function ResumePage() {
 
                         {/* Step-by-Step Form */}
                         {resumeParsed && !loading && (
-                            <div className="w-full xl:w-3/4 max-w-6xl mx-auto mt-8">
-                                <StepFormWrapper
-                                    profile={profile}
-                                    onFieldChange={handleFieldChange}
-                                    onArrayChange={handleArrayChange}
-                                    onCompanyHistoryChange={handleCompanyHistoryChange}
-                                    onAddCompanyHistory={addCompanyHistory}
-                                    onRemoveCompanyHistory={removeCompanyHistory}
-                                    onSave={handleSubmit}
-                                    isSubmitting={submitting}
-                                />
+                            <div className="w-full xl:w-3/4 max-w-6xl mx-auto mt-8 relative">
+                                <div className="relative bg-white shadow-2xl rounded-3xl border border-gray-100 p-8">
+                                    <StepFormWrapper
+                                        profile={profile}
+                                        onFieldChange={handleFieldChange}
+                                        onArrayChange={handleArrayChange}
+                                        onCompanyHistoryChange={handleCompanyHistoryChange}
+                                        onAddCompanyHistory={addCompanyHistory}
+                                        onRemoveCompanyHistory={removeCompanyHistory}
+                                        onSave={handleSubmit}
+                                        isSubmitting={submitting}
+                                    />
+                                </div>
                             </div>
                         )}
 
