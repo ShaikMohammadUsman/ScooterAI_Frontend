@@ -107,6 +107,8 @@ export default function ResumePage() {
     const [linkedInUrl, setLinkedInUrl] = useState("");
     const [consentToUpdates, setConsentToUpdates] = useState(false);
     const [parsedUserName, setParsedUserName] = useState<string>(""); // Add state for parsed user name
+    const [candidateSummary, setCandidateSummary] = useState<string>(""); // Add state for candidate summary
+    const [summaryAlreadySaved, setSummaryAlreadySaved] = useState<boolean>(false); // Track if summary was already saved
 
     // Handle file upload and parse
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,6 +130,10 @@ export default function ResumePage() {
             if (response.status && response.data) {
                 // Store the parsed user name
                 setParsedUserName(response.data.basic_information.full_name);
+
+                // Reset summary saved state for new resume
+                setSummaryAlreadySaved(false);
+                setCandidateSummary("");
 
                 // Update profile with parsed data, ensuring type compatibility
                 setProfile({
@@ -319,6 +325,17 @@ export default function ResumePage() {
         setUserLoginData(null);
     };
 
+    // Handle summary generation callback
+    const handleSummaryGenerated = (summary: string) => {
+        setCandidateSummary(summary);
+    };
+
+    // Handle summary saved callback
+    const handleSummarySaved = (summary: string) => {
+        setCandidateSummary(summary);
+        setSummaryAlreadySaved(true);
+    };
+
     // Handle form submit
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -326,21 +343,23 @@ export default function ResumePage() {
         setError(null);
 
         try {
-            // Auto-save summary if not saved by user
-            // const userId = localStorage.getItem('scooterUserId');
-            // if (userId && profile?.basic_information?.full_name) {
-            //     try {
-            //         // Try to auto-save the summary if it exists but hasn't been saved
-            //         // This is a fallback in case the user didn't explicitly save it
-            //         await saveCandidateSummary({
-            //             user_id: userId,
-            //             summary_content: "Auto-saved summary from profile completion"
-            //         });
-            //     } catch (summaryError) {
-            //         // Ignore summary save errors as it's optional
-            //         console.log("Summary auto-save failed:", summaryError);
-            //     }
-            // }
+            // Auto-save summary only if not already saved by user and summary exists
+            const userId = localStorage.getItem('scooterUserId');
+            if (userId && profile?.basic_information?.full_name && candidateSummary && !summaryAlreadySaved) {
+                try {
+                    // Auto-save the actual summary content that was generated and potentially edited
+                    await saveCandidateSummary({
+                        user_id: userId,
+                        summary_content: candidateSummary
+                    });
+                    console.log("Summary auto-saved during profile submission");
+                } catch (summaryError) {
+                    // Ignore summary save errors as it's optional
+                    console.log("Summary auto-save failed:", summaryError);
+                }
+            } else if (summaryAlreadySaved) {
+                console.log("Summary already saved by user, skipping auto-save");
+            }
 
             // Transform profile data for API
             const transformedProfile = {
@@ -553,6 +572,8 @@ export default function ResumePage() {
                                         onSave={handleSubmit}
                                         isSubmitting={submitting}
                                         parsedUserName={parsedUserName}
+                                        onSummaryGenerated={handleSummaryGenerated}
+                                        onSummarySaved={handleSummarySaved}
                                     />
                                 </div>
                             </div>

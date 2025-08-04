@@ -25,13 +25,15 @@ interface CandidateSummaryFormProps {
     parsedUserName?: string;
     onSummaryGenerated?: (summary: string) => void;
     onSaveProgress?: (isSaving: boolean) => void;
+    onSummarySaved?: (summary: string) => void; // Add callback for when summary is saved
 }
 
 export default function CandidateSummaryForm({
     profile,
     parsedUserName,
     onSummaryGenerated,
-    onSaveProgress
+    onSaveProgress,
+    onSummarySaved
 }: CandidateSummaryFormProps) {
     const [summary, setSummary] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
@@ -125,6 +127,7 @@ export default function CandidateSummaryForm({
                 setHasSaved(true);
                 setHasUnsavedChanges(false);
                 setIsEditing(false);
+                onSummarySaved?.(summary.trim()); // Notify parent that summary was saved
                 toast({
                     title: "Summary Saved!",
                     description: "Your professional summary has been saved successfully.",

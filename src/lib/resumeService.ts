@@ -351,7 +351,7 @@ export async function askJobQuestion(chatbotData: ChatbotRequest): Promise<Chatb
  */
 export async function generateCandidateSummary(summaryData: GenerateCandidateSummaryRequest): Promise<GenerateCandidateSummaryResponse> {
   try {
-    const res = await axios.post(`${API_BASE}/generate-candidate-summary`, summaryData, {
+    const res = await axios.post(`${API_BASE}/generate-resume-summary`, summaryData, {
       headers: { 
         "accept": "application/json",
         "Content-Type": "application/json" 

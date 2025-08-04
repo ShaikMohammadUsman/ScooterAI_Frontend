@@ -57,10 +57,12 @@ interface StepFormWrapperProps {
     onSave: (e?: React.FormEvent) => void;
     isSubmitting: boolean;
     parsedUserName?: string; // Add prop for parsed user name
+    onSummaryGenerated?: (summary: string) => void; // Add prop for summary generation callback
+    onSummarySaved?: (summary: string) => void; // Add prop for summary saved callback
 }
 
 export default function StepFormWrapper({
-    profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, onSave, isSubmitting, parsedUserName
+    profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, onSave, isSubmitting, parsedUserName, onSummaryGenerated, onSummarySaved
 }: StepFormWrapperProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [direction, setDirection] = useState<"left" | "right">("right");
@@ -108,6 +110,8 @@ export default function StepFormWrapper({
             component: <CandidateSummaryForm
                 profile={profile}
                 parsedUserName={parsedUserName}
+                onSummaryGenerated={onSummaryGenerated}
+                onSummarySaved={onSummarySaved}
                 onSaveProgress={setIsSummarySaving}
             />,
             completed: false
@@ -142,7 +146,7 @@ export default function StepFormWrapper({
             component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
             completed: false
         }
-    ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, parsedUserName]);
+    ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, parsedUserName, onSummaryGenerated, onSummarySaved]);
 
     // Move salaryError and salaryStepIndex below steps definition
     const [salaryError, setSalaryError] = useState("");
