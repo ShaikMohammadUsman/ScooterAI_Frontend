@@ -890,14 +890,17 @@ function CommunicationInterview() {
                         <>
                             {/* Main Content */}
                             <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
-                                <div className="h-full flex flex-col sm:flex-row ">
-                                    {/* Video Area */}
-                                    <div className="w-full h-full sm:w-1/3 p-2 rounded-lg">
+                                {/* <div className="h-full flex flex-col sm:flex-row "> */}
+                                {/* Video Area */}
+                                {/* <div className="w-full h-full sm:w-1/3 p-2 rounded-lg">
                                         <UserVideo />
-                                    </div>
+                                    </div> */}
 
-                                    {/* Chat Area */}
-                                    <div className="flex-1 h-full overflow-y-auto p-6 space-y-2">
+                                {/* Chat Area */}
+                                {/* <div className="flex-1 h-full overflow-y-auto p-6 space-y-2"> */}
+                                <div className="h-full">
+                                    {/* Chat Area - Full width since video is floating */}
+                                    <div className="h-full overflow-y-auto p-6 space-y-2">
                                         <AnimatePresence>
                                             {messages.map((msg, i) => (
                                                 <motion.div
@@ -932,6 +935,9 @@ function CommunicationInterview() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Floating Video Component - Only show when interview has started */}
+                            {started && <UserVideo />}
 
                             {/* Controls */}
                             <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
