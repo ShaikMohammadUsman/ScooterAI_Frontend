@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Clock, Headphones, Mic, RotateCcw } from 'lucide-react'
+import { CheckCircle, Clock, Headphones, Mic, RotateCcw, Info } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: () => void }) {
@@ -47,6 +47,19 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                         <div className="flex flex-col items-center text-center p-4 rounded-lg bg-green-50">
                             <Mic className="w-6 h-6 text-green-600 mb-2" />
                             <span className="text-sm font-medium text-green-700">No video required, only voice</span>
+                        </div>
+                    </div>
+
+                    {/* Resume Later Info */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div className="flex items-start gap-3">
+                            <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div className="text-left">
+                                <h4 className="font-medium text-blue-800 mb-1">Need to take a break?</h4>
+                                <p className="text-sm text-blue-700">
+                                    You can resume this audio interview later by refreshing this page and using the same email address. Your progress will be saved automatically.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
