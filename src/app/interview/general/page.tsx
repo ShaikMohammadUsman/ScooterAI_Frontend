@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
 import { AnimatedPlaceholder } from "./AnimatedPlaceholder";
 import { toast } from "@/hooks/use-toast";
+import ProctoringSystem from "@/components/interview/ProctoringSystem";
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
@@ -46,6 +47,10 @@ export default function VoiceInterviewPage() {
     const [passed, setPassed] = useState(false);
     const [recognizing, setRecognizing] = useState(false);
 
+    // Proctoring states
+    const [proctoringActive, setProctoringActive] = useState(false);
+    const [proctoringViolations, setProctoringViolations] = useState<string[]>([]);
+
     // Audio recording states
     const audioRecorderRef = useRef<InterviewAudioRecorder | null>(null);
     const [isUploadingAudio, setIsUploadingAudio] = useState(false);
@@ -68,6 +73,11 @@ export default function VoiceInterviewPage() {
             }
         };
     }, []);
+
+    // Handle proctoring violations
+    const handleProctoringViolation = (violation: string) => {
+        setProctoringViolations(prev => [...prev, violation]);
+    };
 
     // Start interview: fetch questions
     const handleStart = async () => {
@@ -126,8 +136,9 @@ export default function VoiceInterviewPage() {
             setQuestions(res.questions);
             questionsRef.current = res.questions;
 
-            // Start the interview
+            // Start the interview and proctoring
             setStarted(true);
+            setProctoringActive(true);
             await askQuestion(0);
         } catch (err: any) {
             console.error("Error starting interview:", err);
@@ -371,6 +382,7 @@ export default function VoiceInterviewPage() {
                 await uploadAudioFile(profile_id);
 
                 setShowResults(true);
+                setProctoringActive(false);
                 if (res.qualified_for_video_round) {
                     setPassed(res.qualified_for_video_round);
                 }
@@ -421,6 +433,12 @@ export default function VoiceInterviewPage() {
 
     return (
         <div className="min-h-screen flex flex-col bg-background">
+            {/* Proctoring System */}
+            <ProctoringSystem
+                isActive={proctoringActive}
+                onViolation={handleProctoringViolation}
+            />
+
             {/* Audio Upload Modal */}
             <AnimatePresence>
                 {showUploadModal && (
@@ -529,17 +547,7 @@ export default function VoiceInterviewPage() {
                     <div className="text-xs text-muted-foreground">Voice Conversation Simulation</div>
                 </div>
 
-                {started && (
-                    <div className="ml-auto flex flex-col items-end">
-                        <Progress
-                            value={currentQ === questions.length - 1 ? 100 : (currentQ / questions.length) * 100}
-                            className="w-36 h-2 rounded-full bg-slate-200"
-                        />
-                        <div className="text-xs text-gray-500 mt-1">
-                            Question <span className="font-medium text-indigo-600">{currentQ + 1}</span> of {questions.length}
-                        </div>
-                    </div>
-                )}
+
             </div>
 
 
@@ -563,6 +571,16 @@ export default function VoiceInterviewPage() {
                             {/* Question Progress */}
                             {started ? (
                                 <div className="w-full sm:w-56 m-4 flex-grow-0 border-1 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/80 p-5 shadow-inner overflow-y-auto">
+                                    {/* Progress Bar */}
+                                    <div className="mb-4">
+                                        <Progress
+                                            value={currentQ === questions.length - 1 ? 100 : (currentQ / questions.length) * 100}
+                                            className="w-full h-2 rounded-full bg-slate-200"
+                                        />
+                                        <div className="text-xs text-gray-500 mt-1 text-center">
+                                            Question <span className="font-medium text-indigo-600">{currentQ + 1}</span> of {questions.length}
+                                        </div>
+                                    </div>
                                     <h3 className="font-semibold text-gray-800 mb-4 text-lg">Answers</h3>
                                     <div className="space-y-3 gap-4">
                                         {questions.map((q, i) => (
