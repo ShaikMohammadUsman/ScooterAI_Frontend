@@ -70,7 +70,7 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                         onClick={handleStartInterview}
                         className="h-14 px-12 text-xl font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                     >
-                        Start Real Interview
+                        Start Interview
                     </Button>
 
                     <Button
