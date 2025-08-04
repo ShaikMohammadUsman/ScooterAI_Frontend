@@ -9,7 +9,9 @@ import {
     Target,
     Settings,
     Sparkles,
-    CheckCircle2
+    CheckCircle2,
+    FileText,
+    Loader2
 } from "lucide-react";
 import FormProgressBar from "./FormProgressBar";
 import StepNavigation from "./StepNavigation";
@@ -32,7 +34,8 @@ import {
     WorkHistoryForm,
     SalesContextForm,
     RoleProcessExposureForm,
-    ToolsPlatformsForm
+    ToolsPlatformsForm,
+    CandidateSummaryForm
 } from "@/components/resume";
 
 interface FormStep {
@@ -53,21 +56,16 @@ interface StepFormWrapperProps {
     onRemoveCompanyHistory: (index: number) => void;
     onSave: (e?: React.FormEvent) => void;
     isSubmitting: boolean;
+    parsedUserName?: string; // Add prop for parsed user name
 }
 
 export default function StepFormWrapper({
-    profile,
-    onFieldChange,
-    onArrayChange,
-    onCompanyHistoryChange,
-    onAddCompanyHistory,
-    onRemoveCompanyHistory,
-    onSave,
-    isSubmitting
+    profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, onSave, isSubmitting, parsedUserName
 }: StepFormWrapperProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [direction, setDirection] = useState<"left" | "right">("right");
     const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+    const [isSummarySaving, setIsSummarySaving] = useState(false);
 
     // Define form steps with enhanced icons and descriptions - memoized to prevent infinite re-renders
     const steps: FormStep[] = useMemo(() => [
@@ -76,7 +74,7 @@ export default function StepFormWrapper({
             title: "Contact Information",
             subtitle: "Let's get to know you",
             icon: <Contact className="w-5 h-5" />,
-            component: <ContactInformationForm profile={profile} onFieldChange={onFieldChange} />,
+            component: <ContactInformationForm profile={profile} onFieldChange={onFieldChange} parsedUserName={parsedUserName} />,
             completed: false
         },
         {
@@ -84,7 +82,7 @@ export default function StepFormWrapper({
             title: "Salary Expectations",
             subtitle: "Your compensation preferences",
             icon: <DollarSign className="w-5 h-5" />,
-            component: <SalaryExpectationsForm profile={profile} onFieldChange={onFieldChange} />,
+            component: <SalaryExpectationsForm profile={profile} onFieldChange={onFieldChange} parsedUserName={parsedUserName} />,
             completed: false
         },
         {
@@ -100,6 +98,18 @@ export default function StepFormWrapper({
                     onRemoveCompanyHistory={onRemoveCompanyHistory}
                 />
             ),
+            completed: false
+        },
+        {
+            id: "summary",
+            title: "Professional Summary",
+            subtitle: "Your career snapshot",
+            icon: <FileText className="w-5 h-5" />,
+            component: <CandidateSummaryForm
+                profile={profile}
+                parsedUserName={parsedUserName}
+                onSaveProgress={setIsSummarySaving}
+            />,
             completed: false
         },
         {
@@ -132,7 +142,7 @@ export default function StepFormWrapper({
             component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
             completed: false
         }
-    ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory]);
+    ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, parsedUserName]);
 
     // Move salaryError and salaryStepIndex below steps definition
     const [salaryError, setSalaryError] = useState("");
@@ -193,6 +203,9 @@ export default function StepFormWrapper({
                 case "work-history":
                     isCompleted = profile?.career_overview?.company_history?.length > 0;
                     break;
+                case "summary":
+                    isCompleted = true; // Optional step - always considered complete
+                    break;
                 case "sales-context":
                     isCompleted = !!(profile?.sales_context?.sales_type?.length > 0 ||
                         profile?.sales_context?.sales_motion?.length > 0);
@@ -240,7 +253,7 @@ export default function StepFormWrapper({
         return true;
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         // If on contact step, validate before moving forward
         if (steps[currentStep].id === "contact-info" && !isContactValid()) {
             return;
@@ -254,8 +267,17 @@ export default function StepFormWrapper({
             return;
         }
         if (currentStep < steps.length - 1) {
+            // If we're on the summary step and there are unsaved changes, save first
+            if (steps[currentStep].id === "summary" && isSummarySaving) {
+                // Wait for save to complete before proceeding
+                return;
+            }
+
             setDirection("left");
             setCurrentStep(currentStep + 1);
+        } else {
+            // Final step - submit the form
+            await handleSubmit();
         }
     };
 
@@ -335,8 +357,42 @@ export default function StepFormWrapper({
         onSave && onSave(e);
     };
 
+    const handleSubmit = async () => {
+        // Validate contact fields before submit
+        if (!isContactValid()) {
+            setCurrentStep(contactStepIndex);
+            setDirection("right");
+            return;
+        }
+        // Validate salary fields before submit
+        if (!isSalaryValid()) {
+            setCurrentStep(salaryStepIndex);
+            setDirection("right");
+            return;
+        }
+        // Validate work fields before submit
+        if (!isWorkValid()) {
+            setCurrentStep(workStepIndex);
+            setDirection("right");
+            return;
+        }
+        // If you add more step validations, check them here in order
+        setSalaryError("");
+        setContactError("");
+        setWorkError("");
+        onSave && onSave();
+    };
+
+    const canProceedToNext = () => {
+        const currentStepData = steps[currentStep];
+        if (currentStepData.id === "summary") {
+            return true; // Summary is always complete
+        }
+        return canProceed();
+    };
+
     return (
-        <div className="w-full">
+        <div className="w-full max-w-6xl mx-auto">
             {/* Enhanced Header */}
             <div className="text-center mb-8">
                 <div className="flex items-center justify-center gap-2 mb-4">
@@ -352,45 +408,31 @@ export default function StepFormWrapper({
             </div>
 
             {/* Progress Bar */}
-            <FormProgressBar
-                currentStep={currentStep}
-                steps={stepsWithCompletion}
-                onStepClick={handleStepClick}
-            />
+            <div className="mb-8">
+                <FormProgressBar
+                    currentStep={currentStep}
+                    steps={steps}
+                    onStepClick={handleStepClick}
+                />
+            </div>
 
-            {/* Enhanced Form Content */}
-            <Card className="w-full overflow-hidden border-2 shadow-xl py-2 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30">
-                <CardHeader className="block md:hidden text-center">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <Sparkles className="w-6 h-6 text-blue-500" />
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            {steps[currentStep].title}
-                        </h1>
+            {/* Save Progress Indicator */}
+            {isSummarySaving && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-blue-700">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm font-medium">Saving summary before proceeding...</span>
                     </div>
-                </CardHeader>
-                <CardContent className=" items-center justify-center p-0">
-                    <AnimatedFormContainer
-                        direction={direction}
-                        stepKey={currentStep}
-                    >
-                        <div className="">
-                            {contactError && currentStep === contactStepIndex && (
-                                <div className="text-red-500 text-center mb-4 font-medium">{contactError}</div>
-                            )}
-                            {salaryError && currentStep === salaryStepIndex && (
-                                <div className="text-red-500 text-center mb-4 font-medium">{salaryError}</div>
-                            )}
-                            {workError && currentStep === workStepIndex && (
-                                <div className="text-red-500 text-center mb-4 font-medium">{workError}</div>
-                            )}
-                            {steps[currentStep].component && currentStep === workStepIndex && workInvalidIndex !== null ?
-                                React.cloneElement(steps[currentStep].component as React.ReactElement<any>, { forceExpandIndex: workInvalidIndex }) :
-                                steps[currentStep].component
-                            }
-                        </div>
-                    </AnimatedFormContainer>
-                </CardContent>
-            </Card>
+                </div>
+            )}
+
+            {/* Step Content */}
+            <AnimatedFormContainer
+                direction={direction}
+                stepKey={currentStep}
+            >
+                {steps[currentStep].component}
+            </AnimatedFormContainer>
 
             {/* Navigation */}
             <StepNavigation
@@ -399,8 +441,8 @@ export default function StepFormWrapper({
                 onPrevious={handlePrevious}
                 onNext={handleNext}
                 onSave={handleSave}
-                isSubmitting={isSubmitting}
-                canProceed={canProceed()}
+                isSubmitting={isSubmitting || isSummarySaving}
+                canProceed={canProceedToNext()}
             />
         </div>
     );

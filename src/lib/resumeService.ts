@@ -188,6 +188,26 @@ export interface ChatbotResponse {
   answer: string;
 }
 
+// Candidate Summary API Types
+export interface GenerateCandidateSummaryRequest {
+  user_id: string;
+}
+
+export interface GenerateCandidateSummaryResponse {
+  status: boolean;
+  candidate_summary: string;
+}
+
+export interface SaveCandidateSummaryRequest {
+  user_id: string;
+  summary_content: string;
+}
+
+export interface SaveCandidateSummaryResponse {
+  status: boolean;
+  message: string;
+}
+
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 // const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
@@ -321,5 +341,43 @@ export async function askJobQuestion(chatbotData: ChatbotRequest): Promise<Chatb
     return res.data;
   } catch (err: any) {
     throw new Error(err.response?.data?.message || "Failed to get answer from chatbot");
+  }
+}
+
+/**
+ * Generates a candidate summary based on user_id
+ * @param summaryData - Object containing user_id
+ * @returns Promise with generated candidate summary
+ */
+export async function generateCandidateSummary(summaryData: GenerateCandidateSummaryRequest): Promise<GenerateCandidateSummaryResponse> {
+  try {
+    const res = await axios.post(`${API_BASE}/generate-candidate-summary`, summaryData, {
+      headers: { 
+        "accept": "application/json",
+        "Content-Type": "application/json" 
+      },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to generate candidate summary");
+  }
+}
+
+/**
+ * Saves the candidate summary after user edits/confirms
+ * @param saveData - Object containing user_id and summary_content
+ * @returns Promise with save response
+ */
+export async function saveCandidateSummary(saveData: SaveCandidateSummaryRequest): Promise<SaveCandidateSummaryResponse> {
+  try {
+    const res = await axios.post(`${API_BASE}/save-candidate-summary`, saveData, {
+      headers: { 
+        "accept": "application/json",
+        "Content-Type": "application/json" 
+      },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to save candidate summary");
   }
 } 

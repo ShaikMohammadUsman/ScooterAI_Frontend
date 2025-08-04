@@ -15,7 +15,8 @@ import {
     Mail,
     Globe,
     CheckCircle2,
-    Sparkles
+    Sparkles,
+    Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResumeProfile } from "@/lib/resumeService";
@@ -110,25 +111,47 @@ const FormCard = ({ children, className }: { children: React.ReactNode; classNam
 interface ContactInformationFormProps {
     profile: ResumeProfile;
     onFieldChange: (section: string, key: string, value: any, subkey?: string) => void;
+    parsedUserName?: string; // Add prop for parsed user name
 }
 
-export default function ContactInformationForm({ profile, onFieldChange }: ContactInformationFormProps) {
+export default function ContactInformationForm({ profile, onFieldChange, parsedUserName }: ContactInformationFormProps) {
     const isContactComplete = !!(profile?.basic_information?.full_name &&
         profile?.basic_information?.email &&
         profile?.basic_information?.phone_number);
 
+    // Get the user's name for personalization
+    const userName = parsedUserName || profile?.basic_information?.full_name || "there";
+    const firstName = userName.split(' ')[0];
+
     return (
         <div className="flex items-center justify-center py-2">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl">
-                {/* Section Header */}
+                {/* Personalized Header */}
+                <div className="text-center mb-6">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                        <Heart className="w-6 h-6 text-red-400" />
+                        <h2 className="text-2xl font-bold text-gray-800">
+                            Nice to meet you, {firstName}! 👋
+                        </h2>
+                        <Sparkles className="w-6 h-6 text-yellow-400" />
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                        Let's get your contact details sorted so we can connect you with amazing opportunities
+                    </p>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Full Name */}
+                    {/* Full Name - Show as read-only if already parsed */}
                     <div className="flex flex-col gap-1">
                         <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                             <User className="w-4 h-4 text-blue-400" />
                             Name
                             <span className="text-red-500">*</span>
+                            {parsedUserName && (
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                    ✓ Parsed
+                                </span>
+                            )}
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -146,14 +169,25 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                             placeholder="Full name"
                             required
                             className="h-9 text-sm"
+                            readOnly={!!parsedUserName} // Make read-only if parsed
                         />
+                        {parsedUserName && (
+                            <p className="text-xs text-green-600 mt-1">
+                                ✓ We've got this from your resume!
+                            </p>
+                        )}
                     </div>
-                    {/* Email */}
+                    {/* Email - Show as read-only if already parsed */}
                     <div className="flex flex-col gap-1">
                         <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                             <Mail className="w-4 h-4 text-blue-400" />
                             Email
                             <span className="text-red-500">*</span>
+                            {profile?.basic_information?.email && (
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                    ✓ Parsed
+                                </span>
+                            )}
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -172,14 +206,25 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                             placeholder="Email address"
                             required
                             className="h-9 text-sm"
+                            readOnly={!!profile?.basic_information?.email} // Make read-only if parsed
                         />
+                        {profile?.basic_information?.email && (
+                            <p className="text-xs text-green-600 mt-1">
+                                ✓ We've got this from your resume!
+                            </p>
+                        )}
                     </div>
-                    {/* Phone */}
+                    {/* Phone - Show as read-only if already parsed */}
                     <div className="flex flex-col gap-1">
                         <Label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
                             <Phone className="w-4 h-4 text-blue-400" />
                             Phone
                             <span className="text-red-500">*</span>
+                            {profile?.basic_information?.phone_number && (
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                    ✓ Parsed
+                                </span>
+                            )}
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
@@ -201,7 +246,13 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                             placeholder="Phone number"
                             required
                             className="h-9 text-sm"
+                            readOnly={!!profile?.basic_information?.phone_number} // Make read-only if parsed
                         />
+                        {profile?.basic_information?.phone_number && (
+                            <p className="text-xs text-green-600 mt-1">
+                                ✓ We've got this from your resume!
+                            </p>
+                        )}
                     </div>
                     {/* Location */}
                     <div className="flex flex-col gap-1">
@@ -255,8 +306,6 @@ export default function ContactInformationForm({ profile, onFieldChange }: Conta
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                // disabled={!profile?.basic_information.linkedin_url}
-                                // onClick={() => window.open(profile?.basic_information.linkedin_url || "", "_blank")}
                                 onClick={() => window.open("https://www.linkedin.com/in/", "_blank")}
                             >
                                 <Linkedin className="w-4 h-4 mr-1" />

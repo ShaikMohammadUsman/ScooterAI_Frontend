@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { parseResume, addResumeProfile, ParseResumeResponse, ResumeProfile } from "@/lib/resumeService";
+import { parseResume, addResumeProfile, ParseResumeResponse, ResumeProfile, saveCandidateSummary } from "@/lib/resumeService";
 import LoadingSpinner from "@/components/ui/loadingSpinner";
 import ErrorBox from "@/components/ui/error";
 import { FiUploadCloud } from "react-icons/fi";
@@ -98,101 +98,83 @@ export default function ResumePage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [showSuccessScreen, setShowSuccessScreen] = useState(false);
-    const [consentToUpdates, setConsentToUpdates] = useState<boolean>(false);
-    const [linkedInUrl, setLinkedInUrl] = useState<string>("");
-    const [resumeParsed, setResumeParsed] = useState<boolean>(false);
+    const [resumeParsed, setResumeParsed] = useState(false);
     const [showSuggestion, setShowSuggestion] = useState(false);
-    const [showUserLogin, setShowUserLogin] = useState<boolean>(true);
+    const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+    const [showUserLogin, setShowUserLogin] = useState(true);
     const [userLoginData, setUserLoginData] = useState<UserLoginResponse | null>(null);
-    const [showPreviousApplication, setShowPreviousApplication] = useState<boolean>(false);
+    const [showPreviousApplication, setShowPreviousApplication] = useState(false);
+    const [linkedInUrl, setLinkedInUrl] = useState("");
+    const [consentToUpdates, setConsentToUpdates] = useState(false);
+    const [parsedUserName, setParsedUserName] = useState<string>(""); // Add state for parsed user name
 
     // Handle file upload and parse
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-        setShowSuggestion(false);
-        setFile(e.target.files[0]);
-        setProfile(defaultProfile);
-        setError(null);
-        setSuccess(null);
-        setResumeParsed(false);
+        const selectedFile = e.target.files?.[0];
+        if (!selectedFile) return;
+
+        setFile(selectedFile);
         setLoading(true);
+        setError(null);
+
         try {
-            // Get user details from form or use defaults
-            const userDetails = {
-                file: e.target.files[0],
-                name: profile?.basic_information?.full_name || "User",
-                email: profile?.basic_information?.email || "",
-                phone: profile?.basic_information?.phone_number || ""
-            };
+            const response = await parseResume({
+                file: selectedFile,
+                name: profile.basic_information.full_name,
+                email: profile.basic_information.email,
+                phone: profile.basic_information.phone_number,
+            });
 
-            const parsedResponse: ParseResumeResponse = await parseResume(userDetails);
+            if (response.status && response.data) {
+                // Store the parsed user name
+                setParsedUserName(response.data.basic_information.full_name);
 
-            if (!parsedResponse.status) {
-                toast({ title: "Error", description: parsedResponse?.message, variant: "destructive" });
+                // Update profile with parsed data, ensuring type compatibility
+                setProfile({
+                    ...profile,
+                    basic_information: {
+                        ...profile.basic_information,
+                        ...response.data.basic_information,
+                    },
+                    career_overview: response.data.career_overview,
+                    sales_context: {
+                        sales_type: Array.isArray(response.data.sales_context.sales_type)
+                            ? response.data.sales_context.sales_type
+                            : [response.data.sales_context.sales_type].filter(Boolean),
+                        sales_motion: Array.isArray(response.data.sales_context.sales_motion)
+                            ? response.data.sales_context.sales_motion
+                            : [response.data.sales_context.sales_motion].filter(Boolean),
+                        industries_sold_into: response.data.sales_context.industries_sold_into || [],
+                        regions_sold_into: response.data.sales_context.regions_sold_into || [],
+                        buyer_personas: response.data.sales_context.buyer_personas || [],
+                    },
+                    role_process_exposure: {
+                        ...response.data.role_process_exposure,
+                        average_deal_size_range: response.data.role_process_exposure.average_deal_size || "",
+                        monthly_deal_volume: 0,
+                        quota_ownership: {
+                            has_quota: response.data.role_process_exposure.own_quota || false,
+                            amount: 0,
+                            cadence: "",
+                            attainment_history: response.data.role_process_exposure.quota_attainment || "",
+                        },
+                    },
+                    tools_platforms: {
+                        crm_used: response.data.tools_platforms.crm_tools || [],
+                        sales_tools: response.data.tools_platforms.sales_tools || [],
+                        communication_tools: [],
+                    },
+                });
+
+                setResumeParsed(true);
                 setShowSuggestion(true);
-                return;
+                setSuccess("Resume parsed successfully! Please review and complete your profile.");
+            } else {
+                setError(response.message || "Failed to parse resume");
             }
-            const parsed = parsedResponse.data;
-            // Transform the data to match our expected structure
-            const transformedProfile: ResumeProfile = {
-                basic_information: {
-                    full_name: parsed.basic_information.full_name || "",
-                    current_location: parsed.basic_information.current_location || "",
-                    open_to_relocation: parsed.basic_information.open_to_relocation || false,
-                    phone_number: parsed.basic_information.phone_number || "",
-                    linkedin_url: parsed.basic_information.linkedin_url || "",
-                    email: parsed.basic_information.email || "",
-                    specific_phone_number: parsed.basic_information.specific_phone_number || "",
-                    notice_period: parsed.basic_information.notice_period || "",
-                    current_ctc: parsed.basic_information.current_ctc || { currencyType: "", value: 0 },
-                    expected_ctc: parsed.basic_information.expected_ctc || { currencyType: "", value: 0 },
-                },
-                career_overview: {
-                    total_years_experience: parsed.career_overview.total_years_experience || 0,
-                    years_sales_experience: parsed.career_overview.years_sales_experience || 0,
-                    average_tenure_per_role: parsed.career_overview.average_tenure_per_role || 0,
-                    employment_gaps: {
-                        has_gaps: parsed.career_overview.employment_gaps?.has_gaps || false,
-                        duration: parsed.career_overview.employment_gaps?.duration || "",
-                    },
-                    promotion_history: parsed.career_overview.promotion_history || false,
-                    company_history: parsed.career_overview.company_history || [],
-                },
-                sales_context: {
-                    sales_type: parsed.sales_context.sales_type ? [parsed.sales_context.sales_type] : [],
-                    sales_motion: parsed.sales_context.sales_motion ? [parsed.sales_context.sales_motion] : [],
-                    industries_sold_into: parsed.sales_context.industries_sold_into || [],
-                    regions_sold_into: parsed.sales_context.regions_sold_into || [],
-                    buyer_personas: parsed.sales_context.buyer_personas || [],
-                },
-                role_process_exposure: {
-                    sales_role_type: parsed.role_process_exposure.sales_role_type || "",
-                    position_level: parsed.role_process_exposure.position_level || "",
-                    sales_stages_owned: parsed.role_process_exposure.sales_stages_owned || [],
-                    average_deal_size_range: parsed.role_process_exposure.average_deal_size || "",
-                    sales_cycle_length: parsed.role_process_exposure.sales_cycle_length || "",
-                    monthly_deal_volume: 0,
-                    quota_ownership: {
-                        has_quota: parsed.role_process_exposure.own_quota || false,
-                        amount: 0,
-                        cadence: "",
-                        attainment_history: parsed.role_process_exposure.quota_attainment || "",
-                    },
-                },
-                tools_platforms: {
-                    crm_used: parsed.tools_platforms.crm_tools || [],
-                    sales_tools: parsed.tools_platforms.sales_tools || [],
-                    communication_tools: [],
-                },
-            };
-
-            setProfile(transformedProfile);
-            toast({ title: "Resume parsed!", description: "Edit and submit your profile." });
-            setResumeParsed(true);
         } catch (err: any) {
-            setError(err.message || "Failed to parse resume.\nCheck your internet connection.");
-            toast({ title: "Error", description: err.message || "Failed to parse resume", variant: "destructive" });
+            console.error("Error parsing resume:", err);
+            setError(err.message || "Failed to parse resume");
         } finally {
             setLoading(false);
         }
@@ -339,23 +321,31 @@ export default function ResumePage() {
 
     // Handle form submit
     const handleSubmit = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        if (!profile) return;
+        e?.preventDefault();
         setSubmitting(true);
         setError(null);
-        setSuccess(null);
+
         try {
-            // Get user_id from localStorage
+            // Auto-save summary if not saved by user
             const userId = localStorage.getItem('scooterUserId');
-            // console.log(userId);
-            if (!userId) {
-                throw new Error("User ID not found. Please try uploading your resume again.");
+            if (userId && profile?.basic_information?.full_name) {
+                try {
+                    // Try to auto-save the summary if it exists but hasn't been saved
+                    // This is a fallback in case the user didn't explicitly save it
+                    await saveCandidateSummary({
+                        user_id: userId,
+                        summary_content: "Auto-saved summary from profile completion"
+                    });
+                } catch (summaryError) {
+                    // Ignore summary save errors as it's optional
+                    console.log("Summary auto-save failed:", summaryError);
+                }
             }
 
-            // Transform the data to match the backend's expected format
+            // Transform profile data for API
             const transformedProfile = {
-                job_id: searchParams.get('job_id') || "",
-                user_id: userId,
+                job_id: searchParams?.get('job_id') || "",
+                user_id: localStorage.getItem('scooterUserId') || "",
                 basic_information: {
                     full_name: profile.basic_information.full_name,
                     current_location: profile.basic_information.current_location,
@@ -365,14 +355,8 @@ export default function ResumePage() {
                     email: profile.basic_information.email,
                     specific_phone_number: profile.basic_information.specific_phone_number,
                     notice_period: profile.basic_information.notice_period,
-                    current_ctc: {
-                        currencyType: profile.basic_information.current_ctc.currencyType,
-                        value: profile.basic_information.current_ctc.value
-                    },
-                    expected_ctc: {
-                        currencyType: profile.basic_information.expected_ctc.currencyType,
-                        value: profile.basic_information.expected_ctc.value
-                    }
+                    current_ctc: profile.basic_information.current_ctc,
+                    expected_ctc: profile.basic_information.expected_ctc,
                 },
                 career_overview: {
                     total_years_experience: profile.career_overview.total_years_experience,
@@ -380,20 +364,20 @@ export default function ResumePage() {
                     average_tenure_per_role: profile.career_overview.average_tenure_per_role,
                     employment_gaps: profile.career_overview.employment_gaps,
                     promotion_history: profile.career_overview.promotion_history,
-                    company_history: profile.career_overview.company_history
+                    company_history: profile.career_overview.company_history,
                 },
                 sales_context: {
                     sales_type: profile.sales_context.sales_type[0] || "",
                     sales_motion: profile.sales_context.sales_motion[0] || "",
-                    industries_sold_into: profile.sales_context.industries_sold_into,
-                    regions_sold_into: profile.sales_context.regions_sold_into,
-                    buyer_personas: profile.sales_context.buyer_personas
+                    industries_sold_into: profile.sales_context.industries_sold_into || [],
+                    regions_sold_into: profile.sales_context.regions_sold_into || [],
+                    buyer_personas: profile.sales_context.buyer_personas || [],
                 },
                 role_process_exposure: {
                     sales_role_type: profile.role_process_exposure.sales_role_type,
                     position_level: profile.role_process_exposure.position_level,
-                    sales_stages_owned: profile.role_process_exposure.sales_stages_owned,
-                    average_deal_size: profile.role_process_exposure.average_deal_size_range || "",
+                    sales_stages_owned: profile.role_process_exposure.sales_stages_owned || [],
+                    average_deal_size: profile.role_process_exposure.average_deal_size_range,
                     sales_cycle_length: profile.role_process_exposure.sales_cycle_length,
                     own_quota: profile.role_process_exposure.quota_ownership?.has_quota || false,
                     quota_ownership: profile.role_process_exposure.quota_ownership?.has_quota ? [
@@ -568,6 +552,7 @@ export default function ResumePage() {
                                         onRemoveCompanyHistory={removeCompanyHistory}
                                         onSave={handleSubmit}
                                         isSubmitting={submitting}
+                                        parsedUserName={parsedUserName}
                                     />
                                 </div>
                             </div>

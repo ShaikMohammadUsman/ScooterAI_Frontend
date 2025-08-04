@@ -8,6 +8,7 @@ export { default as ResumeUploadSection } from './ResumeUploadSection';
 export { default as UserDetailsForm } from './UserDetailsForm';
 export { default as LinkedInUrlInput } from './LinkedInUrlInput';
 export { default as ConsentCheckbox } from './ConsentCheckbox';
+export { default as CandidateSummaryForm } from './CandidateSummaryForm';
 
 // New step-by-step form components
 export { default as FormProgressBar } from './FormProgressBar';
