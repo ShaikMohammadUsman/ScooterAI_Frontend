@@ -38,6 +38,7 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
     return (
         <div className="flex-1 flex items-center justify-center p-8">
             <div className="max-w-2xl w-full text-center">
+                {/* Main Animation Container */}
                 <AnimatePresence mode="wait">
                     {showSpeakingAnimation ? (
                         <motion.div
@@ -64,12 +65,6 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
                                     exit={{ opacity: 0 }}
                                     className="flex justify-center"
                                 >
-                                    {/* <div className={`px-6 py-3 rounded-full ${isDarkTheme
-                                        ? 'bg-gray-800/50 border border-gray-600'
-                                        : 'bg-gray-100 border border-gray-200'
-                                        }`}>
-                                        <LoadingDots bg={isDarkTheme ? "gray-400" : "gray-600"} />
-                                    </div> */}
                                     <div className="h-10 w-10 mb-2 bg-gray-500 rounded-full border border-l-0 animate-spin"></div>
                                 </motion.div>
                             )}
@@ -92,22 +87,23 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
                             </div>
                         </motion.div>
                     )}
-                    {/* Current Question Display */}
-                    {currentQuestion && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`max-w-lg mx-auto p-6 rounded-2xl ${isDarkTheme
-                                ? 'bg-gray-800/50 border border-gray-600'
-                                : 'bg-gray-100 border border-gray-200'
-                                }`}
-                        >
-                            <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-200' : 'text-gray-800'}`}>
-                                {currentQuestion}
-                            </p>
-                        </motion.div>
-                    )}
                 </AnimatePresence>
+
+                {/* Current Question Display - Separate from main animation */}
+                {currentQuestion && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`max-w-lg mx-auto p-6 rounded-2xl mt-6 ${isDarkTheme
+                            ? 'bg-gray-800/50 border border-gray-600'
+                            : 'bg-gray-100 border border-gray-200'
+                            }`}
+                    >
+                        <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-200' : 'text-gray-800'}`}>
+                            {currentQuestion}
+                        </p>
+                    </motion.div>
+                )}
             </div>
         </div>
     );

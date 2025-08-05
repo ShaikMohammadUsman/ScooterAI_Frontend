@@ -18,6 +18,11 @@ import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
 import { AnimatedPlaceholder } from "./AnimatedPlaceholder";
 import { toast } from "@/hooks/use-toast";
 import ProctoringSystem from "@/components/interview/ProctoringSystem";
+import { GeneralInterviewControls } from "./components/GeneralInterviewControls";
+import { GeneralQuestionPalette } from "./components/GeneralQuestionPalette";
+import { GeneralSubmissionModal } from "./components/GeneralSubmissionModal";
+import AISpeakingAnimation from "@/components/interview/AISpeakingAnimation";
+import ChatPanel from "@/components/interview/ChatPanel";
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
@@ -56,6 +61,17 @@ export default function VoiceInterviewPage() {
     const [isUploadingAudio, setIsUploadingAudio] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showUploadModal, setShowUploadModal] = useState(false);
+
+    // Submission states
+    const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+    const [submissionStep, setSubmissionStep] = useState<'processing' | 'uploading' | 'evaluating'>('processing');
+    const [evaluationStatus, setEvaluationStatus] = useState<string>('');
+
+    // New UI states for consistent design
+    const [showChat, setShowChat] = useState(false);
+    const [canRetake, setCanRetake] = useState(false);
+    const [speechDuration, setSpeechDuration] = useState(0);
+    const [isQuestionAnswered, setIsQuestionAnswered] = useState(false);
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -118,9 +134,6 @@ export default function VoiceInterviewPage() {
                 return;
             }
 
-
-
-
             // Initialize audio recorder
             audioRecorderRef.current = new InterviewAudioRecorder();
 
@@ -136,13 +149,20 @@ export default function VoiceInterviewPage() {
             setQuestions(res.questions);
             questionsRef.current = res.questions;
 
-            // Start the interview and proctoring
-            setStarted(true);
+            // Activate proctoring when starting the interview (user gesture)
             setProctoringActive(true);
+
+            // Wait for proctoring to be fully activated before proceeding
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Start the interview
+            setStarted(true);
             await askQuestion(0);
         } catch (err: any) {
             console.error("Error starting interview:", err);
             setError(err.message || "Failed to start interview");
+            // Deactivate proctoring on error
+            setProctoringActive(false);
         } finally {
             setLoading(false);
         }
@@ -174,7 +194,7 @@ export default function VoiceInterviewPage() {
             }
 
             // Speak the question
-            await textInAudioOut(
+            const duration = await textInAudioOut(
                 question,
                 (spokenText) => {
                     setMessages((prev) => {
@@ -188,6 +208,7 @@ export default function VoiceInterviewPage() {
                 },
                 setLoading
             );
+            setSpeechDuration(duration || 0);
 
             setIsSpeaking(false);
             setMicEnabled(true);
@@ -262,6 +283,7 @@ export default function VoiceInterviewPage() {
             recognizer.canceled = (s, e) => {
                 setIsListening(false);
                 setLoading(false);
+                setCanRetake(true);
                 if (e.reason === speechsdk.CancellationReason.Error) {
                     setError(`Speech recognition error: ${e.errorDetails}`);
                 }
@@ -304,12 +326,24 @@ export default function VoiceInterviewPage() {
         };
 
         // Update messages
-        setMessages((prev) => [...prev, {
-            own: true,
-            text: recognizedText,
-            icon: <FaUser className="text-secondary w-6 h-6" />,
-            status: retakeCount[currentQ] > 0 ? 'retaken' : 'completed'
-        }]);
+        setMessages((prev) => {
+            const newMessages = [...prev];
+            // Find the last AI question (non-own message) and mark it as completed
+            for (let i = newMessages.length - 1; i >= 0; i--) {
+                if (!newMessages[i].own) {
+                    newMessages[i].status = 'completed';
+                    break;
+                }
+            }
+            // Add the user's answer
+            newMessages.push({
+                own: true,
+                text: recognizedText,
+                icon: <FaUser className="text-secondary w-6 h-6" />,
+                status: retakeCount[currentQ] > 0 ? 'retaken' : 'completed'
+            });
+            return newMessages;
+        });
 
         // Update QA pairs and wait for the update
         await new Promise<void>((resolve) => {
@@ -320,8 +354,11 @@ export default function VoiceInterviewPage() {
             });
         });
 
+        console.log(qaPairs);
+
         setRecognizedText("");
         setIsListening(false);
+        setCanRetake(false);
         if (recognizerRef.current) {
             recognizerRef.current.stopContinuousRecognitionAsync();
         }
@@ -367,32 +404,52 @@ export default function VoiceInterviewPage() {
             return;
         }
 
-        setIsSubmitting(true);
-        // console.log("Evaluating qaPairs:", qaPairsToEvaluate);
+        // Show submission modal
+        setShowSubmissionModal(true);
+        setSubmissionStep('processing');
+        setEvaluationStatus('');
+
         try {
+            // Processing step
+            setSubmissionStep('processing');
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing
+
+            // Upload audio file
+            setSubmissionStep('uploading');
+            await uploadAudioFile(profile_id);
+
+            // Evaluation step
+            setSubmissionStep('evaluating');
             const res = await evaluateInterview({
                 qa_pairs: qaPairsToEvaluate,
                 user_id: profile_id,
             });
-            if (res && res.status) {
-                setIsSubmitting(false);
-                setSubmissionSuccess(true);
 
-                // Upload audio file
-                await uploadAudioFile(profile_id);
+            if (res && res.status) {
+                setEvaluationStatus('Evaluation completed successfully!');
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
 
                 setShowResults(true);
                 setProctoringActive(false);
                 if (res.qualified_for_video_round) {
                     setPassed(res.qualified_for_video_round);
                 }
+            } else {
+                setEvaluationStatus('Evaluation failed. Please try again.');
             }
         } catch (err: any) {
             setError(err.message || "Failed to evaluate interview");
+            setEvaluationStatus('An error occurred during evaluation.');
+            setProctoringActive(false);
         } finally {
             setLoading(false);
             setIsListening(false);
             setIsSubmitting(false);
+
+            // Close submission modal after a delay
+            setTimeout(() => {
+                setShowSubmissionModal(false);
+            }, 2000);
         }
     };
 
@@ -405,7 +462,6 @@ export default function VoiceInterviewPage() {
 
         try {
             setIsUploadingAudio(true);
-            setShowUploadModal(true);
             setUploadProgress(0);
 
             // Combine audio segments
@@ -424,9 +480,9 @@ export default function VoiceInterviewPage() {
         } catch (error) {
             console.error("Error uploading audio file:", error);
             setError("Failed to upload audio file");
+            throw error; // Re-throw to be handled by the calling function
         } finally {
             setIsUploadingAudio(false);
-            setShowUploadModal(false);
             setUploadProgress(0);
         }
     };
@@ -434,14 +490,28 @@ export default function VoiceInterviewPage() {
     return (
         <div className="min-h-screen flex flex-col bg-background">
             {/* Proctoring System */}
-            <ProctoringSystem
-                isActive={proctoringActive}
-                onViolation={handleProctoringViolation}
+            {
+                proctoringActive && (
+                    <ProctoringSystem
+                        isActive={proctoringActive}
+                        onViolation={handleProctoringViolation}
+                    />
+                )
+            }
+
+
+            {/* Submission Modal */}
+            <GeneralSubmissionModal
+                open={showSubmissionModal}
+                onOpenChange={setShowSubmissionModal}
+                submissionStep={submissionStep}
+                uploadProgress={uploadProgress}
+                evaluationStatus={evaluationStatus}
             />
 
-            {/* Audio Upload Modal */}
+            {/* Loading Modal for Initial Interview Start */}
             <AnimatePresence>
-                {showUploadModal && (
+                {loading && !started && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -455,81 +525,10 @@ export default function VoiceInterviewPage() {
                             className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl"
                         >
                             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                            <h3 className="text-xl font-semibold text-primary">Uploading Interview Audio...</h3>
-                            <p className="text-muted-foreground">Please wait while we upload your interview recording</p>
-                            <div className="w-full max-w-xs">
-                                <Progress value={uploadProgress} className="h-2" />
-                                <p className="text-sm text-gray-500 mt-2 text-center">
-                                    {uploadProgress}% uploaded
-                                </p>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Submission State Modal */}
-            <AnimatePresence>
-                {((isSubmitting || submissionSuccess || loading) && !isListening && !showUploadModal) && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl"
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                                    <h3 className="text-xl font-semibold text-primary">
-                                        {showResults ? "Evaluating Interview..." : "Loading Question..."}
-                                    </h3>
-                                    <p className="text-muted-foreground">
-                                        {showResults
-                                            ? "Please wait while we evaluate your interview"
-                                            : `Please wait while we prepare ${questionsRef.current && questionsRef.current.length > 0 ? `the next question` : `the interview`}`}
-                                    </p>
-                                </>
-                            ) : isSubmitting ? (
-                                <>
-                                    <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                                    <h3 className="text-xl font-semibold text-primary">Submitting Answer...</h3>
-                                    <p className="text-muted-foreground">Please wait while we process your response</p>
-                                </>
-                            ) : submissionSuccess && (
-                                <>
-                                    <motion.div
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
-                                    >
-                                        <FaCheck className="w-8 h-8 text-green-600" />
-                                    </motion.div>
-                                    <motion.h3
-                                        initial={{ y: 20, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        className="text-xl font-semibold text-green-600"
-                                    >
-                                        Answers Submitted!
-                                    </motion.h3>
-                                    <motion.button
-                                        initial={{ y: 20, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        transition={{ delay: 0.1 }}
-                                        className="flex flex-row items-center gap-2 text-accent-foreground bg-slate-400 px-4 py-2 rounded-md hover:bg-slate-500 cursor-pointer"
-                                        onClick={() => {
-                                            setSubmissionSuccess(false);
-                                        }}
-                                    >
-                                        Done <FaCheck />
-                                    </motion.button>
-                                </>
-                            )}
+                            <h3 className="text-xl font-semibold text-primary">Preparing Your Interview</h3>
+                            <p className="text-muted-foreground text-center">
+                                We're generating personalized questions for your role. This may take a few moments...
+                            </p>
                         </motion.div>
                     </motion.div>
                 )}
@@ -546,216 +545,82 @@ export default function VoiceInterviewPage() {
                     <div className="font-bold text-lg text-indigo-600 tracking-tight">Voice Assistant</div>
                     <div className="text-xs text-muted-foreground">Voice Conversation Simulation</div>
                 </div>
-
-
             </div>
-
 
             {/* Main Content */}
-            {
-                showResults ? (
-                    <AnimatedPlaceholder
-                        onStart={() => {
-                            router.push("/");
-                        }}
-                        title="Thank you for completing the interview!"
-                        description="We will reach out to you soon."
-                        buttonText="Continue to home"
+            {showResults ? (
+                <AnimatedPlaceholder
+                    onStart={() => {
+                        router.push("/");
+                    }}
+                    title="Thank you for completing the interview!"
+                    description="We will reach out to you soon."
+                    buttonText="Continue to home"
+                />
+            ) : (
+                <>
+                    {/* Main Content - AI Speaking Animation */}
+                    <div className={`flex-1 overflow-hidden transition-all duration-1000 ease-in-out pb-24 bg-gradient-to-br from-white via-slate-50 to-white`}>
+                        {!started ? (
+                            <div className="flex justify-center items-center h-full">
+                                <AnimatedPlaceholder
+                                    onStart={handleStart}
+                                    title="Ready to Say Hello?"
+                                    description="Click the button below to share a little about yourself"
+                                    buttonText="Let's Go"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex-1">
+                                <AISpeakingAnimation
+                                    isSpeaking={isSpeaking}
+                                    isProcessing={loading}
+                                    currentQuestion={questionsRef.current[currentQ] || ""}
+                                    isDarkTheme={false}
+                                    speechDuration={speechDuration}
+                                />
+                            </div>
+                        )}
+                    </div>
 
+                    {/* Chat Panel */}
+                    <ChatPanel
+                        isOpen={showChat}
+                        onToggle={() => setShowChat(!showChat)}
+                        messages={messages}
                     />
-                ) : (
 
-                    <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
-                        <div className="h-full flex flex-col sm:flex-row">
+                    {/* Question Palette */}
+                    <GeneralQuestionPalette
+                        messages={messages}
+                    />
 
-                            {/* Question Progress */}
-                            {started ? (
-                                <div className="w-full sm:w-56 m-4 flex-grow-0 border-1 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/80 p-5 shadow-inner overflow-y-auto">
-                                    {/* Progress Bar */}
-                                    <div className="mb-4">
-                                        <Progress
-                                            value={currentQ === questions.length - 1 ? 100 : (currentQ / questions.length) * 100}
-                                            className="w-full h-2 rounded-full bg-slate-200"
-                                        />
-                                        <div className="text-xs text-gray-500 mt-1 text-center">
-                                            Question <span className="font-medium text-indigo-600">{currentQ + 1}</span> of {questions.length}
-                                        </div>
-                                    </div>
-                                    <h3 className="font-semibold text-gray-800 mb-4 text-lg">Answers</h3>
-                                    <div className="space-y-3 gap-4">
-                                        {questions.map((q, i) => (
-                                            <div
-                                                key={i}
-                                                className={`flex items-center gap-3 text-sm transition-all ${i === currentQ
-                                                    ? "text-indigo-600 font-semibold"
-                                                    : i < currentQ && qaPairs[i]?.answer?.trim()
-                                                        ? "text-green-600"
-                                                        : "text-gray-400"
-                                                    }`}
-                                            >
-                                                {i < currentQ && qaPairs[i]?.answer?.trim() ? (
-                                                    <FaCheck className="text-green-500" />
-                                                ) : (
-                                                    <div className="w-4 h-4 rounded-full border border-gray-300" />
-                                                )}
-                                                <span className="truncate">Q{i + 1}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex justify-center items-center h-full">
-                                    <AnimatedPlaceholder
-                                        onStart={handleStart}
-                                        title="Ready to Say Hello?"
-                                        description="Click the button below to share a little about yourself"
-                                        buttonText="Let's Go"
-                                    />
-                                </div>
-                            )}
+                    {/* Interview Controls */}
+                    {started && !showResults && (
+                        <GeneralInterviewControls
+                            isListening={isListening}
+                            recognizedText={recognizedText}
+                            canRetake={canRetake}
+                            retakeCount={retakeCount[currentQ] || 0}
+                            onMicToggle={handleMic}
+                            onLeave={() => {
+                                setProctoringActive(false);
+                                router.push("/");
+                            }}
+                            onChatToggle={() => setShowChat(!showChat)}
+                            onSubmitAnswer={submitAnswer}
+                            onRetakeAnswer={retakeAnswer}
+                            disabled={isSpeaking || loading || isSubmitting}
+                        />
+                    )}
+                </>
+            )}
 
-
-                            {/* Chat Area */}
-                            <div className="flex-1 overflow-y-auto p-6 space-y-2">
-                                <AnimatePresence>
-                                    {messages.map((msg, i) => (
-                                        !msg.own &&
-                                        <motion.div
-                                            key={i}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -20 }}
-                                            className={`flex items-start gap-3 mb-3 ${msg.own ? "justify-end" : "justify-start"}`}
-                                        >
-                                            <div className="flex-shrink-0">{msg.icon}</div>
-                                            <div
-                                                className={`rounded-2xl px-4 py-2 max-w-[80%] relative shadow-sm backdrop-blur-sm ${msg.own
-                                                    ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white"
-                                                    : "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"
-                                                    }`}
-                                            >
-                                                {msg.text}
-                                                {msg.status && (
-                                                    <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                                                        {msg.status === "completed" ? (
-                                                            <FaCheck className="text-green-500" />
-                                                        ) : (
-                                                            <FaRedo className="text-blue-500" />
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </motion.div>
-
-                                        // <motion.div
-                                        //     key={i}
-                                        //     initial={{ opacity: 0, y: 20 }}
-                                        //     animate={{ opacity: 1, y: 0 }}
-                                        //     exit={{ opacity: 0, y: -20 }}
-                                        //     className={`flex items-start gap-3 mb-3 justify-start`}
-                                        // >
-                                        //     {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
-                                        //     <div
-                                        //         className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900"}`}
-                                        //     >
-                                        //         {!msg.own && msg.text}
-                                        //         {msg.status && (
-                                        //             // <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                                        //             <div className="">
-                                        //                 {msg.status === "completed" ? (
-                                        //                     <FaCheck className="text-green-500" />
-                                        //                 ) : (
-                                        //                     <FaRedo className="text-blue-500" />
-                                        //                 )}
-                                        //             </div>
-                                        //         )}
-                                        //     </div>
-                                        // </motion.div>
-                                    ))}
-                                </AnimatePresence>
-
-                                {loading && <LoadingDots bg="#e0e7ff" logo={Penguine} />}
-                                <div ref={scrollRef} />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-            {/* Controls */}
-            <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
-                {!started ? (
-                    // <div className="flex justify-center">
-                    //     <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
-                    //         Start Interview
-                    //     </Button>
-                    // </div>
-                    <></>
-                ) : !showResults && (
-                    <div className="flex flex-col items-center gap-6 w-full">
-                        {/* {recognizedText && (
-                            <div className="w-full max-w-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 px-6 py-3 rounded-2xl text-sm text-indigo-800 border border-indigo-200 shadow-sm">
-                                <span className="font-semibold text-indigo-600">You:</span> {recognizedText}
-                            </div>
-                        )} */}
-
-                        <div className="flex flex-wrap justify-center gap-4">
-                            {(!recognizedText || isListening || recognizing) && (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                onClick={handleMic}
-                                                className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-colors shadow-sm ${recognizing ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" : "bg-primary text-white hover:bg-primary/90"}`}
-                                                disabled={isSpeaking || (!micEnabled && !recognizing)}
-                                            >
-
-                                                {recognizing ? "Stop" : "Answer"}
-                                                {recognizing &&
-                                                    <div className="relative flex items-center justify-center m-2">
-                                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border-2 border-t-0 border-gray-200 rounded-full animate-spin" />
-                                                        <FaMicrophone className="" />
-                                                    </div>
-                                                }
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {recognizing ? "Click to stop recording" : "Click to start recording"}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            )}
-
-                            {recognizedText && !recognizing && (
-                                <div className="flex gap-3">
-                                    <Button
-                                        onClick={submitAnswer}
-                                        className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                        disabled={loading || isSpeaking || isSubmitting}
-                                    >
-                                        {retakeCount[currentQ] > 0 ? "Next" : "Submit"}
-                                    </Button>
-                                    {retakeCount[currentQ] === 0 && !isSubmitting && !submissionSuccess && (
-                                        <Button
-                                            onClick={retakeAnswer}
-                                            variant="outline"
-                                            className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                            disabled={loading || isSpeaking}
-                                        >
-                                            Retake
-                                        </Button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {error && (
-                    <div className="text-red-600 text-center mt-4 font-medium">
-                        {error}
-                    </div>
-                )}
-            </div>
+            {error && (
+                <div className="text-red-600 text-center mt-4 font-medium">
+                    {error}
+                </div>
+            )}
         </div>
     );
 }
