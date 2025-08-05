@@ -311,6 +311,122 @@ export default function JobCandidatesPage({ params }: PageProps) {
         ];
     };
 
+    // Helper functions to handle both old and new audio interview formats
+    const getAudioSummaryScore = (candidate: any) => {
+        const summary = candidate?.audio_interview_details?.audio_interview_summary;
+        if (!summary) return null;
+
+        // New format - scores are out of 100
+        if (summary.average_score !== undefined) {
+            return summary.average_score;
+        }
+
+        // Old format - scores are out of 5, convert to out of 100
+        if (summary.dimension_averages) {
+            const scores = Object.values(summary.dimension_averages).filter(score => typeof score === 'number');
+            if (scores.length > 0) {
+                const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+                return avgScore * 20; // Convert from 0-5 scale to 0-100 scale
+            }
+        }
+
+        return null;
+    };
+
+    const getAudioCredibilityScore = (candidate: any) => {
+        const summary = candidate?.audio_interview_details?.audio_interview_summary;
+        if (!summary) return null;
+
+        // New format - scores are out of 100
+        if (summary.credibility_score !== undefined) {
+            return summary.credibility_score;
+        }
+
+        // Old format - scores are out of 5, convert to out of 100
+        const oldScore = summary.dimension_averages?.credibility;
+        return oldScore ? oldScore * 20 : null;
+    };
+
+    const getAudioCommunicationScore = (candidate: any) => {
+        const summary = candidate?.audio_interview_details?.audio_interview_summary;
+        if (!summary) return null;
+
+        // New format - scores are out of 100
+        if (summary.communication_score !== undefined) {
+            return summary.communication_score;
+        }
+
+        // Old format - scores are out of 5, convert to out of 100
+        const oldScore = summary.dimension_averages?.communication;
+        return oldScore ? oldScore * 20 : null;
+    };
+
+    const getAudioOwnershipScore = (candidate: any) => {
+        const summary = candidate?.audio_interview_details?.audio_interview_summary;
+        if (!summary) return null;
+
+        // Old format only - scores are out of 5, convert to out of 100
+        const oldScore = summary.dimension_averages?.ownership_depth;
+        return oldScore ? oldScore * 20 : null;
+    };
+
+    const getAudioAreasForImprovement = (candidate: any) => {
+        const summary = candidate?.audio_interview_details?.audio_interview_summary;
+        if (!summary?.areas_for_improvement) return [];
+
+        return summary.areas_for_improvement;
+    };
+
+    const getAudioQAEvaluations = (candidate: any) => {
+        return candidate?.audio_interview_details?.qa_evaluations || [];
+    };
+
+    const getQAEvaluationScore = (qa: any) => {
+        // New format - scores are out of 100
+        if (qa.evaluation?.credibility_score !== undefined) {
+            return (qa.evaluation.credibility_score + qa.evaluation.communication_score) / 2;
+        }
+
+        // Old format - scores are out of 5, convert to out of 100
+        if (qa.evaluation?.overall_score !== undefined) {
+            return qa.evaluation.overall_score * 20;
+        }
+
+        return null;
+    };
+
+    const getQAEvaluationDimensions = (qa: any) => {
+        // New format - scores are out of 100
+        if (qa.evaluation?.credibility_score !== undefined) {
+            return {
+                credibility: { score: qa.evaluation.credibility_score, feedback: qa.evaluation.fit_summary },
+                communication: { score: qa.evaluation.communication_score, feedback: qa.evaluation.fit_summary },
+                ownership: null, // Not available in new format
+                confidence: null // Not available in new format
+            };
+        }
+
+        // Old format - scores are out of 5, convert to out of 100
+        return {
+            credibility: qa.evaluation?.credibility ? {
+                score: qa.evaluation.credibility.score * 20,
+                feedback: qa.evaluation.credibility.feedback
+            } : null,
+            communication: qa.evaluation?.communication ? {
+                score: qa.evaluation.communication.score * 20,
+                feedback: qa.evaluation.communication.feedback
+            } : null,
+            ownership: qa.evaluation?.ownership_depth ? {
+                score: qa.evaluation.ownership_depth.score * 20,
+                feedback: qa.evaluation.ownership_depth.feedback
+            } : null,
+            confidence: qa.evaluation?.confidence ? {
+                score: qa.evaluation.confidence.score * 20,
+                feedback: qa.evaluation.confidence.feedback
+            } : null
+        };
+    };
+
     const handleApplicationStatus = async (candidateId: string, status: string, note: string) => {
         setUpdatingStatus(candidateId);
         try {
@@ -979,28 +1095,38 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Average Score</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate?.audio_interview_details?.audio_interview_summary?.average_score?.toFixed(1)}/5</p>
+                                                    <p className="text-lg font-semibold">
+                                                        {getAudioSummaryScore(selectedCandidate)?.toFixed(1) || 'N/A'}/100
+                                                    </p>
                                                 </div>
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Credibility</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate?.audio_interview_details?.audio_interview_summary?.dimension_averages?.credibility?.toFixed(1)}/5</p>
+                                                    <p className="text-lg font-semibold">
+                                                        {getAudioCredibilityScore(selectedCandidate)?.toFixed(1) || 'N/A'}/100
+                                                    </p>
                                                 </div>
-                                                <div className="bg-gray-50 p-3 rounded-lg">
-                                                    <p className="text-sm text-gray-600">Ownership</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate?.audio_interview_details?.audio_interview_summary?.dimension_averages?.ownership_depth?.toFixed(1)}/5</p>
-                                                </div>
+                                                {getAudioOwnershipScore(selectedCandidate) && (
+                                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                                        <p className="text-sm text-gray-600">Ownership</p>
+                                                        <p className="text-lg font-semibold">
+                                                            {getAudioOwnershipScore(selectedCandidate)?.toFixed(1) || 'N/A'}/100
+                                                        </p>
+                                                    </div>
+                                                )}
                                                 <div className="bg-gray-50 p-3 rounded-lg">
                                                     <p className="text-sm text-gray-600">Communication</p>
-                                                    <p className="text-lg font-semibold">{selectedCandidate?.audio_interview_details?.audio_interview_summary?.dimension_averages?.communication?.toFixed(1)}/5</p>
+                                                    <p className="text-lg font-semibold">
+                                                        {getAudioCommunicationScore(selectedCandidate)?.toFixed(1) || 'N/A'}/100
+                                                    </p>
                                                 </div>
                                             </div>
 
                                             {/* Areas for Improvement */}
-                                            {selectedCandidate?.audio_interview_details?.audio_interview_summary?.areas_for_improvement?.length > 0 && (
+                                            {getAudioAreasForImprovement(selectedCandidate).length > 0 && (
                                                 <div className="bg-red-50 p-4 rounded-lg">
                                                     <h5 className="font-medium text-red-900 mb-2">Areas for Improvement</h5>
                                                     <ul className="list-disc list-inside space-y-1">
-                                                        {selectedCandidate?.audio_interview_details?.audio_interview_summary?.areas_for_improvement?.map((area, index) => (
+                                                        {getAudioAreasForImprovement(selectedCandidate).map((area: string, index: number) => (
                                                             <li key={index} className="text-sm text-red-700">{area}</li>
                                                         ))}
                                                     </ul>
@@ -1010,58 +1136,71 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                                         {/* Q&A Evaluations */}
                                         <Accordion type="single" collapsible className="space-y-4">
-                                            {selectedCandidate?.audio_interview_details?.qa_evaluations?.map((qa, index) => (
-                                                <AccordionItem key={index} value={`audio-qa-${index}`} className="bg-gray-50 rounded-lg px-4">
-                                                    <AccordionTrigger className="hover:no-underline">
-                                                        <div className="flex items-center gap-4">
-                                                            <span className="font-medium text-gray-900">Question {index + 1}</span>
-                                                            <span className="text-sm text-gray-500">
-                                                                Score: {qa.evaluation?.overall_score}/5
-                                                            </span>
-                                                        </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent>
-                                                        <div className="space-y-4 pt-2">
-                                                            <div>
-                                                                <h5 className="font-medium text-gray-900 mb-2">Question</h5>
-                                                                <p className="text-gray-700">{qa.question}</p>
+                                            {getAudioQAEvaluations(selectedCandidate).map((qa: any, index: number) => {
+                                                const dimensions = getQAEvaluationDimensions(qa);
+                                                const score = getQAEvaluationScore(qa);
+
+                                                return (
+                                                    <AccordionItem key={index} value={`audio-qa-${index}`} className="bg-gray-50 rounded-lg px-4">
+                                                        <AccordionTrigger className="hover:no-underline">
+                                                            <div className="flex items-center gap-4">
+                                                                <span className="font-medium text-gray-900">Question {index + 1}</span>
+                                                                <span className="text-sm text-gray-500">
+                                                                    Score: {score?.toFixed(1) || 'N/A'}/100
+                                                                </span>
                                                             </div>
-                                                            <div>
-                                                                <h5 className="font-medium text-gray-900 mb-2">Answer</h5>
-                                                                <p className="text-gray-700">{qa.answer}</p>
-                                                            </div>
-                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                        </AccordionTrigger>
+                                                        <AccordionContent>
+                                                            <div className="space-y-4 pt-2">
                                                                 <div>
-                                                                    <p className="text-sm text-gray-600">Credibility</p>
-                                                                    <p className="font-medium">{qa.evaluation?.credibility?.score}/5</p>
-                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.credibility?.feedback}</p>
+                                                                    <h5 className="font-medium text-gray-900 mb-2">Question</h5>
+                                                                    <p className="text-gray-700">{qa.question}</p>
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-sm text-gray-600">Ownership</p>
-                                                                    <p className="font-medium">{qa.evaluation?.ownership_depth?.score}/5</p>
-                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.ownership_depth?.feedback}</p>
+                                                                    <h5 className="font-medium text-gray-900 mb-2">Answer</h5>
+                                                                    <p className="text-gray-700">{qa.answer}</p>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                                    {dimensions.credibility && (
+                                                                        <div>
+                                                                            <p className="text-sm text-gray-600">Credibility</p>
+                                                                            <p className="font-medium">{dimensions.credibility.score}/100</p>
+                                                                            <p className="text-sm text-gray-500 mt-1">{dimensions.credibility.feedback}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {dimensions.ownership && (
+                                                                        <div>
+                                                                            <p className="text-sm text-gray-600">Ownership</p>
+                                                                            <p className="font-medium">{dimensions.ownership.score}/100</p>
+                                                                            <p className="text-sm text-gray-500 mt-1">{dimensions.ownership.feedback}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {dimensions.communication && (
+                                                                        <div>
+                                                                            <p className="text-sm text-gray-600">Communication</p>
+                                                                            <p className="font-medium">{dimensions.communication.score}/100</p>
+                                                                            <p className="text-sm text-gray-500 mt-1">{dimensions.communication.feedback}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {dimensions.confidence && (
+                                                                        <div>
+                                                                            <p className="text-sm text-gray-600">Confidence</p>
+                                                                            <p className="font-medium">{dimensions.confidence.score}/100</p>
+                                                                            <p className="text-sm text-gray-500 mt-1">{dimensions.confidence.feedback}</p>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-sm text-gray-600">Communication</p>
-                                                                    <p className="font-medium">{qa.evaluation?.communication?.score}/5</p>
-                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.communication?.feedback}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-sm text-gray-600">Confidence</p>
-                                                                    <p className="font-medium">{qa.evaluation?.confidence?.score}/5</p>
-                                                                    <p className="text-sm text-gray-500 mt-1">{qa.evaluation?.confidence?.feedback}</p>
+                                                                    <p className="text-sm text-gray-600">Summary</p>
+                                                                    <div className="text-sm text-gray-500 mt-1">
+                                                                        <ReactMarkdown>{qa.evaluation?.summary || qa.evaluation?.fit_summary || ''}</ReactMarkdown>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="text-sm text-gray-600">Summary</p>
-                                                                <div className="text-sm text-gray-500 mt-1">
-                                                                    <ReactMarkdown>{qa.evaluation?.summary || ''}</ReactMarkdown>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            ))}
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                );
+                                            })}
                                         </Accordion>
                                     </div>
                                 )}
