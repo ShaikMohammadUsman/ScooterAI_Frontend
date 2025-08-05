@@ -80,6 +80,9 @@ function CommunicationInterview() {
     const [proctoringActive, setProctoringActive] = useState(false);
     const [proctoringViolations, setProctoringViolations] = useState<string[]>([]);
 
+    // Theme transition state
+    const [isDarkTheme, setIsDarkTheme] = useState(false);
+
     // Check for verification parameter on mount
     useEffect(() => {
         const verifyCode = searchParams.get('verify');
@@ -148,6 +151,11 @@ function CommunicationInterview() {
                 setJobDescription(response.job_description || null);
                 setShowVerification(false);
 
+                // Trigger dark theme transition after successful verification
+                setTimeout(() => {
+                    setIsDarkTheme(true);
+                }, 500); // Small delay for smooth transition
+
                 // Check if resume needs to be updated
                 if (!response.resume_status) {
                     setShowResumeUploadModal(true);
@@ -186,6 +194,7 @@ function CommunicationInterview() {
         }
 
         try {
+
             // Check camera access first
             const hasCameraAccess = await checkCameraAccess();
             if (!hasCameraAccess) {
@@ -195,6 +204,9 @@ function CommunicationInterview() {
 
             // Activate proctoring when camera check starts
             setProctoringActive(true);
+
+            // Wait for proctoring to be fully activated before proceeding
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             // Start with a test question for camera check
             // const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in the role${jobTitle ? ` of ${jobTitle}` : ""}${jobTitle && jobDescription ? ` at ${jobDescription}` : ""}.`;
@@ -694,51 +706,67 @@ function CommunicationInterview() {
     };
 
     return (
-        <div className="h-screen flex flex-col bg-background">
+        <div className={`h-screen flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme ? 'bg-gray-900' : 'bg-background'
+            }`}>
             {/* Header */}
-            <div className="flex items-center gap-4 px-6 py-4 border-b bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
-                <div className="text-primary w-12 h-12">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                    </svg>
+            <div className="flex items-center gap-4 px-6 py-4 sticky top-0 z-10">
+                <div className="w-12 h-12">
+                    <img
+                        src="/assets/images/scooterLogo.png"
+                        alt="Scooter AI"
+                        className="w-full h-full object-contain"
+                    />
                 </div>
                 <div className="flex-1">
-                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Sales Skills Assessment</div>
-                    <div className="text-xs text-muted-foreground">Video Assessment Simulation</div>
+                    <div className={`font-bold text-lg tracking-tight transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'
+                        }`}>
+                        Sales Skills Assessment
+                    </div>
+                    <div className={`text-xs transition-colors duration-1000 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                        Video Assessment Simulation
+                    </div>
                 </div>
                 {isProcessingFinalResponse && (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 rounded-full">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                        <span className="text-blue-800 text-sm font-medium">Processing...</span>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all duration-1000 ${isDarkTheme
+                        ? 'bg-blue-900/50 border-blue-500/30'
+                        : 'bg-blue-100 border-blue-200'
+                        }`}>
+                        <div className={`animate-spin rounded-full h-4 w-4 border-b-2 transition-colors duration-1000 ${isDarkTheme ? 'border-blue-400' : 'border-blue-600'
+                            }`}></div>
+                        <span className={`text-sm font-medium transition-colors duration-1000 ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'
+                            }`}>
+                            Processing...
+                        </span>
                     </div>
                 )}
             </div>
 
             {/* Unauthorized Screen */}
             {showUnauthorized && (
-                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-white via-slate-50 to-white">
-                    <Card className="w-full max-w-md shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+                    <Card className="w-full max-w-md shadow-2xl border-0 bg-gray-800/95 backdrop-blur-sm border border-gray-700">
                         <CardHeader className="text-center pb-6">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6">
-                                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-900/50 rounded-full mb-6 border border-red-500/30">
+                                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                 </svg>
                             </div>
-                            <CardTitle className="text-2xl font-bold text-gray-900">
+                            <CardTitle className="text-2xl font-bold text-white">
                                 Access Denied
                             </CardTitle>
-                            <p className="text-gray-600">
+                            <p className="text-gray-300">
                                 You are not authorized to access this interview
                             </p>
                         </CardHeader>
                         <CardContent className="text-center">
                             <div className="space-y-4">
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-400">
                                     This interview requires a valid verification code. Please check your email for the correct interview link or contact support if you believe this is an error.
                                 </p>
                                 <Button
                                     onClick={() => router.push('/')}
-                                    className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90"
+                                    className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
                                 >
                                     Return to Home
                                 </Button>
@@ -885,19 +913,15 @@ function CommunicationInterview() {
                             loading={loading}
                             jobTitle={jobTitle}
                             jobDescription={jobDescription}
+                            isDarkTheme={isDarkTheme}
                         />
                     ) : (
                         <>
                             {/* Main Content */}
-                            <div className="flex-1 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
-                                {/* <div className="h-full flex flex-col sm:flex-row "> */}
-                                {/* Video Area */}
-                                {/* <div className="w-full h-full sm:w-1/3 p-2 rounded-lg">
-                                        <UserVideo />
-                                    </div> */}
-
-                                {/* Chat Area */}
-                                {/* <div className="flex-1 h-full overflow-y-auto p-6 space-y-2"> */}
+                            <div className={`flex-1 overflow-hidden transition-all duration-1000 ease-in-out ${isDarkTheme
+                                ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+                                : 'bg-gradient-to-br from-white via-slate-50 to-white'
+                                }`}>
                                 <div className="h-full">
                                     {/* Chat Area - Full width since video is floating */}
                                     <div className="h-full overflow-y-auto p-6 space-y-2">
@@ -912,19 +936,29 @@ function CommunicationInterview() {
                                                 >
                                                     {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
                                                     <div
-                                                        className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm  "bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900" ${msg.own ? "" : "px-4 py-2"}`}
+                                                        className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm transition-all duration-1000 ${isDarkTheme
+                                                            ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white border border-gray-600'
+                                                            : 'bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900 border border-gray-200'
+                                                            } ${msg.own ? "" : "px-4 py-2"}`}
                                                     >
                                                         {msg.loading ? (
                                                             <div className="min-w-[100px]">
-                                                                <LoadingDots bg="slate-300" />
+                                                                <LoadingDots bg={isDarkTheme ? "gray-400" : "slate-300"} />
                                                             </div>
                                                         ) : (
                                                             !msg.own && (msg.text)
                                                         )}
                                                         {msg.status && (
-                                                            <div className="float-right flex flex-row items-center gap-2 p-1 bg-green-800 rounded-md">
-                                                                <FaCheck className="text-green-500" size={10} />
-                                                                <span className="text-slate-100 text-[10px]">Answered</span>
+                                                            <div className={`float-right flex flex-row items-center gap-2 p-1 rounded-md transition-all duration-1000 ${isDarkTheme
+                                                                ? 'bg-green-600'
+                                                                : 'bg-green-100'
+                                                                }`}>
+                                                                <FaCheck className={`transition-colors duration-1000 ${isDarkTheme ? 'text-green-300' : 'text-green-600'
+                                                                    }`} size={10} />
+                                                                <span className={`text-[10px] transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-green-800'
+                                                                    }`}>
+                                                                    Answered
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -940,7 +974,10 @@ function CommunicationInterview() {
                             {started && <UserVideo />}
 
                             {/* Controls */}
-                            <div className="border-t bg-gradient-to-r from-white via-gray-50 to-white/90 p-6 shadow-inner rounded-t-2xl">
+                            <div className={`border-t p-6 shadow-inner rounded-t-2xl transition-all duration-1000 ease-in-out ${isDarkTheme
+                                ? 'border-gray-700 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800/90'
+                                : 'border-gray-200 bg-gradient-to-r from-white via-gray-50 to-white/90'
+                                }`}>
                                 {!started ? (
                                     <div className="flex justify-center">
                                         <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
@@ -978,10 +1015,15 @@ function CommunicationInterview() {
                                 ) : !showCompletionScreen && (
                                     <div className="flex flex-col items-center gap-6 w-full">
                                         {isProcessingFinalResponse && (
-                                            <div className="w-full max-w-md bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                            <div className={`w-full max-w-md rounded-lg p-4 mb-4 border transition-all duration-1000 ${isDarkTheme
+                                                ? 'bg-blue-900/50 border-blue-500/30'
+                                                : 'bg-blue-50 border-blue-200'
+                                                }`}>
                                                 <div className="flex items-center justify-center gap-3">
-                                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                                    <span className="text-blue-800 font-medium">
+                                                    <div className={`animate-spin rounded-full h-6 w-6 border-b-2 transition-colors duration-1000 ${isDarkTheme ? 'border-blue-400' : 'border-blue-600'
+                                                        }`}></div>
+                                                    <span className={`font-medium transition-colors duration-1000 ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'
+                                                        }`}>
                                                         Processing your final response...
                                                     </span>
                                                 </div>
@@ -1062,14 +1104,22 @@ function CommunicationInterview() {
 
                                 {error && (
                                     <div className="text-center mt-4">
-                                        <div className="text-red-600 font-medium mb-3">
+                                        <div className={`font-medium mb-3 transition-colors duration-1000 ${isDarkTheme ? 'text-red-400' : 'text-red-600'
+                                            }`}>
                                             {error}
                                         </div>
                                         {showCameraRetry && (
                                             <div className="space-y-3">
-                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                                    <h4 className="font-semibold text-amber-900 mb-2">How to enable camera access:</h4>
-                                                    <ul className="text-sm text-amber-800 space-y-1">
+                                                <div className={`border rounded-lg p-4 transition-all duration-1000 ${isDarkTheme
+                                                    ? 'bg-amber-900/20 border-amber-500/30'
+                                                    : 'bg-amber-50 border-amber-200'
+                                                    }`}>
+                                                    <h4 className={`font-semibold mb-2 transition-colors duration-1000 ${isDarkTheme ? 'text-amber-300' : 'text-amber-900'
+                                                        }`}>
+                                                        How to enable camera access:
+                                                    </h4>
+                                                    <ul className={`text-sm space-y-1 transition-colors duration-1000 ${isDarkTheme ? 'text-amber-200' : 'text-amber-800'
+                                                        }`}>
                                                         <li>• Click the camera icon in your browser's address bar</li>
                                                         <li>• Select "Allow" for camera and microphone access</li>
                                                         <li>• Refresh the page or click "Retry Camera Access" below</li>
@@ -1102,16 +1152,26 @@ function CommunicationInterview() {
 
             {/* Completion Screen */}
             {showCompletionScreen && (
-                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-white via-slate-50 to-white">
-                    <Card className="w-full max-w-2xl shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+                <div className={`flex-1 flex items-center justify-center transition-all duration-1000 ease-in-out ${isDarkTheme
+                    ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+                    : 'bg-gradient-to-br from-white via-slate-50 to-white'
+                    }`}>
+                    <Card className={`w-full max-w-2xl shadow-2xl border-0 backdrop-blur-sm transition-all duration-1000 ${isDarkTheme
+                        ? 'bg-gray-800/95 border-gray-700'
+                        : 'bg-white/95 border-gray-200'
+                        }`}>
                         <CardHeader className="text-center pb-6">
                             <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ duration: 0.5, type: "spring" }}
-                                className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6"
+                                className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 border transition-all duration-1000 ${isDarkTheme
+                                    ? 'bg-green-900/50 border-green-500/30'
+                                    : 'bg-green-100 border-green-200'
+                                    }`}
                             >
-                                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className={`w-10 h-10 transition-colors duration-1000 ${isDarkTheme ? 'text-green-400' : 'text-green-600'
+                                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </motion.div>
@@ -1120,10 +1180,12 @@ function CommunicationInterview() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
                             >
-                                <CardTitle className="text-3xl font-bold text-gray-900 mb-4">
+                                <CardTitle className={`text-3xl font-bold mb-4 transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'
+                                    }`}>
                                     Interview Completed Successfully!
                                 </CardTitle>
-                                <p className="text-lg text-gray-600 leading-relaxed">
+                                <p className={`text-lg leading-relaxed transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'
+                                    }`}>
                                     Thank you for completing your communication skills assessment. Your responses have been recorded and are being evaluated.
                                 </p>
                             </motion.div>
@@ -1135,8 +1197,14 @@ function CommunicationInterview() {
                                 transition={{ delay: 0.4 }}
                                 className="space-y-6"
                             >
-                                <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
-                                    <h3 className="font-semibold text-blue-900 mb-3 text-lg">What happens next?</h3>
+                                <div className={`p-6 rounded-xl border transition-all duration-1000 ${isDarkTheme
+                                    ? 'bg-blue-900/20 border-blue-500/30'
+                                    : 'bg-blue-50 border-blue-200'
+                                    }`}>
+                                    <h3 className={`font-semibold mb-3 text-lg transition-colors duration-1000 ${isDarkTheme ? 'text-blue-300' : 'text-blue-900'
+                                        }`}>
+                                        What happens next?
+                                    </h3>
                                     <div className="space-y-3 text-left">
                                         <div className="flex items-start gap-3">
                                             <div className="flex-shrink-0 mt-1">
@@ -1145,8 +1213,14 @@ function CommunicationInterview() {
                                                 </div>
                                             </div>
                                             <div>
-                                                <p className="text-blue-800 font-medium">Evaluation in Progress</p>
-                                                <p className="text-blue-700 text-sm">Our team is analyzing your communication skills and responses.</p>
+                                                <p className={`font-medium transition-colors duration-1000 ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'
+                                                    }`}>
+                                                    Evaluation in Progress
+                                                </p>
+                                                <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-blue-200' : 'text-blue-700'
+                                                    }`}>
+                                                    Our team is analyzing your communication skills and responses.
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
@@ -1156,8 +1230,14 @@ function CommunicationInterview() {
                                                 </div>
                                             </div>
                                             <div>
-                                                <p className="text-blue-800 font-medium">Results Notification</p>
-                                                <p className="text-blue-700 text-sm">You'll receive an email with your evaluation results within 24-48 hours.</p>
+                                                <p className={`font-medium transition-colors duration-1000 ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'
+                                                    }`}>
+                                                    Results Notification
+                                                </p>
+                                                <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-blue-200' : 'text-blue-700'
+                                                    }`}>
+                                                    You'll receive an email with your evaluation results within 24-48 hours.
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
@@ -1167,15 +1247,25 @@ function CommunicationInterview() {
                                                 </div>
                                             </div>
                                             <div>
-                                                <p className="text-blue-800 font-medium">Next Steps</p>
-                                                <p className="text-blue-700 text-sm">If selected, you'll be contacted for the next stage of the hiring process.</p>
+                                                <p className={`font-medium transition-colors duration-1000 ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'
+                                                    }`}>
+                                                    Next Steps
+                                                </p>
+                                                <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-blue-200' : 'text-blue-700'
+                                                    }`}>
+                                                    If selected, you'll be contacted for the next stage of the hiring process.
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                                    <p className="text-green-800 font-medium">
+                                <div className={`p-4 rounded-xl border transition-all duration-1000 ${isDarkTheme
+                                    ? 'bg-green-900/20 border-green-500/30'
+                                    : 'bg-green-50 border-green-200'
+                                    }`}>
+                                    <p className={`font-medium transition-colors duration-1000 ${isDarkTheme ? 'text-green-300' : 'text-green-800'
+                                        }`}>
                                         💡 While you wait, feel free to explore other job opportunities or update your profile!
                                     </p>
                                 </div>
@@ -1183,14 +1273,17 @@ function CommunicationInterview() {
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <Button
                                         onClick={() => router.push('/')}
-                                        className="w-full sm:w-auto h-12 text-base font-semibold bg-primary hover:bg-primary/90"
+                                        className="w-full sm:w-auto h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
                                     >
                                         Go to Home
                                     </Button>
                                     <Button
                                         onClick={() => router.push('/home/careers')}
                                         variant="outline"
-                                        className="w-full sm:w-auto h-12 text-base font-semibold"
+                                        className={`w-full sm:w-auto h-12 text-base font-semibold transition-all duration-1000 ${isDarkTheme
+                                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            }`}
                                     >
                                         Explore Jobs
                                     </Button>
@@ -1203,27 +1296,40 @@ function CommunicationInterview() {
 
             {/* Resume Upload Required Screen */}
             {verifiedUser && !verifiedUser.resume_status && (
-                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-white via-slate-50 to-white">
-                    <Card className="w-full max-w-md shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+                <div className={`flex-1 flex items-center justify-center transition-all duration-1000 ease-in-out ${isDarkTheme
+                    ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+                    : 'bg-gradient-to-br from-white via-slate-50 to-white'
+                    }`}>
+                    <Card className={`w-full max-w-md shadow-2xl border-0 backdrop-blur-sm transition-all duration-1000 ${isDarkTheme
+                        ? 'bg-gray-800/95 border-gray-700'
+                        : 'bg-white/95 border-gray-200'
+                        }`}>
                         <CardHeader className="text-center pb-6">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-6">
-                                <FaFileAlt className="w-8 h-8 text-amber-600" />
+                            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-6 border transition-all duration-1000 ${isDarkTheme
+                                ? 'bg-amber-900/50 border-amber-500/30'
+                                : 'bg-amber-100 border-amber-200'
+                                }`}>
+                                <FaFileAlt className={`w-8 h-8 transition-colors duration-1000 ${isDarkTheme ? 'text-amber-400' : 'text-amber-600'
+                                    }`} />
                             </div>
-                            <CardTitle className="text-2xl font-bold text-gray-900">
+                            <CardTitle className={`text-2xl font-bold transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'
+                                }`}>
                                 Resume Update Required
                             </CardTitle>
-                            <p className="text-gray-600">
+                            <p className={`transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'
+                                }`}>
                                 Please upload your latest resume to continue with the interview
                             </p>
                         </CardHeader>
                         <CardContent className="text-center">
                             <div className="space-y-4">
-                                <p className="text-sm text-gray-600">
+                                <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'
+                                    }`}>
                                     Your resume information needs to be updated to ensure we have the most current details for your interview evaluation.
                                 </p>
                                 <Button
                                     onClick={() => setShowResumeUploadModal(true)}
-                                    className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90"
+                                    className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
                                 >
                                     Upload Resume
                                 </Button>
@@ -1241,11 +1347,15 @@ function CommunicationInterview() {
                 onResumeUploaded={handleResumeUploaded}
             />
 
-            {/* Proctoring System */}
-            <ProctoringSystem
-                isActive={proctoringActive}
-                onViolation={handleProctoringViolation}
-            />
+            {proctoringActive && (
+                // Proctoring System
+                <ProctoringSystem
+                    isActive={proctoringActive}
+                    onViolation={handleProctoringViolation}
+                />
+
+            )}
+
         </div>
     );
 }
