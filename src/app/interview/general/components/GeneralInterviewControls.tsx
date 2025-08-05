@@ -15,6 +15,8 @@ interface GeneralInterviewControlsProps {
     onSubmitAnswer: () => void;
     onRetakeAnswer: () => void;
     disabled: boolean;
+    isDarkTheme?: boolean;
+    isLeaving?: boolean;
 }
 
 export function GeneralInterviewControls({
@@ -27,23 +29,31 @@ export function GeneralInterviewControls({
     onChatToggle,
     onSubmitAnswer,
     onRetakeAnswer,
-    disabled
+    disabled,
+    isDarkTheme = false,
+    isLeaving = false
 }: GeneralInterviewControlsProps) {
     return (
         <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
+            className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-10"
         >
-            <div className="flex items-center gap-4 bg-white/90 backdrop-blur-md rounded-full px-6 py-4 shadow-lg border border-gray-200">
+            <div className={`flex items-center gap-4 backdrop-blur-md rounded-full px-6 py-4 shadow-lg border transition-all duration-1000 ${isDarkTheme
+                ? 'bg-gray-800/90 border-gray-600'
+                : 'bg-white/90 border-gray-200'
+                }`}>
                 {/* Chat Toggle */}
                 <Button
                     onClick={onChatToggle}
                     variant="ghost"
                     size="icon"
-                    className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                    className={`w-12 h-12 rounded-full transition-all duration-200 ${isDarkTheme
+                        ? 'bg-gray-700 hover:bg-gray-600'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                        }`}
                 >
-                    <MdOutlineChat className="w-5 h-5 text-gray-600" />
+                    <MdOutlineChat className={`w-5 h-5 transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`} />
                 </Button>
 
                 {/* Microphone Button */}
@@ -87,10 +97,9 @@ export function GeneralInterviewControls({
                         <Button
                             onClick={onSubmitAnswer}
                             disabled={disabled}
-                            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg transition-all duration-200"
+                            className="w-12 h-12 p-0 rounded-full bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all duration-200"
                         >
-                            <FaCheck className="w-4 h-4 mr-2" />
-                            {retakeCount > 0 ? "Submit" : "Submit"}
+                            <FaCheck className="w-5 h-5" />
                         </Button>
 
                         {canRetake && retakeCount === 0 && (
@@ -98,10 +107,9 @@ export function GeneralInterviewControls({
                                 onClick={onRetakeAnswer}
                                 variant="outline"
                                 disabled={disabled}
-                                className="px-6 py-3 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-full shadow-lg transition-all duration-200"
+                                className="w-12 h-12 p-0 rounded-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-lg transition-all duration-200"
                             >
-                                <FaRedo className="w-4 h-4 mr-2" />
-                                Retake
+                                <FaRedo className="w-5 h-5" />
                             </Button>
                         )}
                     </motion.div>
@@ -112,9 +120,13 @@ export function GeneralInterviewControls({
                     onClick={onLeave}
                     variant="ghost"
                     size="icon"
-                    className="w-12 h-12 rounded-full bg-red-100 hover:bg-red-200 transition-all duration-200"
+                    disabled={isLeaving}
+                    className={`w-12 h-12 rounded-full transition-all duration-200 ${isDarkTheme
+                        ? 'bg-red-900/50 hover:bg-red-800/50'
+                        : 'bg-red-100 hover:bg-red-200'
+                        }`}
                 >
-                    <FaSignOutAlt className="w-5 h-5 text-red-600" />
+                    <FaSignOutAlt className={`w-5 h-5 transition-colors duration-1000 ${isDarkTheme ? 'text-red-400' : 'text-red-600'}`} />
                 </Button>
             </div>
         </motion.div>

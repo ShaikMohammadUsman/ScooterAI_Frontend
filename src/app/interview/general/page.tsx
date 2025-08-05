@@ -1,14 +1,14 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react";
-import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight, FaUpload } from "react-icons/fa";
+import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight, FaUpload, FaSignOutAlt } from "react-icons/fa";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingDots } from "@/components/ui/loadingDots";
 import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio } from "@/lib/interviewService";
 import { textInAudioOut } from "@/lib/voiceBot";
 import { InterviewAudioRecorder } from "@/lib/audioRecorder";
-import Penguine from "@/../public/assets/icons/penguin_2273664.png";
+
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -67,11 +67,18 @@ export default function VoiceInterviewPage() {
     const [submissionStep, setSubmissionStep] = useState<'processing' | 'uploading' | 'evaluating'>('processing');
     const [evaluationStatus, setEvaluationStatus] = useState<string>('');
 
+    // Theme transition state
+    const [isDarkTheme, setIsDarkTheme] = useState(false);
+
     // New UI states for consistent design
     const [showChat, setShowChat] = useState(false);
     const [canRetake, setCanRetake] = useState(false);
     const [speechDuration, setSpeechDuration] = useState(0);
     const [isQuestionAnswered, setIsQuestionAnswered] = useState(false);
+
+    // Leave confirmation dialog
+    const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+    const [isLeaving, setIsLeaving] = useState(false);
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -154,6 +161,11 @@ export default function VoiceInterviewPage() {
 
             // Wait for proctoring to be fully activated before proceeding
             await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Trigger dark theme transition after successful question generation
+            setTimeout(() => {
+                setIsDarkTheme(true);
+            }, 500); // Small delay for smooth transition
 
             // Start the interview
             setStarted(true);
@@ -354,7 +366,7 @@ export default function VoiceInterviewPage() {
             });
         });
 
-        console.log(qaPairs);
+        // console.log(qaPairs);
 
         setRecognizedText("");
         setIsListening(false);
@@ -393,7 +405,40 @@ export default function VoiceInterviewPage() {
         });
 
         setRecognizedText("");
-        setMicEnabled(true);
+        setCanRetake(false);
+    };
+
+    // Handle leave confirmation
+    const handleLeaveConfirmation = () => {
+        setShowLeaveConfirmation(true);
+    };
+
+    // Handle leave interview with submission
+    const handleLeaveInterview = async () => {
+        setIsLeaving(true);
+        setShowLeaveConfirmation(false);
+
+        try {
+            // If there's recognized text, submit it first
+            if (recognizedText.trim()) {
+                await submitAnswer();
+            }
+
+            // Submit current progress and audio
+            const profile_id = localStorage.getItem('scooterUserId');
+            if (profile_id && qaPairs.length > 0) {
+                await evaluateInterviewResults(qaPairs);
+            }
+
+            // Deactivate proctoring and navigate
+            setProctoringActive(false);
+            router.push("/");
+        } catch (error) {
+            console.error("Error during leave process:", error);
+            setError("Failed to save your progress. Please try again.");
+        } finally {
+            setIsLeaving(false);
+        }
     };
 
     // Evaluate interview results and upload audio
@@ -488,7 +533,7 @@ export default function VoiceInterviewPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-background">
+        <div className={`h-screen flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme ? 'bg-gray-900' : 'bg-background'}`}>
             {/* Proctoring System */}
             {
                 proctoringActive && (
@@ -509,6 +554,61 @@ export default function VoiceInterviewPage() {
                 evaluationStatus={evaluationStatus}
             />
 
+            {/* Leave Confirmation Dialog */}
+            <AnimatePresence>
+                {showLeaveConfirmation && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className={`rounded-lg p-6 shadow-xl transition-all duration-1000 ${isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}
+                        >
+                            <div className="text-center">
+                                <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                                    <FaSignOutAlt className="w-8 h-8 text-red-600" />
+                                </div>
+                                <h3 className={`text-xl font-semibold mb-2 transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                    Leave Interview?
+                                </h3>
+                                <p className={`mb-6 transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    Are you sure you want to leave? Your current progress will be saved and submitted.
+                                </p>
+                                <div className="flex gap-3 justify-center">
+                                    <Button
+                                        onClick={() => setShowLeaveConfirmation(false)}
+                                        variant="outline"
+                                        disabled={isLeaving}
+                                        className="px-6 py-2"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleLeaveInterview}
+                                        disabled={isLeaving}
+                                        className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white"
+                                    >
+                                        {isLeaving ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Saving...
+                                            </div>
+                                        ) : (
+                                            "Leave Interview"
+                                        )}
+                                    </Button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Loading Modal for Initial Interview Start */}
             <AnimatePresence>
                 {loading && !started && (
@@ -522,11 +622,11 @@ export default function VoiceInterviewPage() {
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.8, opacity: 0 }}
-                            className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl"
+                            className={`rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl transition-all duration-1000 ${isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}
                         >
                             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                            <h3 className="text-xl font-semibold text-primary">Preparing Your Interview</h3>
-                            <p className="text-muted-foreground text-center">
+                            <h3 className={`text-xl font-semibold transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-primary'}`}>Preparing Your Interview</h3>
+                            <p className={`text-center transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-muted-foreground'}`}>
                                 We're generating personalized questions for your role. This may take a few moments...
                             </p>
                         </motion.div>
@@ -535,15 +635,21 @@ export default function VoiceInterviewPage() {
             </AnimatePresence>
 
             {/* Header */}
-            <div className="flex items-center gap-4 px-6 py-4 border-b bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
-                <Image
-                    src={Penguine}
-                    alt="Bot"
-                    className="h-12 w-12 rounded-full border-2 border-indigo-200 shadow-sm"
-                />
-                <div>
-                    <div className="font-bold text-lg text-indigo-600 tracking-tight">Voice Assistant</div>
-                    <div className="text-xs text-muted-foreground">Voice Conversation Simulation</div>
+            <div className="flex items-center gap-4 px-6 py-4 sticky top-0 z-10">
+                <div className="w-12 h-12">
+                    <img
+                        src="/assets/images/scooterLogo.png"
+                        alt="Scooter AI"
+                        className="w-full h-full object-contain"
+                    />
+                </div>
+                <div className="flex-1">
+                    <div className={`font-bold text-lg tracking-tight transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                        Voice Skills Assessment
+                    </div>
+                    <div className={`text-xs transition-colors duration-1000 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Audio Assessment Simulation
+                    </div>
                 </div>
             </div>
 
@@ -560,7 +666,10 @@ export default function VoiceInterviewPage() {
             ) : (
                 <>
                     {/* Main Content - AI Speaking Animation */}
-                    <div className={`flex-1 overflow-hidden transition-all duration-1000 ease-in-out pb-24 bg-gradient-to-br from-white via-slate-50 to-white`}>
+                    <div className={`flex-1 overflow-hidden transition-all duration-1000 ease-in-out pb-24 ${isDarkTheme
+                        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+                        : 'bg-gradient-to-br from-white via-slate-50 to-white'
+                        }`}>
                         {!started ? (
                             <div className="flex justify-center items-center h-full">
                                 <AnimatedPlaceholder
@@ -576,7 +685,7 @@ export default function VoiceInterviewPage() {
                                     isSpeaking={isSpeaking}
                                     isProcessing={loading}
                                     currentQuestion={questionsRef.current[currentQ] || ""}
-                                    isDarkTheme={false}
+                                    isDarkTheme={isDarkTheme}
                                     speechDuration={speechDuration}
                                 />
                             </div>
@@ -603,14 +712,13 @@ export default function VoiceInterviewPage() {
                             canRetake={canRetake}
                             retakeCount={retakeCount[currentQ] || 0}
                             onMicToggle={handleMic}
-                            onLeave={() => {
-                                setProctoringActive(false);
-                                router.push("/");
-                            }}
+                            onLeave={handleLeaveConfirmation}
                             onChatToggle={() => setShowChat(!showChat)}
                             onSubmitAnswer={submitAnswer}
                             onRetakeAnswer={retakeAnswer}
                             disabled={isSpeaking || loading || isSubmitting}
+                            isDarkTheme={isDarkTheme}
+                            isLeaving={isLeaving}
                         />
                     )}
                 </>
