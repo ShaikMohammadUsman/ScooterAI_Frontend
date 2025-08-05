@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResumeProfile } from "@/lib/resumeService";
+import { isValidEmail, isValidPhoneNumber, handlePhoneInputChange, getPhoneDisplayValue, isValidLinkedInUrl } from "@/lib/formValidation";
 
 // Constants
 const NOTICE_PERIOD_OPTIONS = [
@@ -74,21 +75,7 @@ const INDIAN_CITIES = [
     "Vijayawada, Andhra Pradesh"
 ];
 
-// LinkedIn URL validation function
-const isValidLinkedInUrl = (url: string): boolean => {
-    if (!url || url.trim() === '') return false;
 
-    const linkedInPatterns = [
-        /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_]+\/?$/,
-        /^https?:\/\/(www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_]+\/?$/,
-        /^https?:\/\/(www\.)?linkedin\.com\/pub\/[a-zA-Z0-9\-_]+\/?$/,
-        /^linkedin\.com\/in\/[a-zA-Z0-9\-_]+\/?$/,
-        /^linkedin\.com\/company\/[a-zA-Z0-9\-_]+\/?$/,
-        /^linkedin\.com\/pub\/[a-zA-Z0-9\-_]+\/?$/
-    ];
-
-    return linkedInPatterns.some(pattern => pattern.test(url.trim()));
-};
 
 // Enhanced form components
 const FormLabel = ({ children, className, icon }: { children: React.ReactNode; className?: string; icon?: React.ReactNode }) => (
@@ -115,6 +102,9 @@ interface ContactInformationFormProps {
 }
 
 export default function ContactInformationForm({ profile, onFieldChange, parsedUserName }: ContactInformationFormProps) {
+    const [emailError, setEmailError] = useState<string>("");
+    const [phoneError, setPhoneError] = useState<string>("");
+
     const isContactComplete = !!(profile?.basic_information?.full_name &&
         profile?.basic_information?.email &&
         profile?.basic_information?.phone_number);
@@ -122,6 +112,29 @@ export default function ContactInformationForm({ profile, onFieldChange, parsedU
     // Get the user's name for personalization
     const userName = parsedUserName || profile?.basic_information?.full_name || "there";
     const firstName = userName.split(' ')[0];
+
+    // Handle email change with validation
+    const handleEmailChange = (email: string) => {
+        onFieldChange("basic_information", "email", email);
+
+        if (email && !isValidEmail(email)) {
+            setEmailError("Please enter a valid email address");
+        } else {
+            setEmailError("");
+        }
+    };
+
+    // Handle phone change with validation and formatting
+    const handlePhoneChange = (phone: string) => {
+        const formattedPhone = handlePhoneInputChange(phone);
+        onFieldChange("basic_information", "phone_number", formattedPhone);
+
+        if (formattedPhone && !isValidPhoneNumber(formattedPhone)) {
+            setPhoneError("Please enter a valid 10-digit phone number");
+        } else {
+            setPhoneError("");
+        }
+    };
 
     return (
         <div className="flex items-center justify-center py-2">
@@ -202,13 +215,18 @@ export default function ContactInformationForm({ profile, onFieldChange, parsedU
                         <Input
                             type="email"
                             value={profile?.basic_information.email || ""}
-                            onChange={e => onFieldChange("basic_information", "email", e.target.value)}
+                            onChange={e => handleEmailChange(e.target.value)}
                             placeholder="Email address"
                             required
-                            className="h-9 text-sm"
+                            className={`h-9 text-sm ${emailError ? 'border-red-500 focus:border-red-500' : ''}`}
                             readOnly={!!profile?.basic_information?.email} // Make read-only if parsed
                         />
-                        {profile?.basic_information?.email && (
+                        {emailError && (
+                            <p className="text-xs text-red-600 mt-1">
+                                {emailError}
+                            </p>
+                        )}
+                        {profile?.basic_information?.email && !emailError && (
                             <p className="text-xs text-green-600 mt-1">
                                 ✓ We've got this from your resume!
                             </p>
@@ -231,24 +249,31 @@ export default function ContactInformationForm({ profile, onFieldChange, parsedU
                                         <InfoIcon className="h-4 w-4 text-gray-400 ml-1" />
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Auto-detect country code, supports SMS follow-up</p>
+                                        <p>Enter 10-digit number, +91 country code will be added automatically</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         </Label>
-                        <Input
-                            type="tel"
-                            value={profile?.basic_information.phone_number || ""}
-                            onChange={e => {
-                                const cleaned = e.target.value.replace(/[^\d+\-\s]/g, "");
-                                onFieldChange("basic_information", "phone_number", cleaned);
-                            }}
-                            placeholder="Phone number"
-                            required
-                            className="h-9 text-sm"
-                            readOnly={!!profile?.basic_information?.phone_number} // Make read-only if parsed
-                        />
-                        {profile?.basic_information?.phone_number && (
+                        <div className="relative">
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium text-sm z-10 pointer-events-none">
+                                +91
+                            </div>
+                            <Input
+                                type="tel"
+                                value={getPhoneDisplayValue(profile?.basic_information.phone_number || "")}
+                                onChange={e => handlePhoneChange(e.target.value)}
+                                placeholder="98765 43210"
+                                required
+                                className={`h-9 text-sm pl-12 ${phoneError ? 'border-red-500 focus:border-red-500' : ''}`}
+                                readOnly={!!profile?.basic_information?.phone_number} // Make read-only if parsed
+                            />
+                        </div>
+                        {phoneError && (
+                            <p className="text-xs text-red-600 mt-1">
+                                {phoneError}
+                            </p>
+                        )}
+                        {profile?.basic_information?.phone_number && !phoneError && (
                             <p className="text-xs text-green-600 mt-1">
                                 ✓ We've got this from your resume!
                             </p>
