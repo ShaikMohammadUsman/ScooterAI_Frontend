@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist } from '@/lib/adminService';
-import formatText from '@/lib/formatText';
+import ReactMarkdown from 'react-markdown';
 import { toast } from "@/hooks/use-toast";
 import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit } from 'react-icons/fa';
 import { use } from 'react';
@@ -1054,12 +1054,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm text-gray-600">Summary</p>
-                                                                <div
-                                                                    className="text-sm text-gray-500 mt-1"
-                                                                    dangerouslySetInnerHTML={{
-                                                                        __html: formatText(qa.evaluation?.summary)
-                                                                    }}
-                                                                />
+                                                                <div className="text-sm text-gray-500 mt-1">
+                                                                    <ReactMarkdown>{qa.evaluation?.summary || ''}</ReactMarkdown>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </AccordionContent>
@@ -1174,12 +1171,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 {selectedCandidate?.interview_details?.communication_evaluation?.summary && (
                                                     <div className="bg-gray-50 p-4 rounded-lg">
                                                         <h5 className="font-medium text-gray-900 mb-2">Summary</h5>
-                                                        <div
-                                                            className="text-gray-700"
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: formatText(selectedCandidate?.interview_details?.communication_evaluation?.summary)
-                                                            }}
-                                                        />
+                                                        <div className="text-gray-700">
+                                                            <ReactMarkdown>{selectedCandidate?.interview_details?.communication_evaluation?.summary || ''}</ReactMarkdown>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -1217,12 +1211,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 {selectedCandidate?.interview_details?.qa_evaluations?.summary && (
                                                     <div className="bg-blue-50 p-4 rounded-lg mb-6">
                                                         <h5 className="font-medium text-blue-900 mb-2">Evaluation Summary</h5>
-                                                        <div
-                                                            className="text-sm text-blue-700"
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: formatText(selectedCandidate?.interview_details?.qa_evaluations?.summary)
-                                                            }}
-                                                        />
+                                                        <div className="text-sm text-blue-700">
+                                                            <ReactMarkdown>{selectedCandidate?.interview_details?.qa_evaluations?.summary || ''}</ReactMarkdown>
+                                                        </div>
                                                     </div>
                                                 )}
 
@@ -1263,21 +1254,15 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                         <div className="bg-blue-50 p-3 rounded-lg">
                                                                             <h6 className="font-medium text-blue-900 mb-2">Skill Reasoning</h6>
-                                                                            <div
-                                                                                className="text-sm text-blue-700"
-                                                                                dangerouslySetInnerHTML={{
-                                                                                    __html: formatText(qa?.skill_reasoning)
-                                                                                }}
-                                                                            />
+                                                                            <div className="text-sm text-blue-700">
+                                                                                <ReactMarkdown>{qa?.skill_reasoning || ''}</ReactMarkdown>
+                                                                            </div>
                                                                         </div>
                                                                         <div className="bg-green-50 p-3 rounded-lg">
                                                                             <h6 className="font-medium text-green-900 mb-2">Trait Reasoning</h6>
-                                                                            <div
-                                                                                className="text-sm text-green-700"
-                                                                                dangerouslySetInnerHTML={{
-                                                                                    __html: formatText(qa?.trait_reasoning)
-                                                                                }}
-                                                                            />
+                                                                            <div className="text-sm text-green-700">
+                                                                                <ReactMarkdown>{qa?.trait_reasoning || ''}</ReactMarkdown>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
