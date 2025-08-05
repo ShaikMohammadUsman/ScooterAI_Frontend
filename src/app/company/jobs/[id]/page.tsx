@@ -316,12 +316,19 @@ export default function JobCandidatesPage({ params }: PageProps) {
         const summary = candidate?.audio_interview_details?.audio_interview_summary;
         if (!summary) return null;
 
-        // New format - scores are out of 100
+        // Check if this is new format (scores out of 100)
         if (summary.average_score !== undefined) {
-            return summary.average_score;
+            // If average_score is > 20, it's likely new format (0-100 scale)
+            if (summary.average_score > 20) {
+                return summary.average_score;
+            }
+            // If average_score is <= 20, it's likely old format (0-5 scale), convert it
+            else {
+                return summary.average_score * 20;
+            }
         }
 
-        // Old format - scores are out of 5, convert to out of 100
+        // Fallback: calculate from dimension_averages if available
         if (summary.dimension_averages) {
             const scores = Object.values(summary.dimension_averages).filter(score => typeof score === 'number');
             if (scores.length > 0) {
