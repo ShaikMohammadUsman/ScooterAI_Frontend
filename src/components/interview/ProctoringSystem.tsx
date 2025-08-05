@@ -673,11 +673,12 @@ export default function ProctoringSystem({ isActive, onViolation }: ProctoringSy
                                     onClick={() => setShowCompactCard(!showCompactCard)}
                                     variant="ghost"
                                     size="icon"
-                                    className={`w-10 h-10 rounded-full  bg-red-50 hover:bg-red-100 shadow-lg relative proctoring-icon transition-all duration-200 ${isBlinking ? 'bg-red-100 shadow-xl' : ''
+                                    className={`w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 shadow-lg relative proctoring-icon transition-all duration-200 flex items-center justify-center ${isBlinking ? 'shadow-xl ring-2 ring-red-400 bg-red-100' : ''
                                         } ${hasAnimatedIn ? 'ring-4 ring-red-300 ring-opacity-50' : ''}`}
                                 >
+                                    {/* Status indicator dot */}
                                     <motion.div
-                                        className={`w-2 h-2 rounded-full ${isWatching ? 'bg-green-500' : 'bg-red-500'} absolute -top-1 -right-1`}
+                                        className={`w-2 h-2 rounded-full ${isWatching ? 'bg-green-500' : 'bg-red-500'} absolute -top-1 -right-1 z-10`}
                                         animate={isWatching ? {
                                             scale: [1, 1.3, 1],
                                             opacity: [1, 0.7, 1]

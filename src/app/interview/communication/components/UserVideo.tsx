@@ -4,8 +4,11 @@ import { Camera, CameraOff, Mic, MicOff } from 'lucide-react';
 import { VoiceWave } from './VoiceWave';
 import { useMediaStream } from '@/hooks/useMediaStream';
 
+interface UserVideoProps {
+    showVideo: boolean;
+}
 
-export function UserVideo() {
+export function UserVideo({ showVideo }: UserVideoProps) {
     const { stream, isVideoOn, isAudioOn, voiceStrength, startStream, stopStream, toggleVideo, toggleAudio } = useMediaStream();
 
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -25,8 +28,16 @@ export function UserVideo() {
         }
     }, [toggle.current])
 
+    useEffect(() => {
+        if (showVideo) {
+            toggle.current = true;
+        } else {
+            toggle.current = false
+        }
+    }, [showVideo])
+
     return (
-        <div className="fixed bottom-4 right-4 z-50 w-64 h-48 sm:w-80 sm:h-60 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-500 rounded-xl shadow-2xl border-2 border-white/20">
+        <div className="fixed bottom-4 left-4 z-50 w-64 h-48 sm:w-80 sm:h-60 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-500 rounded-xl shadow-2xl border-2 border-white/20">
             <video
                 ref={videoRef}
                 autoPlay
@@ -51,11 +62,11 @@ export function UserVideo() {
                     {isVideoOn ? <Camera size={14} /> : <CameraOff size={14} />}
                 </Button>
 
-                {isAudioOn && (
+                {/* {isAudioOn && (
                     <div className="bg-black/50 rounded-lg p-1 border border-white/20">
                         <VoiceWave voiceStrength={voiceStrength} />
                     </div>
-                )}
+                )} */}
             </div>
         </div>
     );

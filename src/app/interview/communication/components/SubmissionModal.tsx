@@ -7,6 +7,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import Image from "next/image";
 
 interface SubmissionModalProps {
     open: boolean;
@@ -93,7 +94,46 @@ export function SubmissionModal({
                         </p>
                         {submissionStep === 'uploading' && (
                             <div className="mt-4 space-y-2">
-                                <Progress value={uploadProgress} className="h-2" />
+                                {/* Custom Progress Bar with Moving Scooter */}
+                                <div className="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden">
+                                    {/* Progress Fill */}
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${uploadProgress}%` }}
+                                        transition={{ duration: 0.5, ease: "easeOut" }}
+                                        className="h-full bg-blue-600 rounded-full"
+                                    />
+
+                                    {/* Moving Scooter Icon */}
+                                    <motion.div
+                                        initial={{ left: 0 }}
+                                        animate={{ left: `${uploadProgress}%` }}
+                                        transition={{ duration: 0.5, ease: "easeOut" }}
+                                        className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2"
+                                        style={{ left: `${Math.min(uploadProgress, 100)}%` }}
+                                    >
+                                        <motion.div
+                                            animate={{
+                                                y: [0, -2, 0],
+                                                rotate: [0, 5, -5, 0]
+                                            }}
+                                            transition={{
+                                                duration: 1,
+                                                repeat: Infinity,
+                                                ease: "easeInOut"
+                                            }}
+                                            className="w-6 h-6 relative"
+                                        >
+                                            <Image
+                                                src="/assets/images/scooterLogo.png"
+                                                alt="Scooter"
+                                                width={24}
+                                                height={24}
+                                                className="w-6 h-6 object-contain"
+                                            />
+                                        </motion.div>
+                                    </motion.div>
+                                </div>
                                 <p className="text-sm text-gray-500">
                                     {uploadProgress}% uploaded
                                 </p>

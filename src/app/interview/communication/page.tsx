@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { UserVideo } from './components/UserVideo';
 import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, evaluateCommunication, videoInterviewLogin } from '@/lib/interviewService';
 import { textInAudioOut } from '@/lib/voiceBot';
+
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaShieldAlt, FaEnvelope, FaKey, FaFileAlt } from "react-icons/fa";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -20,6 +22,11 @@ import { ResumeUploadModal } from "./components/ResumeUploadModal";
 import { toast } from "@/hooks/use-toast";
 import WelcomeScreen from "@/components/interview/WelcomeScreen";
 import ProctoringSystem from "@/components/interview/ProctoringSystem";
+import InterviewControls from "@/components/interview/InterviewControls";
+import ChatPanel from "@/components/interview/ChatPanel";
+import QuestionPalette from "@/components/interview/QuestionPalette";
+import AISpeakingAnimation from "@/components/interview/AISpeakingAnimation";
+import { useMediaStream } from '@/hooks/useMediaStream';
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
@@ -35,7 +42,7 @@ function CommunicationInterview() {
     const [error, setError] = useState<string | null>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
-    const [messages, setMessages] = useState<{ own: boolean; text: string; icon: React.ReactNode; status?: 'completed'; loading?: boolean }[]>([]);
+    const [messages, setMessages] = useState<{ own: boolean; text: string; icon: React.ReactNode; status?: 'completed' | 'retaken'; loading?: boolean; isIntroduction?: boolean }[]>([]);
     const [micEnabled, setMicEnabled] = useState(false);
     const [recognizedText, setRecognizedText] = useState("");
     const [isListening, setIsListening] = useState(false);
@@ -53,6 +60,8 @@ function CommunicationInterview() {
     const [cameraAccessDenied, setCameraAccessDenied] = useState(false);
     const [showCameraRetry, setShowCameraRetry] = useState(false);
     const [isProcessingFinalResponse, setIsProcessingFinalResponse] = useState(false);
+    const [speechDuration, setSpeechDuration] = useState<number>(0);
+
     const recognizerRef = useRef<any>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -82,6 +91,19 @@ function CommunicationInterview() {
 
     // Theme transition state
     const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+    // Control states
+    const [showChat, setShowChat] = useState(false);
+
+    // Retake functionality
+    const [retakeCount, setRetakeCount] = useState<number>(0);
+    const [canRetake, setCanRetake] = useState(false);
+
+    // Media stream for camera functionality
+    // const { isVideoOn, toggleVideo } = useMediaStream();
+    const [showVideo, setShowVideo] = useState(true);
+
+
 
     // Check for verification parameter on mount
     useEffect(() => {
@@ -215,11 +237,12 @@ function CommunicationInterview() {
             setMessages([{
                 own: false,
                 text: testQuestion,
-                icon: <FaUserTie className="text-primary w-6 h-6" />
+                icon: <FaUserTie className="text-primary w-6 h-6" />,
+                isIntroduction: true
             }]);
 
             // Speak the test question
-            await textInAudioOut(
+            const duration = await textInAudioOut(
                 testQuestion,
                 (spokenText) => {
                     setMessages((prev) => {
@@ -231,8 +254,10 @@ function CommunicationInterview() {
                         return newMessages;
                     });
                 },
-                setLoading
+                setLoading,
+                setIsSpeaking
             );
+            setSpeechDuration(duration);
 
             setStarted(true);
             setMicEnabled(true);
@@ -384,7 +409,7 @@ function CommunicationInterview() {
 
             // Speak the question
             if (res.question) {
-                await textInAudioOut(
+                const duration = await textInAudioOut(
                     res.question,
                     (spokenText) => {
                         setMessages((prev) => {
@@ -397,8 +422,10 @@ function CommunicationInterview() {
                             return newMessages;
                         });
                     },
-                    setLoading
+                    setLoading,
+                    setIsSpeaking
                 );
+                setSpeechDuration(duration);
             }
 
             setMicEnabled(true);
@@ -428,8 +455,13 @@ function CommunicationInterview() {
             if (recognizerRef.current) {
                 try {
                     await recognizerRef.current.stopContinuousRecognitionAsync();
-                    // setIsListening(false);
+                    setIsListening(false);
                     setLoading(false);
+
+                    // If we have recognized text, allow retake (only once)
+                    if (recognizedText.trim()) {
+                        setCanRetake(retakeCount === 0);
+                    }
                 } catch (error) {
                     console.error("Error stopping recognition:", error);
                     setError("Failed to stop recording");
@@ -486,14 +518,30 @@ function CommunicationInterview() {
         const textToSend = recognizedText;
         setLoading(true);
         setIsProcessingResponse(true);
-        setMessages((prev) => [...prev, {
-            own: true,
-            text: textToSend,
-            icon: <FaUser className="text-secondary w-6 h-6" />,
-            status: 'completed'
-        }]);
+
+        // Update the status of the last AI question to 'completed'
+        setMessages((prev) => {
+            const newMessages = [...prev];
+            // Find the last AI question (non-own message) and mark it as completed
+            for (let i = newMessages.length - 1; i >= 0; i--) {
+                if (!newMessages[i].own) {
+                    newMessages[i].status = 'completed';
+                    break;
+                }
+            }
+            // Add the user's answer
+            newMessages.push({
+                own: true,
+                text: textToSend,
+                icon: <FaUser className="text-secondary w-6 h-6" />,
+                status: 'completed'
+            });
+            return newMessages;
+        });
 
         setRecognizedText("");
+        setCanRetake(false);
+        setRetakeCount(0); // Reset retake count for next question
         try {
             const res = await continueConversationalInterview({
                 session_id: sessionId,
@@ -585,7 +633,7 @@ function CommunicationInterview() {
 
             // Speak the next question
             if (res.question) {
-                await textInAudioOut(
+                const duration = await textInAudioOut(
                     res.question,
                     (spokenText) => {
                         setMessages((prev) => {
@@ -598,8 +646,10 @@ function CommunicationInterview() {
                             return newMessages;
                         });
                     },
-                    setLoading
+                    setLoading,
+                    setIsSpeaking
                 );
+                setSpeechDuration(duration);
             }
 
             setMicEnabled(true);
@@ -703,6 +753,35 @@ function CommunicationInterview() {
                 resume_status: true
             });
         }
+    };
+
+    // Control handlers
+    const handleTakeNotes = () => {
+        // Placeholder for take notes functionality
+        console.log('Take notes clicked');
+    };
+
+    const handleChatToggle = () => {
+        setShowChat(!showChat);
+    };
+
+    // Retake answer functionality
+    const retakeAnswer = () => {
+        if (retakeCount >= 1) return; // Only allow one retake
+
+        setRetakeCount(prev => prev + 1);
+        setRecognizedText("");
+        setCanRetake(false);
+
+        // Update the last message status to retaken
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage && lastMessage.own) {
+                lastMessage.status = 'retaken';
+            }
+            return newMessages;
+        });
     };
 
     return (
@@ -917,225 +996,147 @@ function CommunicationInterview() {
                         />
                     ) : (
                         <>
-                            {/* Main Content */}
-                            <div className={`flex-1 overflow-hidden transition-all duration-1000 ease-in-out ${isDarkTheme
+                            {/* Main Content - AI Speaking Animation and User Video */}
+                            <div className={`flex-1 overflow-hidden transition-all duration-1000 ease-in-out pb-24 ${isDarkTheme
                                 ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
                                 : 'bg-gradient-to-br from-white via-slate-50 to-white'
                                 }`}>
-                                <div className="h-full">
-                                    {/* Chat Area - Full width since video is floating */}
-                                    <div className="h-full overflow-y-auto p-6 space-y-2">
-                                        <AnimatePresence>
-                                            {messages.map((msg, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: -20 }}
-                                                    className={`flex items-start gap-3 mb-3 justify-start`}
-                                                >
-                                                    {!msg.own && <div className="flex-shrink-0">{msg.icon}</div>}
-                                                    <div
-                                                        className={`rounded-2xl flex flex-row max-w-[80%] relative shadow-sm backdrop-blur-sm transition-all duration-1000 ${isDarkTheme
-                                                            ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white border border-gray-600'
-                                                            : 'bg-gradient-to-r from-gray-100 via-white to-gray-50 text-gray-900 border border-gray-200'
-                                                            } ${msg.own ? "" : "px-4 py-2"}`}
-                                                    >
-                                                        {msg.loading ? (
-                                                            <div className="min-w-[100px]">
-                                                                <LoadingDots bg={isDarkTheme ? "gray-400" : "slate-300"} />
-                                                            </div>
-                                                        ) : (
-                                                            !msg.own && (msg.text)
-                                                        )}
-                                                        {msg.status && (
-                                                            <div className={`float-right flex flex-row items-center gap-2 p-1 rounded-md transition-all duration-1000 ${isDarkTheme
-                                                                ? 'bg-green-600'
-                                                                : 'bg-green-100'
-                                                                }`}>
-                                                                <FaCheck className={`transition-colors duration-1000 ${isDarkTheme ? 'text-green-300' : 'text-green-600'
-                                                                    }`} size={10} />
-                                                                <span className={`text-[10px] transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-green-800'
-                                                                    }`}>
-                                                                    Answered
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                        </AnimatePresence>
-                                        <div ref={scrollRef} />
-                                    </div>
+                                {/* AI Speaking Animation */}
+                                <div className="flex-1">
+                                    <AISpeakingAnimation
+                                        isSpeaking={isSpeaking}
+                                        isProcessing={isProcessingResponse || isProcessingFinalResponse}
+                                        currentQuestion={currentQuestion}
+                                        isDarkTheme={isDarkTheme}
+                                        speechDuration={speechDuration}
+                                    />
                                 </div>
+
+                                {/* User Video - Positioned below AI animation on smaller screens */}
+                                {started && (
+                                    <div className="md:hidden flex justify-center pb-4">
+                                        <UserVideo showVideo={showVideo} />
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Floating Video Component - Only show when interview has started */}
-                            {started && <UserVideo />}
+                            {/* Floating Video Component - Only show on larger screens */}
+                            {started && (
+                                <div className="hidden md:block">
+                                    <UserVideo showVideo={showVideo} />
+                                </div>
+                            )}
 
-                            {/* Controls */}
-                            <div className={`border-t p-6 shadow-inner rounded-t-2xl transition-all duration-1000 ease-in-out ${isDarkTheme
-                                ? 'border-gray-700 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800/90'
-                                : 'border-gray-200 bg-gradient-to-r from-white via-gray-50 to-white/90'
-                                }`}>
-                                {!started ? (
-                                    <div className="flex justify-center">
-                                        <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
-                                            Start Camera Check
-                                        </Button>
-                                    </div>
-                                ) : !sessionId ? (
-                                    <div className="flex flex-col items-center gap-6 w-full">
-                                        <Button
-                                            onClick={startActualInterview}
-                                            className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md"
-                                            disabled={loading || isProcessingResponse}
-                                        >
-                                            {isProcessingResponse ? (
-                                                <div className="flex items-center gap-2">
-                                                    <LoadingDots bg="slate-300" />
-                                                    <span>Starting Interview...</span>
-                                                </div>
-                                            ) : (
-                                                "Start Interview"
-                                            )}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                                setShowWelcomeScreen(true);
-                                                setStarted(false);
-                                                setProctoringActive(false); // Deactivate proctoring when going back
-                                            }}
-                                            className="w-full max-w-xs text-base py-3 rounded-xl"
-                                        >
-                                            Back to Welcome
-                                        </Button>
-                                    </div>
-                                ) : !showCompletionScreen && (
-                                    <div className="flex flex-col items-center gap-6 w-full">
-                                        {isProcessingFinalResponse && (
-                                            <div className={`w-full max-w-md rounded-lg p-4 mb-4 border transition-all duration-1000 ${isDarkTheme
-                                                ? 'bg-blue-900/50 border-blue-500/30'
-                                                : 'bg-blue-50 border-blue-200'
+                            {/* Interview Controls - Only show when interview is active */}
+                            {started && sessionId && !showCompletionScreen && (
+                                <InterviewControls
+                                    isListening={isListening}
+                                    isCameraOn={showVideo}
+                                    recognizedText={recognizedText}
+                                    canRetake={canRetake}
+                                    retakeCount={retakeCount}
+                                    onMicToggle={handleMic}
+                                    onCameraToggle={() => setShowVideo(!showVideo)}
+                                    onLeave={endInterviewEarly}
+                                    onTakeNotes={handleTakeNotes}
+                                    onChatToggle={handleChatToggle}
+                                    onSubmitAnswer={submitAnswer}
+                                    onRetakeAnswer={retakeAnswer}
+                                    disabled={loading || isSpeaking || isProcessingResponse || isProcessingFinalResponse}
+                                />
+                            )}
+
+                            {/* Question Palette - Only show when interview is active */}
+                            {started && sessionId && !showCompletionScreen && (
+                                <QuestionPalette messages={messages} />
+                            )}
+
+                            {/* Chat Panel - Only show when interview is active */}
+                            {started && sessionId && !showCompletionScreen && (
+                                <ChatPanel
+                                    isOpen={showChat}
+                                    onToggle={handleChatToggle}
+                                    messages={messages}
+                                />
+                            )}
+
+                            {/* Legacy Controls - Only show for pre-interview stages */}
+                            {(!started || !sessionId) && (
+                                <div className={`border-t p-6 shadow-inner rounded-t-2xl transition-all duration-1000 ease-in-out ${isDarkTheme
+                                    ? 'border-gray-700 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800/90'
+                                    : 'border-gray-200 bg-gradient-to-r from-white via-gray-50 to-white/90'
+                                    }`}>
+                                    {!started ? (
+                                        <div className="flex justify-center">
+                                            <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
+                                                Start Camera Check
+                                            </Button>
+                                        </div>
+                                    ) : !sessionId && (
+                                        <div className="flex flex-col items-center gap-6 w-full">
+                                            <Button
+                                                onClick={startActualInterview}
+                                                className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md"
+                                                disabled={loading || isProcessingResponse}
+                                            >
+                                                {isProcessingResponse ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <LoadingDots bg="slate-300" />
+                                                        <span>Starting Interview...</span>
+                                                    </div>
+                                                ) : (
+                                                    "Start Interview"
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setShowWelcomeScreen(true);
+                                                    setStarted(false);
+                                                    setProctoringActive(false); // Deactivate proctoring when going back
+                                                }}
+                                                className="w-full max-w-xs text-base py-3 rounded-xl"
+                                            >
+                                                Back to Welcome
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    {error && (
+                                        <div className="text-center mt-4">
+                                            <div className={`font-medium mb-3 transition-colors duration-1000 ${isDarkTheme ? 'text-red-400' : 'text-red-600'
                                                 }`}>
-                                                <div className="flex items-center justify-center gap-3">
-                                                    <div className={`animate-spin rounded-full h-6 w-6 border-b-2 transition-colors duration-1000 ${isDarkTheme ? 'border-blue-400' : 'border-blue-600'
-                                                        }`}></div>
-                                                    <span className={`font-medium transition-colors duration-1000 ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'
-                                                        }`}>
-                                                        Processing your final response...
-                                                    </span>
-                                                </div>
+                                                {error}
                                             </div>
-                                        )}
-                                        <div className="flex flex-wrap justify-center gap-4">
-                                            {(!recognizedText || isListening) && (
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                onClick={handleMic}
-                                                                className={`w-36 h-12 flex items-center justify-center rounded-xl text-base transition-all duration-300 shadow-sm relative ${isListening
-                                                                    ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/50 scale-105"
-                                                                    : "bg-primary text-white hover:bg-primary/90"
-                                                                    }`}
-                                                                disabled={isSpeaking || (!micEnabled && !isListening) || isProcessingResponse || isProcessingFinalResponse}
-                                                            >
-                                                                <FaMicrophone className="mr-2" />
-                                                                {(loading || isListening) && <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-gray-100" />}
-                                                                {isListening ? "Stop" : "Answer"}
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            {isListening ? "Click to stop recording" : "Click to start recording"}
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            )}
-
-                                            {recognizedText && !isListening && (
-                                                <Button
-                                                    onClick={submitAnswer}
-                                                    className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                                    disabled={loading || isSpeaking || isProcessingResponse || isProcessingFinalResponse}
-                                                >
-                                                    {isProcessingResponse || loading ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <LoadingDots bg="slate-300" />
-                                                        </div>
-                                                    ) : (
-                                                        "Submit"
-                                                    )}
-                                                </Button>
-                                            )}
-
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
+                                            {showCameraRetry && (
+                                                <div className="space-y-3">
+                                                    <div className={`border rounded-lg p-4 transition-all duration-1000 ${isDarkTheme
+                                                        ? 'bg-amber-900/20 border-amber-500/30'
+                                                        : 'bg-amber-50 border-amber-200'
+                                                        }`}>
+                                                        <h4 className={`font-semibold mb-2 transition-colors duration-1000 ${isDarkTheme ? 'text-amber-300' : 'text-amber-900'
+                                                            }`}>
+                                                            How to enable camera access:
+                                                        </h4>
+                                                        <ul className={`text-sm space-y-1 transition-colors duration-1000 ${isDarkTheme ? 'text-amber-200' : 'text-amber-800'
+                                                            }`}>
+                                                            <li>• Click the camera icon in your browser's address bar</li>
+                                                            <li>• Select "Allow" for camera and microphone access</li>
+                                                            <li>• Refresh the page or click "Retry Camera Access" below</li>
+                                                        </ul>
+                                                    </div>
                                                     <Button
-                                                        variant="outline"
-                                                        className="w-36 h-12 text-base rounded-xl shadow-sm"
-                                                        disabled={loading || isSpeaking || isEndingInterview || isProcessingResponse || isProcessingFinalResponse}
+                                                        onClick={retryCameraAccess}
+                                                        className="w-full bg-amber-600 hover:bg-amber-700 text-white"
                                                     >
-                                                        End Interview
+                                                        Retry Camera Access
                                                     </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>End Interview Early?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Are you sure you want to end the interview now? Your responses will be evaluated based on the questions you've answered so far.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction
-                                                            onClick={endInterviewEarly}
-                                                            className="bg-red-500 hover:bg-red-600"
-                                                        >
-                                                            End Interview
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {error && (
-                                    <div className="text-center mt-4">
-                                        <div className={`font-medium mb-3 transition-colors duration-1000 ${isDarkTheme ? 'text-red-400' : 'text-red-600'
-                                            }`}>
-                                            {error}
-                                        </div>
-                                        {showCameraRetry && (
-                                            <div className="space-y-3">
-                                                <div className={`border rounded-lg p-4 transition-all duration-1000 ${isDarkTheme
-                                                    ? 'bg-amber-900/20 border-amber-500/30'
-                                                    : 'bg-amber-50 border-amber-200'
-                                                    }`}>
-                                                    <h4 className={`font-semibold mb-2 transition-colors duration-1000 ${isDarkTheme ? 'text-amber-300' : 'text-amber-900'
-                                                        }`}>
-                                                        How to enable camera access:
-                                                    </h4>
-                                                    <ul className={`text-sm space-y-1 transition-colors duration-1000 ${isDarkTheme ? 'text-amber-200' : 'text-amber-800'
-                                                        }`}>
-                                                        <li>• Click the camera icon in your browser's address bar</li>
-                                                        <li>• Select "Allow" for camera and microphone access</li>
-                                                        <li>• Refresh the page or click "Retry Camera Access" below</li>
-                                                    </ul>
                                                 </div>
-                                                <Button
-                                                    onClick={retryCameraAccess}
-                                                    className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                                                >
-                                                    Retry Camera Access
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Submission Modal */}
                             <SubmissionModal
@@ -1347,7 +1348,7 @@ function CommunicationInterview() {
                 onResumeUploaded={handleResumeUploaded}
             />
 
-            {proctoringActive && (
+            {proctoringActive && !showCompletionScreen && (
                 // Proctoring System
                 <ProctoringSystem
                     isActive={proctoringActive}
