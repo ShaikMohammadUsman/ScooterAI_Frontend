@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
     Contact,
     DollarSign,
@@ -8,14 +9,16 @@ import {
     TrendingUp,
     Target,
     Settings,
+    FileText,
     Sparkles,
     CheckCircle2,
-    FileText,
-    Loader2
+    Loader2,
+    AlertCircle
 } from "lucide-react";
 import FormProgressBar from "./FormProgressBar";
-import StepNavigation from "./StepNavigation";
 import AnimatedFormContainer from "./AnimatedFormContainer";
+import StepNavigation from "./StepNavigation";
+import ErrorMessage from "@/components/ui/error-message";
 
 // Define CompanyHistory interface
 interface CompanyHistory {
@@ -69,6 +72,12 @@ export default function StepFormWrapper({
     const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
     const [isSummarySaving, setIsSummarySaving] = useState(false);
 
+    // Error states
+    const [contactError, setContactError] = useState("");
+    const [salaryError, setSalaryError] = useState("");
+    const [workError, setWorkError] = useState("");
+    const [workInvalidIndex, setWorkInvalidIndex] = useState<number | null>(null);
+
     // Define form steps with enhanced icons and descriptions - memoized to prevent infinite re-renders
     const steps: FormStep[] = useMemo(() => [
         {
@@ -76,7 +85,7 @@ export default function StepFormWrapper({
             title: "Contact Information",
             subtitle: "Let's get to know you",
             icon: <Contact className="w-5 h-5" />,
-            component: <ContactInformationForm profile={profile} onFieldChange={onFieldChange} parsedUserName={parsedUserName} />,
+            component: <ContactInformationForm profile={profile} onFieldChange={onFieldChange} parsedUserName={parsedUserName} contactError={contactError} />,
             completed: false
         },
         {
@@ -84,7 +93,7 @@ export default function StepFormWrapper({
             title: "Salary Expectations",
             subtitle: "Your compensation preferences",
             icon: <DollarSign className="w-5 h-5" />,
-            component: <SalaryExpectationsForm profile={profile} onFieldChange={onFieldChange} parsedUserName={parsedUserName} />,
+            component: <SalaryExpectationsForm profile={profile} onFieldChange={onFieldChange} parsedUserName={parsedUserName} salaryError={salaryError} />,
             completed: false
         },
         {
@@ -98,6 +107,8 @@ export default function StepFormWrapper({
                     onCompanyHistoryChange={onCompanyHistoryChange}
                     onAddCompanyHistory={onAddCompanyHistory}
                     onRemoveCompanyHistory={onRemoveCompanyHistory}
+                    workError={workError}
+                    workInvalidIndex={workInvalidIndex}
                 />
             ),
             completed: false
@@ -146,10 +157,9 @@ export default function StepFormWrapper({
             component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
             completed: false
         }
-    ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, parsedUserName, onSummaryGenerated, onSummarySaved]);
+    ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, parsedUserName, onSummaryGenerated, onSummarySaved, contactError, salaryError, workError, workInvalidIndex]);
 
     // Move salaryError and salaryStepIndex below steps definition
-    const [salaryError, setSalaryError] = useState("");
     const salaryStepIndex = steps.findIndex(s => s.id === "salary");
 
     // Helper to validate contact info fields
@@ -165,13 +175,10 @@ export default function StepFormWrapper({
         setContactError("");
         return true;
     };
-    const [contactError, setContactError] = useState("");
     const contactStepIndex = steps.findIndex(s => s.id === "contact-info");
 
     // Helper to validate work history fields
-    const [workError, setWorkError] = useState("");
     const workStepIndex = steps.findIndex(s => s.id === "work-history");
-    const [workInvalidIndex, setWorkInvalidIndex] = useState<number | null>(null);
     const isWorkValid = () => {
         const companies = profile?.career_overview?.company_history || [];
         for (let i = 0; i < companies.length; i++) {
@@ -419,6 +426,19 @@ export default function StepFormWrapper({
                     onStepClick={handleStepClick}
                 />
             </div>
+
+            {/* Error Messages Display */}
+            {/* {contactError && steps[currentStep].id === "contact-info" && (
+                <ErrorMessage message={contactError} />
+            )}
+
+            {salaryError && steps[currentStep].id === "salary" && (
+                <ErrorMessage message={salaryError} />
+            )}
+
+            {workError && steps[currentStep].id === "work-history" && (
+                <ErrorMessage message={workError} />
+            )} */}
 
             {/* Save Progress Indicator */}
             {isSummarySaving && (

@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { InfoIcon, X, Briefcase } from "lucide-react";
 import { CompanyHistory, ResumeProfile } from "@/lib/resumeService";
 import dayjs from "dayjs";
+import ErrorMessage from "@/components/ui/error-message";
 
 // Simple form components
 const FormLabel = ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -25,6 +26,8 @@ interface WorkHistoryFormProps {
     onAddCompanyHistory: () => void;
     onRemoveCompanyHistory: (index: number) => void;
     forceExpandIndex?: number | null;
+    workError?: string; // Add prop for work error
+    workInvalidIndex?: number | null; // Add prop for invalid work index
 }
 
 export default function WorkHistoryForm({
@@ -32,7 +35,9 @@ export default function WorkHistoryForm({
     onCompanyHistoryChange,
     onAddCompanyHistory,
     onRemoveCompanyHistory,
-    forceExpandIndex
+    forceExpandIndex,
+    workError,
+    workInvalidIndex
 }: WorkHistoryFormProps) {
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
     const count = useRef(-1)
@@ -98,6 +103,8 @@ export default function WorkHistoryForm({
     return (
         <div className="flex items-center justify-center p-2">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-6 w-full max-w-3xl">
+                <ErrorMessage message={workError} />
+
                 <p className="text-muted-foreground text-sm mb-2">We parsed this from your resume — feel free to tweak or add details.</p>
                 {profile?.career_overview?.company_history?.length > 0 ? (
                     <>

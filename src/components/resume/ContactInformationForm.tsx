@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ResumeProfile } from "@/lib/resumeService";
 import { isValidEmail, isValidPhoneNumber, handlePhoneInputChange, getPhoneDisplayValue, isValidLinkedInUrl } from "@/lib/formValidation";
+import ErrorMessage from "@/components/ui/error-message";
 
 // Constants
 const NOTICE_PERIOD_OPTIONS = [
@@ -99,9 +100,10 @@ interface ContactInformationFormProps {
     profile: ResumeProfile;
     onFieldChange: (section: string, key: string, value: any, subkey?: string) => void;
     parsedUserName?: string; // Add prop for parsed user name
+    contactError?: string; // Add prop for contact error
 }
 
-export default function ContactInformationForm({ profile, onFieldChange, parsedUserName }: ContactInformationFormProps) {
+export default function ContactInformationForm({ profile, onFieldChange, parsedUserName, contactError }: ContactInformationFormProps) {
     const [emailError, setEmailError] = useState<string>("");
     const [phoneError, setPhoneError] = useState<string>("");
 
@@ -139,6 +141,11 @@ export default function ContactInformationForm({ profile, onFieldChange, parsedU
     return (
         <div className="flex items-center justify-center py-2">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-3xl">
+                {/* Error Message Display */}
+                {contactError && (
+                    <ErrorMessage message={contactError} />
+                )}
+
                 {/* Personalized Header */}
                 <div className="text-center mb-6">
                     <div className="flex items-center justify-center gap-2 mb-3">

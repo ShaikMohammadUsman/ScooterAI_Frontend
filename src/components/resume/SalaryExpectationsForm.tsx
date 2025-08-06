@@ -7,6 +7,7 @@ import { InfoIcon, TrendingUp, Sparkles, Target, Trophy } from "lucide-react";
 import { Banknote, Calendar, TrendingUp as TrendingUpIcon } from "lucide-react";
 import { ResumeProfile } from "@/lib/resumeService";
 import { Slider } from "@/components/ui/slider";
+import ErrorMessage from "@/components/ui/error-message";
 
 // Simple form components
 const FormLabel = ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -21,9 +22,10 @@ interface SalaryExpectationsFormProps {
     profile: ResumeProfile;
     onFieldChange: (section: string, key: string, value: any, subkey?: string) => void;
     parsedUserName?: string;
+    salaryError?: string; // Add prop for salary error
 }
 
-export default function SalaryExpectationsForm({ profile, onFieldChange, parsedUserName }: SalaryExpectationsFormProps) {
+export default function SalaryExpectationsForm({ profile, onFieldChange, parsedUserName, salaryError }: SalaryExpectationsFormProps) {
     // Use the cadence and currencyType from current_ctc or expected_ctc, fallback to defaults
     const cadence = profile?.basic_information.current_ctc?.cadence || profile?.basic_information.expected_ctc?.cadence || "annual";
     const currencyType = profile?.basic_information.current_ctc?.currencyType || profile?.basic_information.expected_ctc?.currencyType || "INR";
@@ -147,6 +149,11 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-4xl relative overflow-hidden">
                 {/* Subtle background icon */}
                 <Banknote className="absolute right-6 top-6 w-24 h-24 text-blue-50 opacity-30 pointer-events-none z-0" />
+
+                {/* Error Message Display */}
+                {salaryError && (
+                    <ErrorMessage message={salaryError} />
+                )}
 
                 {/* Personalized Header */}
                 <div className="text-center mb-6 relative z-10">
