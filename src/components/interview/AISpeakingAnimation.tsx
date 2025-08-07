@@ -8,6 +8,7 @@ interface AISpeakingAnimationProps {
     currentQuestion?: string | null;
     isDarkTheme?: boolean;
     speechDuration?: number; // Duration of the current speech in milliseconds
+    interviewType?: 'audio' | 'video';
 }
 
 const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
@@ -15,7 +16,8 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
     isProcessing,
     currentQuestion,
     isDarkTheme = true,
-    speechDuration
+    speechDuration,
+    interviewType = 'audio'
 }) => {
     // Add a small delay after speech ends to ensure smooth transition
     const [showSpeakingAnimation, setShowSpeakingAnimation] = React.useState(false);
@@ -90,7 +92,7 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
                 </AnimatePresence>
 
                 {/* Current Question Display - Separate from main animation */}
-                <div className='hidden md:block w-fit mx-auto justify-center items-center mt-6'>
+                <div className={`${interviewType === 'video' ? 'hidden md:block' : 'block'} w-fit mx-auto justify-center items-center mt-6`}>
                     {currentQuestion && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}

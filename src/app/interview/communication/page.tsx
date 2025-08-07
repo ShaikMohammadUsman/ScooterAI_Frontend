@@ -1009,6 +1009,7 @@ function CommunicationInterview() {
                                         currentQuestion={currentQuestion}
                                         isDarkTheme={isDarkTheme}
                                         speechDuration={speechDuration}
+                                        interviewType='video'
                                     />
                                 </div>
 

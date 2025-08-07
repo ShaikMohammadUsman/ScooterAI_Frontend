@@ -37,7 +37,7 @@ export function UserVideo({ showVideo }: UserVideoProps) {
     }, [showVideo])
 
     return (
-        <div className="md:fixed bottom-4 left-4 z-50 w-64 h-48 sm:w-80 sm:h-60 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-500 rounded-xl shadow-3xl shadow-amber-50 border-0">
+        <div className="relative md:fixed md:bottom-4 md:left-4 z-50 w-64 h-48 sm:w-80 sm:h-60 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-500 rounded-xl shadow-3xl shadow-amber-50 border-0">
             <video
                 ref={videoRef}
                 autoPlay
