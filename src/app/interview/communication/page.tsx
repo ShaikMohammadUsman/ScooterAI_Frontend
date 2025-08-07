@@ -10,10 +10,19 @@ import { textInAudioOut } from '@/lib/voiceBot';
 
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaShieldAlt, FaEnvelope, FaKey, FaFileAlt } from "react-icons/fa";
+import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaShieldAlt, FaEnvelope, FaKey, FaFileAlt, FaSignOutAlt } from "react-icons/fa";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingDots } from "@/components/ui/loadingDots";
@@ -56,6 +65,8 @@ function CommunicationInterview() {
     const [submissionStep, setSubmissionStep] = useState<'processing' | 'uploading' | 'evaluating'>('processing');
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showCompletionScreen, setShowCompletionScreen] = useState(false);
+    const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+    const [isLeaving, setIsLeaving] = useState(false);
     const [evaluationStatus, setEvaluationStatus] = useState<string>('');
     const [cameraAccessDenied, setCameraAccessDenied] = useState(false);
     const [showCameraRetry, setShowCameraRetry] = useState(false);
@@ -670,6 +681,18 @@ function CommunicationInterview() {
         }
     };
 
+    // Handle leave confirmation
+    const handleLeaveConfirmation = () => {
+        setShowLeaveConfirmation(true);
+    };
+
+    // Handle leave interview with submission
+    const handleLeaveInterview = async () => {
+        setIsLeaving(true);
+        setShowLeaveConfirmation(false);
+        await endInterviewEarly();
+    };
+
     // End interview early
     const endInterviewEarly = async () => {
         if (!sessionId) return;
@@ -730,6 +753,7 @@ function CommunicationInterview() {
             setIsUploadingVideo(false);
             setIsSubmittingFinal(false);
             setShowSubmissionModal(false);
+            setIsLeaving(false);
             cleanupRecording();
         }
     };
@@ -1038,12 +1062,13 @@ function CommunicationInterview() {
                                     retakeCount={retakeCount}
                                     onMicToggle={handleMic}
                                     onCameraToggle={() => setShowVideo(!showVideo)}
-                                    onLeave={endInterviewEarly}
+                                    onLeave={handleLeaveConfirmation}
                                     onTakeNotes={handleTakeNotes}
                                     onChatToggle={handleChatToggle}
                                     onSubmitAnswer={submitAnswer}
                                     onRetakeAnswer={retakeAnswer}
-                                    disabled={loading || isSpeaking || isProcessingResponse || isProcessingFinalResponse}
+                                    disabled={loading || isSpeaking || isProcessingResponse || isProcessingFinalResponse || isLeaving}
+                                    isLeaving={isLeaving}
                                 />
                             )}
 
@@ -1358,6 +1383,38 @@ function CommunicationInterview() {
 
             )}
 
+            {/* Leave Confirmation Dialog */}
+            <AlertDialog open={showLeaveConfirmation} onOpenChange={setShowLeaveConfirmation}>
+                <AlertDialogContent className="sm:max-w-md">
+                    <AlertDialogHeader>
+                        <div className="flex items-center justify-center mb-4">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                                <FaSignOutAlt className="w-8 h-8 text-red-600" />
+                            </div>
+                        </div>
+                        <AlertDialogTitle className="text-xl font-semibold text-center">
+                            Leave Interview?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-center">
+                            Are you sure you want to leave? Your interview responses will be submitted for evaluation.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex gap-3 justify-center">
+                        <AlertDialogCancel
+                            onClick={() => setShowLeaveConfirmation(false)}
+                            className="px-6 py-2"
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleLeaveInterview}
+                            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            Leave Interview
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -38,6 +38,7 @@ interface InterviewControlsProps {
     onSubmitAnswer: () => void;
     onRetakeAnswer: () => void;
     disabled?: boolean;
+    isLeaving?: boolean;
 }
 
 const InterviewControls: React.FC<InterviewControlsProps> = ({
@@ -53,7 +54,8 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
     onChatToggle,
     onSubmitAnswer,
     onRetakeAnswer,
-    disabled = false
+    disabled = false,
+    isLeaving = false
 }) => {
     return (
         <TooltipProvider>
@@ -202,13 +204,20 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                                 variant="destructive"
                                 className="h-12 px-6 rounded-full bg-red-600 hover:bg-red-700 text-white font-medium"
                                 onClick={onLeave}
-                                disabled={disabled}
+                                disabled={disabled || isLeaving}
                             >
-                                Leave
+                                {isLeaving ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Saving...
+                                    </div>
+                                ) : (
+                                    "Leave"
+                                )}
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Leave interview</p>
+                            <p>{isLeaving ? "Saving progress..." : "Leave interview"}</p>
                         </TooltipContent>
                     </Tooltip>
                 </div>
