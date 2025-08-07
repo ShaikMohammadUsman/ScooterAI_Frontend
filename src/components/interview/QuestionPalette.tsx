@@ -24,7 +24,7 @@ const QuestionPalette: React.FC<QuestionPaletteProps> = ({ messages }) => {
     }
 
     return (
-        <div className="hidden md:block fixed left-4 top-1/2 transform -translate-y-1/2 z-40">
+        <div className="md:block fixed left-4 top-1/2 transform -translate-y-1/2 z-40">
             <div className="flex flex-col items-center gap-3">
                 <AnimatePresence>
                     {aiQuestions.map((question, index) => (

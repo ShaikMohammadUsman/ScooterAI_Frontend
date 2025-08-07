@@ -27,7 +27,7 @@ export function GeneralQuestionPalette({ messages }: GeneralQuestionPaletteProps
             animate={{ opacity: 1, x: 0 }}
             className="hidden md:block fixed left-4 top-1/2 transform -translate-y-1/2 z-30"
         >
-            <div className="bg-gray-600 backdrop-blur-md rounded-2xl py-4 shadow-lg border border-gray-200">
+            <div className=" backdrop-blur-md rounded-2xl py-4 shadow-lg">
                 <div className="flex flex-col gap-3">
                     {aiQuestions.map((question, index) => (
                         <motion.div
@@ -35,7 +35,7 @@ export function GeneralQuestionPalette({ messages }: GeneralQuestionPaletteProps
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.1 }}
-                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-400 transition-colors"
                         >
                             {/* Question Number or Icon */}
                             <div className="flex-shrink-0">
@@ -50,7 +50,7 @@ export function GeneralQuestionPalette({ messages }: GeneralQuestionPaletteProps
                                 ) : (
                                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                         {/* <FaQuestion className="w-4 h-4 text-blue-600" /> */}
-                                        <p className="text-blue-600 text-sm font-bold">{index + 1}</p>
+                                        <p className="text-sm font-bold">{index + 1}</p>
                                     </div>
                                 )}
                             </div>
