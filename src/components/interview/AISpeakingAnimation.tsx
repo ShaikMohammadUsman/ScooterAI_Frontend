@@ -36,7 +36,7 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
     }, [isSpeaking, isProcessing, speechDuration]);
 
     return (
-        <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex-1 flex items-center justify-center p-3 sm:p-8">
             <div className="max-w-2xl w-full text-center">
                 {/* Main Animation Container */}
                 <AnimatePresence mode="wait">
@@ -90,20 +90,22 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
                 </AnimatePresence>
 
                 {/* Current Question Display - Separate from main animation */}
-                {currentQuestion && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`max-w-lg mx-auto p-6 rounded-2xl mt-6 ${isDarkTheme
-                            ? 'bg-gray-800/50 border border-gray-600'
-                            : 'bg-gray-100 border border-gray-200'
-                            }`}
-                    >
-                        <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-200' : 'text-gray-800'}`}>
-                            {currentQuestion}
-                        </p>
-                    </motion.div>
-                )}
+                <div className='hidden md:block w-fit mx-auto justify-center items-center mt-6'>
+                    {currentQuestion && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`max-w-lg  p-6 rounded-2xl  ${isDarkTheme
+                                ? 'bg-gray-800/50 border border-gray-600'
+                                : 'bg-gray-100 border border-gray-200'
+                                }`}
+                        >
+                            <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-200' : 'text-gray-800'}`}>
+                                {currentQuestion}
+                            </p>
+                        </motion.div>
+                    )}
+                </div>
             </div>
         </div>
     );
