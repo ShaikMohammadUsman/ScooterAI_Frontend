@@ -5,7 +5,7 @@ import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight, FaUploa
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingDots } from "@/components/ui/loadingDots";
-import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio } from "@/lib/interviewService";
+import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio, updateAudioProctoringLogs } from "@/lib/interviewService";
 import { textInAudioOut } from "@/lib/voiceBot";
 import { InterviewAudioRecorder } from "@/lib/audioRecorder";
 
@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
 import { AnimatedPlaceholder } from "./AnimatedPlaceholder";
 import { toast } from "@/hooks/use-toast";
-import ProctoringSystem from "@/components/interview/ProctoringSystem";
+import ProctoringSystem, { ProctoringSystemRef } from "@/components/interview/ProctoringSystem";
 import { GeneralInterviewControls } from "./components/GeneralInterviewControls";
 import { GeneralQuestionPalette } from "./components/GeneralQuestionPalette";
 import { GeneralSubmissionModal } from "./components/GeneralSubmissionModal";
@@ -55,6 +55,7 @@ export default function VoiceInterviewPage() {
     // Proctoring states
     const [proctoringActive, setProctoringActive] = useState(false);
     const [proctoringViolations, setProctoringViolations] = useState<string[]>([]);
+    const proctoringRef = useRef<ProctoringSystemRef>(null);
 
     // Audio recording states
     const audioRecorderRef = useRef<InterviewAudioRecorder | null>(null);
@@ -80,6 +81,24 @@ export default function VoiceInterviewPage() {
     const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
     const [isLeaving, setIsLeaving] = useState(false);
 
+    // Interview event timestamps
+    const [interviewEvents, setInterviewEvents] = useState<Array<{
+        event: string;
+        timestamp: Date;
+        details?: any;
+    }>>([]);
+
+    // Add interview event with timestamp
+    const addInterviewEvent = (event: string, details?: any) => {
+        const newEvent = {
+            event,
+            timestamp: new Date(),
+            details
+        };
+        setInterviewEvents(prev => [...prev, newEvent]);
+        console.log(`Interview Event: ${event}`, newEvent);
+    };
+
     // Scroll to bottom on new message
     useEffect(() => {
         scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -100,6 +119,60 @@ export default function VoiceInterviewPage() {
     // Handle proctoring violations
     const handleProctoringViolation = (violation: string) => {
         setProctoringViolations(prev => [...prev, violation]);
+        // setProctoringData(prev => ({ // This line is removed
+        //     ...prev,
+        //     violations: [...prev.violations, violation]
+        // }));
+    };
+
+    // Handle proctoring data updates
+    // const handleProctoringDataUpdate = (data: { // This function is removed
+    //     tabSwitchCount?: number;
+    //     windowFocusCount?: number;
+    //     rightClickCount?: number;
+    //     devToolsCount?: number;
+    //     multiTouchCount?: number;
+    //     swipeGestureCount?: number;
+    //     orientationChangeCount?: number;
+    // }) => {
+    //     setProctoringData(prev => ({
+    //         ...prev,
+    //         ...data
+    //     }));
+    // };
+
+    // Handle question narration start
+    const handleQuestionNarrationStart = (questionIndex: number, question: string) => {
+        addInterviewEvent('question_narration_started', {
+            questionIndex,
+            question,
+            timestamp: new Date()
+        });
+    };
+
+    // Handle question narration end
+    const handleQuestionNarrationEnd = (questionIndex: number) => {
+        addInterviewEvent('question_narration_ended', {
+            questionIndex,
+            timestamp: new Date()
+        });
+    };
+
+    // Handle answer start
+    const handleAnswerStart = (questionIndex: number) => {
+        addInterviewEvent('answer_started', {
+            questionIndex,
+            timestamp: new Date()
+        });
+    };
+
+    // Handle answer end
+    const handleAnswerEnd = (questionIndex: number, answer: string) => {
+        addInterviewEvent('answer_ended', {
+            questionIndex,
+            answerLength: answer.length,
+            timestamp: new Date()
+        });
     };
 
     // Start interview: fetch questions
@@ -158,6 +231,7 @@ export default function VoiceInterviewPage() {
 
             // Activate proctoring when starting the interview (user gesture)
             setProctoringActive(true);
+            addInterviewEvent('interview_started', { timestamp: new Date() });
 
             // Wait for proctoring to be fully activated before proceeding
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -192,6 +266,9 @@ export default function VoiceInterviewPage() {
         setIsSpeaking(true);
         const question = currentQuestions[index];
 
+        // Track question narration start
+        handleQuestionNarrationStart(index, question);
+
         try {
             // Add question to chat
             setMessages((prev) => [...prev, {
@@ -221,6 +298,9 @@ export default function VoiceInterviewPage() {
                 setLoading
             );
             setSpeechDuration(duration || 0);
+
+            // Track question narration end
+            handleQuestionNarrationEnd(index);
 
             setIsSpeaking(false);
             setMicEnabled(true);
@@ -266,6 +346,9 @@ export default function VoiceInterviewPage() {
         setRecognizing(true);
         // Remove loading state when starting recording
         setLoading(false);
+
+        // Track answer start
+        handleAnswerStart(currentQ);
 
         // Start audio recording for user response
         if (audioRecorderRef.current) {
@@ -325,6 +408,9 @@ export default function VoiceInterviewPage() {
 
         const isLastQuestion = currentQ === questionsRef.current.length - 1;
         setIsSubmitting(true);
+
+        // Track answer end
+        handleAnswerEnd(currentQ, recognizedText);
 
         // Stop audio recording for user response
         if (audioRecorderRef.current) {
@@ -428,6 +514,9 @@ export default function VoiceInterviewPage() {
             const profile_id = localStorage.getItem('scooterUserId');
             if (profile_id && qaPairs.length > 0) {
                 await evaluateInterviewResults(qaPairs);
+            } else if (profile_id) {
+                // Upload proctoring logs even if no Q&A pairs
+                await uploadAudioProctoringLogs(profile_id);
             }
 
             // Deactivate proctoring and navigate
@@ -463,21 +552,31 @@ export default function VoiceInterviewPage() {
             setSubmissionStep('uploading');
             await uploadAudioFile(profile_id);
 
-            // Evaluation step
+            // Upload audio proctoring logs
+            await uploadAudioProctoringLogs(profile_id);
+
+            // Evaluate interview results
             setSubmissionStep('evaluating');
-            const res = await evaluateInterview({
+            addInterviewEvent('evaluation_started', { timestamp: new Date() });
+
+            const evaluationResult = await evaluateInterview({
                 qa_pairs: qaPairsToEvaluate,
                 user_id: profile_id,
             });
 
-            if (res && res.status) {
+            addInterviewEvent('evaluation_completed', {
+                timestamp: new Date(),
+                message: evaluationResult?.message
+            });
+
+            if (evaluationResult && evaluationResult.status) {
                 setEvaluationStatus('Evaluation completed successfully!');
                 await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
 
                 setShowResults(true);
                 setProctoringActive(false);
-                if (res.qualified_for_video_round) {
-                    setPassed(res.qualified_for_video_round);
+                if (evaluationResult.qualified_for_video_round) {
+                    setPassed(evaluationResult.qualified_for_video_round);
                 }
             } else {
                 setEvaluationStatus('Evaluation failed. Please try again.');
@@ -508,6 +607,7 @@ export default function VoiceInterviewPage() {
         try {
             setIsUploadingAudio(true);
             setUploadProgress(0);
+            addInterviewEvent('audio_upload_started', { timestamp: new Date() });
 
             // Combine audio segments
             const audioFile = await audioRecorderRef.current.combineAudioSegments();
@@ -521,14 +621,61 @@ export default function VoiceInterviewPage() {
                 }
             });
 
+            addInterviewEvent('audio_upload_completed', { timestamp: new Date() });
             console.log("Audio file uploaded successfully");
         } catch (error) {
             console.error("Error uploading audio file:", error);
-            setError("Failed to upload audio file");
-            throw error; // Re-throw to be handled by the calling function
+            addInterviewEvent('audio_upload_failed', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                timestamp: new Date()
+            });
+            setError("Failed to upload audio file. Please try again.");
         } finally {
             setIsUploadingAudio(false);
-            setUploadProgress(0);
+        }
+    };
+
+    // Upload audio proctoring logs
+    const uploadAudioProctoringLogs = async (profile_id: string) => {
+        try {
+            const endTime = new Date();
+            const proctoringData = proctoringRef.current?.getProctoringData();
+            const duration = proctoringData?.startTime
+                ? Math.round((endTime.getTime() - proctoringData.startTime.getTime()) / 1000)
+                : 0;
+
+            // Add final submission event
+            addInterviewEvent('final_submission_started', { timestamp: new Date() });
+
+            const proctoringLogs = {
+                email: localStorage.getItem('userEmail') || "unknown@example.com",
+                "screen time": duration.toString(),
+                flags: proctoringData?.violations || [],
+                tab_switches: proctoringData?.tabSwitchCount || 0,
+                window_focus_loss: proctoringData?.windowFocusCount || 0,
+                right_clicks: proctoringData?.rightClickCount || 0,
+                dev_tools_attempts: proctoringData?.devToolsCount || 0,
+                multi_touch_gestures: proctoringData?.multiTouchCount || 0,
+                swipe_gestures: proctoringData?.swipeGestureCount || 0,
+                orientation_changes: proctoringData?.orientationChangeCount || 0,
+                interview_events: interviewEvents,
+                interview_duration: duration,
+                submission_timestamp: new Date().toISOString()
+            };
+
+            await updateAudioProctoringLogs({
+                user_id: profile_id,
+                audio_proctoring_logs: proctoringLogs
+            });
+
+            addInterviewEvent('proctoring_logs_uploaded', { timestamp: new Date() });
+            console.log("Audio proctoring logs uploaded successfully");
+        } catch (error) {
+            console.error("Error uploading audio proctoring logs:", error);
+            addInterviewEvent('proctoring_logs_upload_failed', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                timestamp: new Date()
+            });
         }
     };
 
@@ -540,6 +687,7 @@ export default function VoiceInterviewPage() {
                     <ProctoringSystem
                         isActive={proctoringActive}
                         onViolation={handleProctoringViolation}
+                        ref={proctoringRef}
                     />
                 )
             }

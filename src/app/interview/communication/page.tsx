@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserVideo } from './components/UserVideo';
-import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, evaluateCommunication, videoInterviewLogin } from '@/lib/interviewService';
+import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, evaluateCommunication, videoInterviewLogin, updateVideoProctoringLogs } from '@/lib/interviewService';
 import { textInAudioOut } from '@/lib/voiceBot';
 
 
@@ -30,12 +30,12 @@ import { SubmissionModal } from "./components/SubmissionModal";
 import { ResumeUploadModal } from "./components/ResumeUploadModal";
 import { toast } from "@/hooks/use-toast";
 import WelcomeScreen from "@/components/interview/WelcomeScreen";
-import ProctoringSystem from "@/components/interview/ProctoringSystem";
+import ProctoringSystem, { ProctoringSystemRef, ProctoringData } from "@/components/interview/ProctoringSystem";
 import InterviewControls from "@/components/interview/InterviewControls";
 import ChatPanel from "@/components/interview/ChatPanel";
 import QuestionPalette from "@/components/interview/QuestionPalette";
 import AISpeakingAnimation from "@/components/interview/AISpeakingAnimation";
-import { useMediaStream } from '@/hooks/useMediaStream';
+// import { useMediaStream } from '@/hooks/useMediaStream';
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
@@ -73,6 +73,24 @@ function CommunicationInterview() {
     const [isProcessingFinalResponse, setIsProcessingFinalResponse] = useState(false);
     const [speechDuration, setSpeechDuration] = useState<number>(0);
 
+    // Interview event timestamps
+    const [interviewEvents, setInterviewEvents] = useState<Array<{
+        event: string;
+        timestamp: Date;
+        details?: any;
+    }>>([]);
+
+    // Add interview event with timestamp
+    const addInterviewEvent = (event: string, details?: any) => {
+        const newEvent = {
+            event,
+            timestamp: new Date(),
+            details
+        };
+        setInterviewEvents(prev => [...prev, newEvent]);
+        console.log(`Video Interview Event: ${event}`, newEvent);
+    };
+
     const recognizerRef = useRef<any>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -99,6 +117,7 @@ function CommunicationInterview() {
     // Proctoring states
     const [proctoringActive, setProctoringActive] = useState(false);
     const [proctoringViolations, setProctoringViolations] = useState<string[]>([]);
+    const proctoringRef = useRef<ProctoringSystemRef>(null);
 
     // Theme transition state
     const [isDarkTheme, setIsDarkTheme] = useState(false);
@@ -237,6 +256,7 @@ function CommunicationInterview() {
 
             // Activate proctoring when camera check starts
             setProctoringActive(true);
+            addInterviewEvent('video_interview_started', { timestamp: new Date() });
 
             // Wait for proctoring to be fully activated before proceeding
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -420,6 +440,9 @@ function CommunicationInterview() {
 
             // Speak the question
             if (res.question) {
+                // Track question narration start
+                handleQuestionNarrationStart(0, res.question);
+
                 const duration = await textInAudioOut(
                     res.question,
                     (spokenText) => {
@@ -437,6 +460,9 @@ function CommunicationInterview() {
                     setIsSpeaking
                 );
                 setSpeechDuration(duration);
+
+                // Track question narration end
+                handleQuestionNarrationEnd(0);
             }
 
             setMicEnabled(true);
@@ -487,6 +513,9 @@ function CommunicationInterview() {
         setRecognizedText("");
         setLoading(false);
 
+        // Track user response start
+        handleUserResponseStart();
+
         try {
             const speechConfig = speechsdk.SpeechConfig.fromSubscription(SPEECH_KEY, SPEECH_REGION);
             speechConfig.speechRecognitionLanguage = "en-US";
@@ -529,6 +558,9 @@ function CommunicationInterview() {
         const textToSend = recognizedText;
         setLoading(true);
         setIsProcessingResponse(true);
+
+        // Track user response end
+        handleUserResponseEnd(textToSend);
 
         // Update the status of the last AI question to 'completed'
         setMessages((prev) => {
@@ -592,6 +624,9 @@ function CommunicationInterview() {
                     setSubmissionStep('uploading');
                     setEvaluationStatus('Uploading your interview video...');
 
+                    // Upload video file
+                    addInterviewEvent('video_upload_started', { timestamp: new Date() });
+
                     await uploadInterviewVideo({
                         file: new File([videoBlob], `interview_${Date.now()}.webm`, {
                             type: 'video/webm;codecs=vp9,opus'
@@ -602,11 +637,23 @@ function CommunicationInterview() {
                         }
                     });
 
+                    addInterviewEvent('video_upload_completed', { timestamp: new Date() });
+
+                    // Upload video proctoring logs
+                    await uploadVideoProctoringLogs(userId);
+
                     // Evaluate communication
                     setSubmissionStep('evaluating');
-                    setEvaluationStatus('Evaluating your communication skills...');
 
-                    await evaluateCommunication(sessionId);
+                    setEvaluationStatus('Evaluating your communication skills...');
+                    addInterviewEvent('evaluation_started', { timestamp: new Date() });
+
+                    const evaluationResult = await evaluateCommunication(sessionId);
+
+                    addInterviewEvent('evaluation_completed', {
+                        timestamp: new Date(),
+                        summary: evaluationResult?.summary
+                    });
                 }
 
                 // Add completion message to chat
@@ -724,12 +771,20 @@ function CommunicationInterview() {
                 setSubmissionStep('uploading');
                 setEvaluationStatus('Uploading your interview video...');
 
+                // Upload video file
+                addInterviewEvent('early_video_upload_started', { timestamp: new Date() });
+
                 await uploadInterviewVideo({
                     file: new File([videoBlob], `interview_${Date.now()}.webm`, {
                         type: 'video/webm;codecs=vp9,opus'
                     }),
                     user_id: userId
                 });
+
+                addInterviewEvent('early_video_upload_completed', { timestamp: new Date() });
+
+                // Upload video proctoring logs
+                await uploadVideoProctoringLogs(userId);
 
                 // Evaluate communication
                 setSubmissionStep('evaluating');
@@ -779,6 +834,50 @@ function CommunicationInterview() {
         }
     };
 
+    // Upload video proctoring logs
+    const uploadVideoProctoringLogs = async (userId: string) => {
+        try {
+            const endTime = new Date();
+            const proctoringData = proctoringRef.current?.getProctoringData();
+            const duration = proctoringData?.startTime
+                ? Math.round((endTime.getTime() - proctoringData.startTime.getTime()) / 1000)
+                : 0;
+
+            // Add final submission event
+            addInterviewEvent('final_submission_started', { timestamp: new Date() });
+
+            const proctoringLogs = {
+                email: email || localStorage.getItem('userEmail') || "unknown@example.com",
+                "screen time": duration.toString(),
+                flags: proctoringData?.violations || [],
+                tab_switches: proctoringData?.tabSwitchCount || 0,
+                window_focus_loss: proctoringData?.windowFocusCount || 0,
+                right_clicks: proctoringData?.rightClickCount || 0,
+                dev_tools_attempts: proctoringData?.devToolsCount || 0,
+                multi_touch_gestures: proctoringData?.multiTouchCount || 0,
+                swipe_gestures: proctoringData?.swipeGestureCount || 0,
+                orientation_changes: proctoringData?.orientationChangeCount || 0,
+                interview_events: interviewEvents,
+                interview_duration: duration,
+                submission_timestamp: new Date().toISOString()
+            };
+
+            await updateVideoProctoringLogs({
+                user_id: userId,
+                video_proctoring_logs: proctoringLogs
+            });
+
+            addInterviewEvent('proctoring_logs_uploaded', { timestamp: new Date() });
+            console.log("Video proctoring logs uploaded successfully");
+        } catch (error) {
+            console.error("Error uploading video proctoring logs:", error);
+            addInterviewEvent('proctoring_logs_upload_failed', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                timestamp: new Date()
+            });
+        }
+    };
+
     // Control handlers
     const handleTakeNotes = () => {
         // Placeholder for take notes functionality
@@ -805,6 +904,50 @@ function CommunicationInterview() {
                 lastMessage.status = 'retaken';
             }
             return newMessages;
+        });
+    };
+
+    // Handle question narration events
+    const handleQuestionNarrationStart = (questionIndex: number, question: string) => {
+        addInterviewEvent('question_narration_started', {
+            questionIndex,
+            question,
+            timestamp: new Date()
+        });
+    };
+
+    const handleQuestionNarrationEnd = (questionIndex: number) => {
+        addInterviewEvent('question_narration_ended', {
+            questionIndex,
+            timestamp: new Date()
+        });
+    };
+
+    // Handle conversation events
+    const handleConversationStart = (questionIndex: number) => {
+        addInterviewEvent('conversation_started', {
+            questionIndex,
+            timestamp: new Date()
+        });
+    };
+
+    const handleConversationEnd = (questionIndex: number, duration: number) => {
+        addInterviewEvent('conversation_ended', {
+            questionIndex,
+            duration,
+            timestamp: new Date()
+        });
+    };
+
+    // Handle user response events
+    const handleUserResponseStart = () => {
+        addInterviewEvent('user_response_started', { timestamp: new Date() });
+    };
+
+    const handleUserResponseEnd = (response: string) => {
+        addInterviewEvent('user_response_ended', {
+            responseLength: response.length,
+            timestamp: new Date()
         });
     };
 
@@ -848,7 +991,7 @@ function CommunicationInterview() {
             {/* Unauthorized Screen */}
             {showUnauthorized && (
                 <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-                    <Card className="w-full max-w-md shadow-2xl border-0 bg-gray-800/95 backdrop-blur-sm border border-gray-700">
+                    <Card className="w-full max-w-md shadow-2xl bg-gray-800/95 backdrop-blur-sm border border-gray-700">
                         <CardHeader className="text-center pb-6">
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-red-900/50 rounded-full mb-6 border border-red-500/30">
                                 <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1379,6 +1522,7 @@ function CommunicationInterview() {
                 <ProctoringSystem
                     isActive={proctoringActive}
                     onViolation={handleProctoringViolation}
+                    ref={proctoringRef}
                 />
 
             )}

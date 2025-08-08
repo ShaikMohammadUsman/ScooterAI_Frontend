@@ -302,3 +302,51 @@ export async function videoInterviewLogin(
 }
 
 // -------------------------------------------------------------------------------------------------------------------
+
+// UPDATE VIDEO PROCTORING LOGS
+export interface UpdateVideoProctoringLogsRequest {
+  user_id: string;
+  video_proctoring_logs: Record<string, any>;
+}
+
+export interface UpdateVideoProctoringLogsResponse {
+  status: boolean;
+  message: string;
+}
+
+export async function updateVideoProctoringLogs(
+  data: UpdateVideoProctoringLogsRequest
+): Promise<UpdateVideoProctoringLogsResponse> {
+  try {
+    const res = await axios.post(`${API_BASE}/update-video-proctoring-logs/`, data, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to update video proctoring logs");
+  }
+}
+
+// UPDATE AUDIO PROCTORING LOGS
+export interface UpdateAudioProctoringLogsRequest {
+  user_id: string;
+  audio_proctoring_logs: Record<string, any>;
+}
+
+export interface UpdateAudioProctoringLogsResponse {
+  status: boolean;
+  message: string;
+}
+
+export async function updateAudioProctoringLogs(
+  data: UpdateAudioProctoringLogsRequest
+): Promise<UpdateAudioProctoringLogsResponse> {
+  try {
+    const res = await axios.post(`${API_BASE}/update-audio-proctoring-logs/`, data, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to update audio proctoring logs");
+  }
+}
