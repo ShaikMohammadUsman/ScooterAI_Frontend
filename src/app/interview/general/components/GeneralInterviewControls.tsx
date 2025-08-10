@@ -18,6 +18,7 @@ interface GeneralInterviewControlsProps {
     disabled: boolean;
     isDarkTheme?: boolean;
     isLeaving?: boolean;
+    micEnabled?: boolean;
 }
 
 export function GeneralInterviewControls({
@@ -32,7 +33,8 @@ export function GeneralInterviewControls({
     onRetakeAnswer,
     disabled,
     isDarkTheme = false,
-    isLeaving = false
+    isLeaving = false,
+    micEnabled = false
 }: GeneralInterviewControlsProps) {
     return (
         <TooltipProvider>
@@ -102,6 +104,16 @@ export function GeneralInterviewControls({
                             <p>{isListening ? "Stop recording" : "Start recording"}</p>
                         </TooltipContent>
                     </Tooltip>
+
+                    {/* User's turn to speak tooltip - shows when micEnabled but not listening */}
+                    {micEnabled && !isListening && !recognizedText && (
+                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20">
+                            <div className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
+                                🎤 Click to start speaking
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-600"></div>
+                        </div>
+                    )}
 
                     {/* Submit/Retake Buttons */}
                     {recognizedText && !isListening && (

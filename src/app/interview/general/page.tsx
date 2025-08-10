@@ -867,6 +867,7 @@ export default function VoiceInterviewPage() {
                             disabled={isSpeaking || loading || isSubmitting}
                             isDarkTheme={isDarkTheme}
                             isLeaving={isLeaving}
+                            micEnabled={micEnabled}
                         />
                     )}
                 </>

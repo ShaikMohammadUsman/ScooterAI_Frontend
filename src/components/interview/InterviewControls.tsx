@@ -39,6 +39,7 @@ interface InterviewControlsProps {
     onRetakeAnswer: () => void;
     disabled?: boolean;
     isLeaving?: boolean;
+    micEnabled?: boolean;
 }
 
 const InterviewControls: React.FC<InterviewControlsProps> = ({
@@ -55,7 +56,8 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
     onSubmitAnswer,
     onRetakeAnswer,
     disabled = false,
-    isLeaving = false
+    isLeaving = false,
+    micEnabled = false
 }) => {
     return (
         <TooltipProvider>
@@ -66,15 +68,26 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                     {!isListening && !recognizedText && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="w-14 h-14 rounded-full border-2 bg-gray-800 hover:bg-gray-700 border-gray-600 text-white"
-                                    onClick={onMicToggle}
-                                    disabled={disabled}
-                                >
-                                    <FaMicrophone className="w-6 h-6" />
-                                </Button>
+                                <div className="relative">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="w-14 h-14 rounded-full border-2 bg-gray-800 hover:bg-gray-700 border-gray-600 text-white"
+                                        onClick={onMicToggle}
+                                        disabled={disabled}
+                                    >
+                                        <FaMicrophone className="w-6 h-6" />
+                                    </Button>
+                                    {/* User's turn to speak tooltip - shows when micEnabled but not listening */}
+                                    {micEnabled && !isListening && !recognizedText && (
+                                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20">
+                                            <div className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
+                                                🎤 Click to start speaking
+                                            </div>
+                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-600"></div>
+                                        </div>
+                                    )}
+                                </div>
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p>Start recording</p>

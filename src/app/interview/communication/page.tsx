@@ -1212,6 +1212,7 @@ function CommunicationInterview() {
                                     onRetakeAnswer={retakeAnswer}
                                     disabled={loading || isSpeaking || isProcessingResponse || isProcessingFinalResponse || isLeaving}
                                     isLeaving={isLeaving}
+                                    micEnabled={micEnabled}
                                 />
                             )}
 
