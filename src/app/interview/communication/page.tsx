@@ -126,8 +126,11 @@ function CommunicationInterview() {
     const [showChat, setShowChat] = useState(false);
 
     // Retake functionality
-    const [retakeCount, setRetakeCount] = useState<number>(0);
-    const [canRetake, setCanRetake] = useState(false);
+    const [currentAnswer, setCurrentAnswer] = useState(""); // Track current answer for retake
+    const [retakeCount, setRetakeCount] = useState<number[]>([]);
+
+    // Track current question index for retake counting
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
     // Media stream for camera functionality
     // const { isVideoOn, toggleVideo } = useMediaStream();
@@ -430,6 +433,10 @@ function CommunicationInterview() {
                 setCurrentQuestion(res.question);
             }
 
+            // Initialize retake tracking for the first question
+            setRetakeCount([0]);
+            setCurrentQuestionIndex(0);
+
             // Add loading message
             setMessages((prev) => [...prev, {
                 own: false,
@@ -466,8 +473,7 @@ function CommunicationInterview() {
             }
 
             setMicEnabled(true);
-
-            // Proctoring is already active from camera check
+            setCurrentAnswer(""); // Reset current answer for new question
         } catch (err: any) {
             console.error("Error starting actual interview:", err);
             setError(err.message || "Failed to start interview");
@@ -497,7 +503,7 @@ function CommunicationInterview() {
 
                     // If we have recognized text, allow retake (only once)
                     if (recognizedText.trim()) {
-                        setCanRetake(retakeCount === 0);
+                        // Retake logic is now handled by retakeCount state
                     }
                 } catch (error) {
                     console.error("Error stopping recognition:", error);
@@ -582,9 +588,9 @@ function CommunicationInterview() {
             return newMessages;
         });
 
-        setRecognizedText("");
-        setCanRetake(false);
-        setRetakeCount(0); // Reset retake count for next question
+        // Don't clear recognizedText yet - keep it for retake functionality
+        setCurrentAnswer(recognizedText); // Store current answer for retake
+        // Retake not available until user answers the new question
         try {
             const res = await continueConversationalInterview({
                 session_id: sessionId,
@@ -674,8 +680,10 @@ function CommunicationInterview() {
             // If interview is not completed, continue with next question
             if (res.question) {
                 setCurrentQuestion(res.question);
+                setCurrentQuestionIndex(prev => prev + 1); // Increment question index for retake tracking
             }
             setRecognizedText("");
+            setCurrentAnswer(""); // Reset current answer for new question
             setIsListening(false);
             if (recognizerRef.current) {
                 recognizerRef.current.stopContinuousRecognitionAsync();
@@ -711,6 +719,7 @@ function CommunicationInterview() {
             }
 
             setMicEnabled(true);
+            // Retake not available until user answers the new question
         } catch (err: any) {
             console.error("Error submitting answer:", err);
             setError(err.message || "Failed to submit answer");
@@ -890,11 +899,16 @@ function CommunicationInterview() {
 
     // Retake answer functionality
     const retakeAnswer = () => {
-        if (retakeCount >= 1) return; // Only allow one retake
+        // Allow only one retake per question
+        if (retakeCount[currentQuestionIndex] >= 1) return;
 
-        setRetakeCount(prev => prev + 1);
-        setRecognizedText("");
-        setCanRetake(false);
+        setRetakeCount(prev => {
+            const newCount = [...prev];
+            newCount[currentQuestionIndex] = 1;
+            return newCount;
+        });
+        setRecognizedText(currentAnswer); // Restore the stored answer
+        // Retake not available until user answers the new question
 
         // Update the last message status to retaken
         setMessages(prev => {
@@ -1200,9 +1214,8 @@ function CommunicationInterview() {
                                 <InterviewControls
                                     isListening={isListening}
                                     isCameraOn={showVideo}
-                                    recognizedText={recognizedText}
-                                    canRetake={canRetake}
-                                    retakeCount={retakeCount}
+                                    recognizedText={currentAnswer || recognizedText} // Use currentAnswer for retake logic
+                                    retakeCount={retakeCount[currentQuestionIndex] || 0}
                                     onMicToggle={handleMic}
                                     onCameraToggle={() => setShowVideo(!showVideo)}
                                     onLeave={handleLeaveConfirmation}

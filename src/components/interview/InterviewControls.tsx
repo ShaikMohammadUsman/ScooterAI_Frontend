@@ -28,7 +28,6 @@ interface InterviewControlsProps {
     isListening: boolean;
     isCameraOn: boolean;
     recognizedText?: string;
-    canRetake?: boolean;
     retakeCount?: number;
     onMicToggle: () => void;
     onCameraToggle: () => void;
@@ -46,7 +45,6 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
     isListening,
     isCameraOn,
     recognizedText = "",
-    canRetake = false,
     retakeCount = 0,
     onMicToggle,
     onCameraToggle,
@@ -142,8 +140,8 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                         </Tooltip>
                     )}
 
-                    {/* Retake Answer Button - Show when can retake and not listening */}
-                    {canRetake && !isListening && retakeCount === 0 && (
+                    {/* Retake Answer Button - Show when user has recorded an answer and can retake */}
+                    {recognizedText && !isListening && retakeCount === 0 && (
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button

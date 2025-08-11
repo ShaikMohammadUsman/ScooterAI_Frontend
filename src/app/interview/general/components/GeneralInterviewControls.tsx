@@ -8,7 +8,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface GeneralInterviewControlsProps {
     isListening: boolean;
     recognizedText: string;
-    canRetake: boolean;
     retakeCount: number;
     onMicToggle: () => void;
     onLeave: () => void;
@@ -24,7 +23,6 @@ interface GeneralInterviewControlsProps {
 export function GeneralInterviewControls({
     isListening,
     recognizedText,
-    canRetake,
     retakeCount,
     onMicToggle,
     onLeave,
@@ -67,43 +65,45 @@ export function GeneralInterviewControls({
                         </TooltipContent>
                     </Tooltip>
 
-                    {/* Microphone Button */}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <Button
-                                    onClick={onMicToggle}
-                                    disabled={disabled}
-                                    className={`w-16 h-16 rounded-full shadow-lg transition-all duration-200 ${isListening
-                                        ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
-                                        : "bg-blue-600 hover:bg-blue-700 text-white"
-                                        }`}
+                    {/* Microphone Button - Hide when submit/retake buttons are shown */}
+                    {(!recognizedText || isListening) && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <motion.div
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                 >
-                                    <FaMicrophone className="w-6 h-6" />
-                                    {isListening && (
-                                        <motion.div
-                                            className="absolute inset-0 rounded-full bg-red-400"
-                                            animate={{
-                                                scale: [1, 1.2, 1],
-                                                opacity: [0.5, 0, 0.5]
-                                            }}
-                                            transition={{
-                                                duration: 1.5,
-                                                repeat: Infinity,
-                                                ease: "easeInOut"
-                                            }}
-                                        />
-                                    )}
-                                </Button>
-                            </motion.div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{isListening ? "Stop recording" : "Start recording"}</p>
-                        </TooltipContent>
-                    </Tooltip>
+                                    <Button
+                                        onClick={onMicToggle}
+                                        disabled={disabled}
+                                        className={`w-16 h-16 rounded-full shadow-lg transition-all duration-200 ${isListening
+                                            ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+                                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                                            }`}
+                                    >
+                                        <FaMicrophone className="w-6 h-6" />
+                                        {isListening && (
+                                            <motion.div
+                                                className="absolute inset-0 rounded-full bg-red-400"
+                                                animate={{
+                                                    scale: [1, 1.2, 1],
+                                                    opacity: [0.5, 0, 0.5]
+                                                }}
+                                                transition={{
+                                                    duration: 1.5,
+                                                    repeat: Infinity,
+                                                    ease: "easeInOut"
+                                                }}
+                                            />
+                                        )}
+                                    </Button>
+                                </motion.div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{isListening ? "Stop recording" : "Start recording"}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
 
                     {/* User's turn to speak tooltip - shows when micEnabled but not listening */}
                     {micEnabled && !isListening && !recognizedText && (
@@ -137,7 +137,7 @@ export function GeneralInterviewControls({
                                 </TooltipContent>
                             </Tooltip>
 
-                            {canRetake && retakeCount === 0 && (
+                            {retakeCount === 0 && (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button

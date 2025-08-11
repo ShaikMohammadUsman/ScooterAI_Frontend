@@ -73,7 +73,6 @@ export default function VoiceInterviewPage() {
 
     // New UI states for consistent design
     const [showChat, setShowChat] = useState(false);
-    const [canRetake, setCanRetake] = useState(false);
     const [speechDuration, setSpeechDuration] = useState(0);
     const [isQuestionAnswered, setIsQuestionAnswered] = useState(false);
 
@@ -378,7 +377,7 @@ export default function VoiceInterviewPage() {
             recognizer.canceled = (s, e) => {
                 setIsListening(false);
                 setLoading(false);
-                setCanRetake(true);
+                // Don't set canRetake here - it should only be enabled after submitting
                 if (e.reason === speechsdk.CancellationReason.Error) {
                     setError(`Speech recognition error: ${e.errorDetails}`);
                 }
@@ -456,7 +455,7 @@ export default function VoiceInterviewPage() {
 
         setRecognizedText("");
         setIsListening(false);
-        setCanRetake(false);
+        // Don't reset canRetake here - let it be reset when moving to next question
         if (recognizerRef.current) {
             recognizerRef.current.stopContinuousRecognitionAsync();
         }
@@ -482,6 +481,7 @@ export default function VoiceInterviewPage() {
 
     // Retake answer
     const retakeAnswer = () => {
+        // Allow only one retake per question
         if (retakeCount[currentQ] >= 1) return;
 
         setRetakeCount(prev => {
@@ -491,7 +491,6 @@ export default function VoiceInterviewPage() {
         });
 
         setRecognizedText("");
-        setCanRetake(false);
     };
 
     // Handle leave confirmation
@@ -857,14 +856,13 @@ export default function VoiceInterviewPage() {
                         <GeneralInterviewControls
                             isListening={isListening}
                             recognizedText={recognizedText}
-                            canRetake={canRetake}
                             retakeCount={retakeCount[currentQ] || 0}
                             onMicToggle={handleMic}
                             onLeave={handleLeaveConfirmation}
                             onChatToggle={() => setShowChat(!showChat)}
                             onSubmitAnswer={submitAnswer}
                             onRetakeAnswer={retakeAnswer}
-                            disabled={isSpeaking || loading || isSubmitting}
+                            disabled={loading || isSpeaking || isSubmitting}
                             isDarkTheme={isDarkTheme}
                             isLeaving={isLeaving}
                             micEnabled={micEnabled}
