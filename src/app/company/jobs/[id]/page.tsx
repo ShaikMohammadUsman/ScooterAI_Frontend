@@ -49,10 +49,8 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-    const [selectedCandidateForStatus, setSelectedCandidateForStatus] = useState<Candidate | null>(null);
     const [updatingShortlist, setUpdatingShortlist] = useState<string | null>(null);
     const [isShortlistModalOpen, setIsShortlistModalOpen] = useState(false);
-    const [selectedCandidateForShortlist, setSelectedCandidateForShortlist] = useState<Candidate | null>(null);
 
     // Media player toggle states
     const [showVideoPlayer, setShowVideoPlayer] = useState(false);
@@ -476,7 +474,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 });
                 // Close modal and refresh the candidates list
                 setIsStatusModalOpen(false);
-                setSelectedCandidateForStatus(null);
+                setSelectedCandidate(null);
                 fetchCandidates();
             } else {
                 toast({
@@ -516,7 +514,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 });
                 // Close modal and refresh the candidates list
                 setIsShortlistModalOpen(false);
-                setSelectedCandidateForShortlist(null);
+                setSelectedCandidate(null);
                 fetchCandidates();
             } else {
                 toast({
@@ -538,12 +536,12 @@ export default function JobCandidatesPage({ params }: PageProps) {
     };
 
     const openStatusModal = (candidate: Candidate) => {
-        setSelectedCandidateForStatus(candidate);
+        setSelectedCandidate(candidate);
         setIsStatusModalOpen(true);
     };
 
     const openShortlistModal = (candidate: Candidate) => {
-        setSelectedCandidateForShortlist(candidate);
+        setSelectedCandidate(candidate);
         setIsShortlistModalOpen(true);
     };
 
@@ -760,22 +758,6 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         </div>
                                     )}
                                     <div className="flex flex-col md:flex-row items-center gap-2">
-                                        <Button
-                                            variant="outline"
-                                            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
-                                            onClick={() => openShortlistModal(candidate)}
-                                            disabled={updatingShortlist === candidate?.profile_id}
-                                        >
-                                            <FaCheck className="text-white animate-pulse" />
-                                            {updatingShortlist === candidate?.profile_id ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                    Updating...
-                                                </>
-                                            ) : (
-                                                'Final Shortlist'
-                                            )}
-                                        </Button>
                                         {candidate?.interview_status?.resume_url && (
                                             <Button
                                                 variant="outline"
@@ -811,23 +793,6 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 )} */}
                                             </div>
                                         )}
-
-                                        <Button
-                                            variant="outline"
-                                            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
-                                            onClick={() => openStatusModal(candidate)}
-                                            disabled={updatingStatus === candidate?.profile_id}
-                                        >
-                                            <FaEdit className="text-white animate-pulse" />
-                                            {updatingStatus === candidate?.profile_id ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                    Updating...
-                                                </>
-                                            ) : (
-                                                typeof candidate?.application_status === 'string' ? 'Add Status' : 'Update Status'
-                                            )}
-                                        </Button>
 
                                     </div>
                                 </div>
@@ -1024,6 +989,42 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             View Resume
                                         </Button>
                                     )}
+
+                                    {/* Final Shortlist Button */}
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                        onClick={() => openShortlistModal(selectedCandidate)}
+                                        disabled={updatingShortlist === selectedCandidate?.profile_id}
+                                    >
+                                        <FaCheck className="text-white animate-pulse" />
+                                        {updatingShortlist === selectedCandidate?.profile_id ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                Updating...
+                                            </>
+                                        ) : (
+                                            'Final Shortlist'
+                                        )}
+                                    </Button>
+
+                                    {/* Update Status Button */}
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                        onClick={() => openStatusModal(selectedCandidate)}
+                                        disabled={updatingStatus === selectedCandidate?.profile_id}
+                                    >
+                                        <FaEdit className="text-white animate-pulse" />
+                                        {updatingStatus === selectedCandidate?.profile_id ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                Updating...
+                                            </>
+                                        ) : (
+                                            typeof selectedCandidate?.application_status === 'string' ? 'Add Status' : 'Update Status'
+                                        )}
+                                    </Button>
                                 </div>
 
                                 {/* Audio Interview Q&A */}
@@ -1505,34 +1506,32 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     isOpen={isStatusModalOpen}
                     onClose={() => {
                         setIsStatusModalOpen(false);
-                        setSelectedCandidateForStatus(null);
                     }}
                     onSubmit={(status, note) => {
-                        if (selectedCandidateForStatus) {
-                            handleApplicationStatus(selectedCandidateForStatus.profile_id, status, note);
+                        if (selectedCandidate) {
+                            handleApplicationStatus(selectedCandidate.profile_id, status, note);
                         }
                     }}
-                    candidateName={selectedCandidateForStatus?.basic_information?.full_name || ''}
-                    isLoading={updatingStatus === selectedCandidateForStatus?.profile_id}
-                    currentStatus={typeof selectedCandidateForStatus?.application_status === 'string' ? selectedCandidateForStatus.application_status : typeof selectedCandidateForStatus?.application_status === 'boolean' ? selectedCandidateForStatus.application_status.toString() : null}
-                    currentNote={selectedCandidateForStatus?.application_status_reason}
+                    candidateName={selectedCandidate?.basic_information?.full_name || ''}
+                    isLoading={updatingStatus === selectedCandidate?.profile_id}
+                    currentStatus={typeof selectedCandidate?.application_status === 'string' ? selectedCandidate.application_status : typeof selectedCandidate?.application_status === 'boolean' ? selectedCandidate.application_status.toString() : null}
+                    currentNote={selectedCandidate?.application_status_reason}
                 />
                 {/* Shortlist Modal */}
                 <ShortlistModal
                     isOpen={isShortlistModalOpen}
                     onClose={() => {
                         setIsShortlistModalOpen(false);
-                        setSelectedCandidateForShortlist(null);
                     }}
                     onSubmit={(status, note) => {
-                        if (selectedCandidateForShortlist) {
-                            handleShortlist(selectedCandidateForShortlist.profile_id, status, note);
+                        if (selectedCandidate) {
+                            handleShortlist(selectedCandidate.profile_id, status, note);
                         }
                     }}
-                    candidateName={selectedCandidateForShortlist?.basic_information?.full_name || ''}
-                    isLoading={updatingShortlist === selectedCandidateForShortlist?.profile_id}
-                    currentStatus={typeof selectedCandidateForShortlist?.final_shortlist === 'boolean' ? selectedCandidateForShortlist.final_shortlist : null}
-                    currentNote={selectedCandidateForShortlist?.shortlist_status_reason}
+                    candidateName={selectedCandidate?.basic_information?.full_name || ''}
+                    isLoading={updatingShortlist === selectedCandidate?.profile_id}
+                    currentStatus={typeof selectedCandidate?.final_shortlist === 'boolean' ? selectedCandidate.final_shortlist : null}
+                    currentNote={selectedCandidate?.shortlist_status_reason}
                 />
             </div>
         </div>
