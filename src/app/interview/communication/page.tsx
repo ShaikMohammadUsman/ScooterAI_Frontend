@@ -620,46 +620,72 @@ function CommunicationInterview() {
                 setUploadProgress(0);
                 setEvaluationStatus('Processing your final response...');
 
+                // Add timeout to prevent modal from getting stuck indefinitely
+                const submissionTimeout = setTimeout(() => {
+                    console.warn("Submission process taking too long, closing modal");
+                    setShowSubmissionModal(false);
+                    setIsSubmittingFinal(false);
+                    setIsUploadingVideo(false);
+                    setError("Submission process is taking longer than expected. Please try again or contact support.");
+                    cleanupRecording();
+                    setProctoringActive(false);
+                }, 300000); // 5 minutes timeout
+
                 // Stop recording and get final video
                 const videoBlob = await stopRecording();
                 const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
                 if (userId) {
-                    // Upload the complete video
-                    setIsUploadingVideo(true);
-                    setSubmissionStep('uploading');
-                    setEvaluationStatus('Uploading your interview video...');
+                    try {
+                        // Upload the complete video
+                        setIsUploadingVideo(true);
+                        setSubmissionStep('uploading');
+                        setEvaluationStatus('Uploading your interview video...');
 
-                    // Upload video file
-                    addInterviewEvent('video_upload_started', { timestamp: new Date() });
+                        // Upload video file
+                        addInterviewEvent('video_upload_started', { timestamp: new Date() });
 
-                    await uploadInterviewVideo({
-                        file: new File([videoBlob], `interview_${Date.now()}.webm`, {
-                            type: 'video/webm;codecs=vp9,opus'
-                        }),
-                        user_id: userId,
-                        onProgress: (progress) => {
-                            setUploadProgress(Math.round(progress * 100));
-                        }
-                    });
+                        await uploadInterviewVideo({
+                            file: new File([videoBlob], `interview_${Date.now()}.webm`, {
+                                type: 'video/webm;codecs=vp9,opus'
+                            }),
+                            user_id: userId,
+                            onProgress: (progress) => {
+                                setUploadProgress(Math.round(progress * 100));
+                            }
+                        });
 
-                    addInterviewEvent('video_upload_completed', { timestamp: new Date() });
+                        addInterviewEvent('video_upload_completed', { timestamp: new Date() });
 
-                    // Upload video proctoring logs
-                    await uploadVideoProctoringLogs(userId);
+                        // Upload video proctoring logs
+                        await uploadVideoProctoringLogs(userId);
 
-                    // Evaluate communication
-                    setSubmissionStep('evaluating');
+                        // Evaluate communication
+                        setSubmissionStep('evaluating');
+                        setEvaluationStatus('Evaluating your communication skills...');
+                        addInterviewEvent('evaluation_started', { timestamp: new Date() });
 
-                    setEvaluationStatus('Evaluating your communication skills...');
-                    addInterviewEvent('evaluation_started', { timestamp: new Date() });
+                        console.log("Evaluating communication response...", messages);
+                        const evaluationResult = await evaluateCommunication(sessionId);
 
-                    const evaluationResult = await evaluateCommunication(sessionId);
+                        addInterviewEvent('evaluation_completed', {
+                            timestamp: new Date(),
+                            summary: evaluationResult?.summary
+                        });
 
-                    addInterviewEvent('evaluation_completed', {
-                        timestamp: new Date(),
-                        summary: evaluationResult?.summary
-                    });
+                        // Clear timeout since submission completed successfully
+                        clearTimeout(submissionTimeout);
+                    } catch (err: any) {
+                        console.error("Error in final submission process:", err);
+                        setError(err.message || "Failed to complete interview submission");
+                        setShowSubmissionModal(false);
+                        setIsSubmittingFinal(false);
+                        setIsUploadingVideo(false);
+                        cleanupRecording();
+                        setProctoringActive(false);
+                        clearTimeout(submissionTimeout);
+                        return;
+                    }
                 }
 
                 // Add completion message to chat
@@ -760,6 +786,17 @@ function CommunicationInterview() {
         setSubmissionStep('processing');
         setEvaluationStatus('Processing your interview...');
 
+        // Add timeout to prevent modal from getting stuck indefinitely
+        const earlyEndingTimeout = setTimeout(() => {
+            console.warn("Early ending process taking too long, closing modal");
+            setShowSubmissionModal(false);
+            setIsSubmittingFinal(false);
+            setIsUploadingVideo(false);
+            setError("Interview ending process is taking longer than expected. Please try again or contact support.");
+            cleanupRecording();
+            setProctoringActive(false);
+        }, 300000); // 5 minutes timeout
+
         try {
             // Check if we still have camera access for recording
             if (!videoStreamRef.current) {
@@ -775,31 +812,46 @@ function CommunicationInterview() {
             const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
             if (userId) {
-                // Upload the complete video
-                setIsUploadingVideo(true);
-                setSubmissionStep('uploading');
-                setEvaluationStatus('Uploading your interview video...');
+                try {
+                    // Upload the complete video
+                    setIsUploadingVideo(true);
+                    setSubmissionStep('uploading');
+                    setEvaluationStatus('Uploading your interview video...');
 
-                // Upload video file
-                addInterviewEvent('early_video_upload_started', { timestamp: new Date() });
+                    // Upload video file
+                    addInterviewEvent('early_video_upload_started', { timestamp: new Date() });
 
-                await uploadInterviewVideo({
-                    file: new File([videoBlob], `interview_${Date.now()}.webm`, {
-                        type: 'video/webm;codecs=vp9,opus'
-                    }),
-                    user_id: userId
-                });
+                    await uploadInterviewVideo({
+                        file: new File([videoBlob], `interview_${Date.now()}.webm`, {
+                            type: 'video/webm;codecs=vp9,opus'
+                        }),
+                        user_id: userId
+                    });
 
-                addInterviewEvent('early_video_upload_completed', { timestamp: new Date() });
+                    addInterviewEvent('early_video_upload_completed', { timestamp: new Date() });
 
-                // Upload video proctoring logs
-                await uploadVideoProctoringLogs(userId);
+                    // Upload video proctoring logs
+                    await uploadVideoProctoringLogs(userId);
 
-                // Evaluate communication
-                setSubmissionStep('evaluating');
-                setEvaluationStatus('Evaluating your communication skills...');
+                    // Evaluate communication
+                    setSubmissionStep('evaluating');
+                    setEvaluationStatus('Evaluating your communication skills...');
 
-                await evaluateCommunication(sessionId);
+                    await evaluateCommunication(sessionId);
+
+                    // Clear timeout since process completed successfully
+                    clearTimeout(earlyEndingTimeout);
+                } catch (err: any) {
+                    console.error("Error in early interview ending process:", err);
+                    setError(err.message || "Failed to complete early interview ending");
+                    setShowSubmissionModal(false);
+                    setIsSubmittingFinal(false);
+                    setIsUploadingVideo(false);
+                    cleanupRecording();
+                    setProctoringActive(false);
+                    clearTimeout(earlyEndingTimeout);
+                    return;
+                }
             }
 
             setShowCompletionScreen(true);

@@ -79,6 +79,21 @@ export function SubmissionModal({
                             </motion.div>
                         )}
                     </motion.div>
+
+                    {/* Manual Close Button - Only show after a reasonable delay */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 90 }} // Show after 30 seconds
+                        className="mt-4"
+                    >
+                        <button
+                            onClick={() => onOpenChange(false)}
+                            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 underline"
+                        >
+                            Close (if taking too long)
+                        </button>
+                    </motion.div>
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
