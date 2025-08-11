@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserVideo } from './components/UserVideo';
-import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, evaluateCommunication, videoInterviewLogin, updateVideoProctoringLogs } from '@/lib/interviewService';
+import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, videoInterviewLogin, updateVideoProctoringLogs } from '@/lib/interviewService';
 import { textInAudioOut } from '@/lib/voiceBot';
 
 
@@ -62,12 +62,11 @@ function CommunicationInterview() {
     const [isUploadingVideo, setIsUploadingVideo] = useState(false);
     const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
     const [showSubmissionModal, setShowSubmissionModal] = useState(false);
-    const [submissionStep, setSubmissionStep] = useState<'processing' | 'uploading' | 'evaluating'>('processing');
+    const [submissionStep, setSubmissionStep] = useState<'processing' | 'uploading'>('processing');
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showCompletionScreen, setShowCompletionScreen] = useState(false);
     const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
     const [isLeaving, setIsLeaving] = useState(false);
-    const [evaluationStatus, setEvaluationStatus] = useState<string>('');
     const [cameraAccessDenied, setCameraAccessDenied] = useState(false);
     const [showCameraRetry, setShowCameraRetry] = useState(false);
     const [isProcessingFinalResponse, setIsProcessingFinalResponse] = useState(false);
@@ -606,7 +605,7 @@ function CommunicationInterview() {
                 // Add processing message to chat
                 setMessages((prev) => [...prev, {
                     own: false,
-                    text: "Processing your final response and preparing for evaluation...",
+                    text: "Processing your final response...",
                     icon: <FaUserTie className="text-primary w-6 h-6" />,
                     loading: false
                 }]);
@@ -618,7 +617,6 @@ function CommunicationInterview() {
                 setShowSubmissionModal(true);
                 setSubmissionStep('processing');
                 setUploadProgress(0);
-                setEvaluationStatus('Processing your final response...');
 
                 // Add timeout to prevent modal from getting stuck indefinitely
                 const submissionTimeout = setTimeout(() => {
@@ -640,7 +638,6 @@ function CommunicationInterview() {
                         // Upload the complete video
                         setIsUploadingVideo(true);
                         setSubmissionStep('uploading');
-                        setEvaluationStatus('Uploading your interview video...');
 
                         // Upload video file
                         addInterviewEvent('video_upload_started', { timestamp: new Date() });
@@ -659,19 +656,6 @@ function CommunicationInterview() {
 
                         // Upload video proctoring logs
                         await uploadVideoProctoringLogs(userId);
-
-                        // Evaluate communication
-                        setSubmissionStep('evaluating');
-                        setEvaluationStatus('Evaluating your communication skills...');
-                        addInterviewEvent('evaluation_started', { timestamp: new Date() });
-
-                        console.log("Evaluating communication response...", messages);
-                        const evaluationResult = await evaluateCommunication(sessionId);
-
-                        addInterviewEvent('evaluation_completed', {
-                            timestamp: new Date(),
-                            summary: evaluationResult?.summary
-                        });
 
                         // Clear timeout since submission completed successfully
                         clearTimeout(submissionTimeout);
@@ -784,7 +768,6 @@ function CommunicationInterview() {
         setIsSubmittingFinal(true);
         setShowSubmissionModal(true);
         setSubmissionStep('processing');
-        setEvaluationStatus('Processing your interview...');
 
         // Add timeout to prevent modal from getting stuck indefinitely
         const earlyEndingTimeout = setTimeout(() => {
@@ -816,7 +799,6 @@ function CommunicationInterview() {
                     // Upload the complete video
                     setIsUploadingVideo(true);
                     setSubmissionStep('uploading');
-                    setEvaluationStatus('Uploading your interview video...');
 
                     // Upload video file
                     addInterviewEvent('early_video_upload_started', { timestamp: new Date() });
@@ -832,12 +814,6 @@ function CommunicationInterview() {
 
                     // Upload video proctoring logs
                     await uploadVideoProctoringLogs(userId);
-
-                    // Evaluate communication
-                    setSubmissionStep('evaluating');
-                    setEvaluationStatus('Evaluating your communication skills...');
-
-                    await evaluateCommunication(sessionId);
 
                     // Clear timeout since process completed successfully
                     clearTimeout(earlyEndingTimeout);
@@ -1379,7 +1355,6 @@ function CommunicationInterview() {
                                 onOpenChange={setShowSubmissionModal}
                                 submissionStep={submissionStep}
                                 uploadProgress={uploadProgress}
-                                evaluationStatus={evaluationStatus}
                             />
                         </>
                     )}
@@ -1451,11 +1426,11 @@ function CommunicationInterview() {
                                             <div>
                                                 <p className={`font-medium transition-colors duration-1000 ${isDarkTheme ? 'text-blue-300' : 'text-blue-800'
                                                     }`}>
-                                                    Evaluation in Progress
+                                                    Processing Complete
                                                 </p>
                                                 <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-blue-200' : 'text-blue-700'
                                                     }`}>
-                                                    Our team is analyzing your communication skills and responses.
+                                                    Your interview responses have been processed and recorded.
                                                 </p>
                                             </div>
                                         </div>
@@ -1472,7 +1447,7 @@ function CommunicationInterview() {
                                                 </p>
                                                 <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-blue-200' : 'text-blue-700'
                                                     }`}>
-                                                    You'll receive an email with your evaluation results within 24-48 hours.
+                                                    You'll receive a confirmation email shortly.
                                                 </p>
                                             </div>
                                         </div>
@@ -1561,7 +1536,7 @@ function CommunicationInterview() {
                             <div className="space-y-4">
                                 <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'
                                     }`}>
-                                    Your resume information needs to be updated to ensure we have the most current details for your interview evaluation.
+                                    Your resume information needs to be updated to ensure we have the most current details for your interview.
                                 </p>
                                 <Button
                                     onClick={() => setShowResumeUploadModal(true)}
@@ -1606,7 +1581,7 @@ function CommunicationInterview() {
                             Leave Interview?
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-center">
-                            Are you sure you want to leave? Your interview responses will be submitted for evaluation.
+                            Are you sure you want to leave? Your interview responses will be submitted.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex gap-3 justify-center">

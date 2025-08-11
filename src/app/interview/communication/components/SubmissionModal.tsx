@@ -12,9 +12,8 @@ import Image from "next/image";
 interface SubmissionModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    submissionStep: 'processing' | 'uploading' | 'evaluating';
+    submissionStep: 'processing' | 'uploading';
     uploadProgress?: number;
-    evaluationStatus?: string;
 }
 
 export function SubmissionModal({
@@ -22,7 +21,6 @@ export function SubmissionModal({
     onOpenChange,
     submissionStep,
     uploadProgress = 0,
-    evaluationStatus
 }: SubmissionModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,14 +29,10 @@ export function SubmissionModal({
                     <DialogTitle className="text-2xl font-bold text-center">
                         {submissionStep === 'processing' && "Processing Your Response"}
                         {submissionStep === 'uploading' && "Uploading Interview Video"}
-                        {submissionStep === 'evaluating' && "Evaluating Communication Skills"}
                     </DialogTitle>
                     <DialogDescription className="text-center">
-                        {evaluationStatus || (
-                            submissionStep === 'processing' && "We're processing your final response..."
-                        )}
-                        {!evaluationStatus && submissionStep === 'uploading' && "Please wait while we upload your interview video..."}
-                        {!evaluationStatus && submissionStep === 'evaluating' && "Analyzing your communication skills..."}
+                        {submissionStep === 'processing' && "We're processing your final response..."}
+                        {submissionStep === 'uploading' && "Please wait while we upload your interview video..."}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center justify-center py-6">
@@ -67,17 +61,6 @@ export function SubmissionModal({
                                 </svg>
                             </motion.div>
                         )}
-                        {submissionStep === 'evaluating' && (
-                            <motion.div
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="w-full h-full flex items-center justify-center"
-                            >
-                                <svg className="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </motion.div>
-                        )}
                     </motion.div>
 
                     {/* Manual Close Button - Only show after a reasonable delay */}
@@ -101,11 +84,8 @@ export function SubmissionModal({
                         className="text-center w-full"
                     >
                         <p className="text-lg font-medium text-gray-700">
-                            {evaluationStatus || (
-                                submissionStep === 'processing' && "Please wait while we process your response..."
-                            )}
-                            {!evaluationStatus && submissionStep === 'uploading' && "Uploading your interview video..."}
-                            {!evaluationStatus && submissionStep === 'evaluating' && "Evaluating your communication skills..."}
+                            {submissionStep === 'processing' && "Please wait while we process your response..."}
+                            {submissionStep === 'uploading' && "Uploading your interview video..."}
                         </p>
                         {submissionStep === 'uploading' && (
                             <div className="mt-4 space-y-2">
