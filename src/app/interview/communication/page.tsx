@@ -62,7 +62,7 @@ function CommunicationInterview() {
     const [isUploadingVideo, setIsUploadingVideo] = useState(false);
     const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
     const [showSubmissionModal, setShowSubmissionModal] = useState(false);
-    const [submissionStep, setSubmissionStep] = useState<'processing' | 'uploading'>('processing');
+    const [submissionStep, setSubmissionStep] = useState<'submitting' | 'processing' | 'uploading'>('submitting');
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showCompletionScreen, setShowCompletionScreen] = useState(false);
     const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
@@ -130,6 +130,9 @@ function CommunicationInterview() {
 
     // Track current question index for retake counting
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+    // Track whether the current visible question is the final one (server signaled step "done")
+    const [isFinalQuestion, setIsFinalQuestion] = useState(false);
 
     // Media stream for camera functionality
     // const { isVideoOn, toggleVideo } = useMediaStream();
@@ -432,6 +435,9 @@ function CommunicationInterview() {
                 setCurrentQuestion(res.question);
             }
 
+            // If server marks the shown question as the final one
+            // setIsFinalQuestion(res.step === 'done');
+
             // Initialize retake tracking for the first question
             setRetakeCount([0]);
             setCurrentQuestionIndex(0);
@@ -591,13 +597,22 @@ function CommunicationInterview() {
         setCurrentAnswer(recognizedText); // Store current answer for retake
         // Retake not available until user answers the new question
         try {
+            // If the server marked the currently shown question as final (step "done"),
+            // show the submitting modal immediately after sending the answer to reflect backend processing.
+            const answeringFinalQuestion = isFinalQuestion;
+            if (answeringFinalQuestion) {
+                setIsSubmittingFinal(true);
+                setShowSubmissionModal(true);
+                setSubmissionStep('submitting');
+                setUploadProgress(0);
+            }
+
             const res = await continueConversationalInterview({
                 session_id: sessionId,
                 user_answer: textToSend
             });
 
-
-            // Check if interview is completed
+            // If server signals overall completion now, proceed to processing and upload flow
             if (res.step === "completed") {
                 // Immediately show processing indicator
                 setIsProcessingFinalResponse(true);
@@ -691,6 +706,8 @@ function CommunicationInterview() {
             if (res.question) {
                 setCurrentQuestion(res.question);
                 setCurrentQuestionIndex(prev => prev + 1); // Increment question index for retake tracking
+                // Update final question indicator for the new shown question
+                setIsFinalQuestion(res.step === 'done');
             }
             setRecognizedText("");
             setCurrentAnswer(""); // Reset current answer for new question
@@ -767,6 +784,12 @@ function CommunicationInterview() {
         setLoading(true);
         setIsSubmittingFinal(true);
         setShowSubmissionModal(true);
+        setSubmissionStep('submitting');
+
+        // Small delay to show the submitting message
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Move to processing step
         setSubmissionStep('processing');
 
         // Add timeout to prevent modal from getting stuck indefinitely

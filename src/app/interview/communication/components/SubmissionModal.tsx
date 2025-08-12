@@ -12,7 +12,7 @@ import Image from "next/image";
 interface SubmissionModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    submissionStep: 'processing' | 'uploading';
+    submissionStep: 'submitting' | 'processing' | 'uploading';
     uploadProgress?: number;
 }
 
@@ -27,10 +27,12 @@ export function SubmissionModal({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold text-center">
+                        {submissionStep === 'submitting' && "Submitting Your Response"}
                         {submissionStep === 'processing' && "Processing Your Response"}
                         {submissionStep === 'uploading' && "Uploading Interview Video"}
                     </DialogTitle>
                     <DialogDescription className="text-center">
+                        {submissionStep === 'submitting' && "We're submitting your responses, please wait..."}
                         {submissionStep === 'processing' && "We're processing your final response..."}
                         {submissionStep === 'uploading' && "Please wait while we upload your interview video..."}
                     </DialogDescription>
@@ -42,6 +44,35 @@ export function SubmissionModal({
                         transition={{ duration: 0.5 }}
                         className="w-24 h-24 mb-4"
                     >
+                        {submissionStep === 'submitting' && (
+                            <motion.div
+                                initial={{ y: 0 }}
+                                animate={{ y: [-10, 10] }}
+                                transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
+                                className="w-full h-full flex items-center justify-center"
+                            >
+                                <motion.div
+                                    animate={{
+                                        y: [0, -2, 0],
+                                        rotate: [0, 5, -5, 0]
+                                    }}
+                                    transition={{
+                                        duration: 1,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
+                                    className="w-16 h-16 relative"
+                                >
+                                    <Image
+                                        src="/assets/images/scooterLogo.png"
+                                        alt="Scooter"
+                                        width={64}
+                                        height={64}
+                                        className="w-16 h-16 object-contain"
+                                    />
+                                </motion.div>
+                            </motion.div>
+                        )}
                         {submissionStep === 'processing' && (
                             <motion.div
                                 animate={{ rotate: 360 }}
@@ -84,9 +115,57 @@ export function SubmissionModal({
                         className="text-center w-full"
                     >
                         <p className="text-lg font-medium text-gray-700">
+                            {submissionStep === 'submitting' && "Submitting your final answer..."}
                             {submissionStep === 'processing' && "Please wait while we process your response..."}
                             {submissionStep === 'uploading' && "Uploading your interview video..."}
                         </p>
+                        {submissionStep === 'submitting' && (
+                            <div className="mt-4 space-y-2">
+                                {/* Custom Progress Bar with Moving Scooter for Submitting */}
+                                <div className="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden">
+                                    {/* Progress Fill - Simulated progress for submitting */}
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: "95%" }}
+                                        transition={{ duration: 10, ease: "easeInOut" }}
+                                        className="h-full bg-green-600 rounded-full"
+                                    />
+
+                                    {/* Moving Scooter Icon */}
+                                    <motion.div
+                                        initial={{ left: 0 }}
+                                        animate={{ left: "95%" }}
+                                        transition={{ duration: 10, ease: "easeInOut" }}
+                                        className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2"
+                                        style={{ left: "100%" }}
+                                    >
+                                        <motion.div
+                                            animate={{
+                                                y: [0, -2, 0],
+                                                rotate: [0, 5, -5, 0]
+                                            }}
+                                            transition={{
+                                                duration: 1,
+                                                repeat: Infinity,
+                                                ease: "easeInOut"
+                                            }}
+                                            className="w-6 h-6 relative"
+                                        >
+                                            <Image
+                                                src="/assets/images/scooterLogo.png"
+                                                alt="Scooter"
+                                                width={24}
+                                                height={24}
+                                                className="w-6 h-6 object-contain"
+                                            />
+                                        </motion.div>
+                                    </motion.div>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    Submitting your response...
+                                </p>
+                            </div>
+                        )}
                         {submissionStep === 'uploading' && (
                             <div className="mt-4 space-y-2">
                                 {/* Custom Progress Bar with Moving Scooter */}
@@ -134,7 +213,7 @@ export function SubmissionModal({
                                 </p>
                             </div>
                         )}
-                        {submissionStep !== 'uploading' && (
+                        {submissionStep !== 'uploading' && submissionStep !== 'submitting' && (
                             <p className="text-sm text-gray-500 mt-2">
                                 This may take a few moments
                             </p>
