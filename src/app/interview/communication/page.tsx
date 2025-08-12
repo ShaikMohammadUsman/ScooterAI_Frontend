@@ -642,7 +642,7 @@ function CommunicationInterview() {
                     setError("Submission process is taking longer than expected. Please try again or contact support.");
                     cleanupRecording();
                     setProctoringActive(false);
-                }, 300000); // 5 minutes timeout
+                }, 900000); // 15 minutes timeout
 
                 // Stop recording and get final video
                 const videoBlob = await stopRecording();
@@ -801,7 +801,7 @@ function CommunicationInterview() {
             setError("Interview ending process is taking longer than expected. Please try again or contact support.");
             cleanupRecording();
             setProctoringActive(false);
-        }, 300000); // 5 minutes timeout
+        }, 900000); // 15 minutes timeout
 
         try {
             // Check if we still have camera access for recording
