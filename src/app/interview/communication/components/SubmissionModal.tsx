@@ -127,15 +127,15 @@ export function SubmissionModal({
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{ width: "95%" }}
-                                        transition={{ duration: 10, ease: "easeInOut" }}
-                                        className="h-full bg-green-600 rounded-full"
+                                        transition={{ duration: 20, ease: "easeInOut" }}
+                                        className="h-full bg-green-400 rounded-full"
                                     />
 
                                     {/* Moving Scooter Icon */}
                                     <motion.div
                                         initial={{ left: 0 }}
                                         animate={{ left: "95%" }}
-                                        transition={{ duration: 10, ease: "easeInOut" }}
+                                        transition={{ duration: 20, ease: "easeInOut" }}
                                         className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2"
                                         style={{ left: "100%" }}
                                     >
