@@ -27,11 +27,20 @@ import {
     Globe,
     UserCheck,
     Award,
-    BarChart3
+    BarChart3,
+    User,
+    Mic,
+    Mail,
+    Video,
+    PlayCircle,
+    Eye,
+    Trophy
 } from 'lucide-react';
 import { getJobCandidates, Candidate } from '@/lib/adminService';
 import LoadingSpinner from '@/components/ui/loadingSpinner';
 import ErrorBox from '@/components/ui/error';
+import InterviewStatusIndicator from '@/components/InterviewStatusIndicator';
+import InterviewStatusCompact from '@/components/InterviewStatusCompact';
 
 interface CandidatesResponse {
     status: boolean;
@@ -136,6 +145,18 @@ export default function CandidatesPage() {
         }
     };
 
+    const handleNudgeAudio = (profileId: string) => {
+        // TODO: Implement audio nudge functionality
+        console.log('Nudging candidate for audio interview:', profileId);
+        // This could trigger an email, SMS, or in-app notification
+    };
+
+    const handleNudgeVideo = (profileId: string) => {
+        // TODO: Implement video nudge functionality
+        console.log('Nudging candidate for video interview:', profileId);
+        // This could trigger an email, SMS, or in-app notification
+    };
+
     const getCredibilityScore = (score: number): { label: string; color: string } => {
         if (score >= 8) return { label: 'High', color: 'bg-green-100 text-green-800' };
         if (score >= 6) return { label: 'Medium', color: 'bg-yellow-100 text-yellow-800' };
@@ -204,6 +225,31 @@ export default function CandidatesPage() {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Interview Process Summary */}
+                <Card className="mb-6">
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
+                            {[
+                                { label: "Profile Created", count: candidates.length, icon: <User className="h-5 w-5" />, color: "bg-green-100 text-green-800" },
+                                { label: "Audio Attempted", count: candidates.filter(c => c.interview_status.audio_interview_attended).length, icon: <Mic className="h-5 w-5" />, color: "bg-blue-100 text-blue-800" },
+                                { label: "Marked for Video", count: candidates.filter(c => c.interview_status.audio_interview_passed).length, icon: <Mail className="h-5 w-5" />, color: "bg-yellow-100 text-yellow-800" },
+                                { label: "Video Sent", count: candidates.filter(c => c.interview_status.video_interview_url).length, icon: <Video className="h-5 w-5" />, color: "bg-purple-100 text-purple-800" },
+                                { label: "Video Attempted", count: candidates.filter(c => c.interview_status.video_interview_attended).length, icon: <PlayCircle className="h-5 w-5" />, color: "bg-indigo-100 text-indigo-800" },
+                                { label: "Marked for Review", count: candidates.filter(c => c.final_shortlist).length, icon: <Eye className="h-5 w-5" />, color: "bg-orange-100 text-orange-800" },
+                                { label: "Hired", count: candidates.filter(c => c.call_for_interview).length, icon: <Trophy className="h-5 w-5" />, color: "bg-emerald-100 text-emerald-800" }
+                            ].map((step, index) => (
+                                <div key={index} className="text-center">
+                                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${step.color} mb-2`}>
+                                        {step.icon}
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-900">{step.count}</p>
+                                    <p className="text-xs text-gray-500">{step.label}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Candidate List */}
                     <div className="lg:col-span-1">
@@ -248,6 +294,11 @@ export default function CandidatesPage() {
                                             <p className="text-xs text-gray-500">
                                                 {candidate.career_overview.total_years_experience} years exp • {candidate.basic_information.current_location}
                                             </p>
+
+                                            {/* Interview Process Status */}
+                                            <div className="mt-2">
+                                                <InterviewStatusCompact candidate={candidate} />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -346,6 +397,13 @@ export default function CandidatesPage() {
                                         </div>
                                     </CardContent>
                                 </Card>
+
+                                {/* Interview Process Status */}
+                                <InterviewStatusIndicator
+                                    candidate={selectedCandidate}
+                                    onNudgeAudio={handleNudgeAudio}
+                                    onNudgeVideo={handleNudgeVideo}
+                                />
 
                                 {/* Quick Summary */}
                                 <Card>

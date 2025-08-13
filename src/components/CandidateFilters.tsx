@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FaFilter, FaTimes, FaSearch, FaUserCheck, FaUserTimes, FaClock, FaGraduationCap, FaBriefcase, FaMicrophone, FaVideo, FaBars, FaMapMarkerAlt, FaEnvelope, FaCheckCircle } from 'react-icons/fa';
+import { FaFilter, FaTimes, FaSearch, FaUserCheck, FaUserTimes, FaClock, FaGraduationCap, FaBriefcase, FaMicrophone, FaVideo, FaBars, FaMapMarkerAlt, FaEnvelope, FaCheckCircle, FaUser } from 'react-icons/fa';
 import { FilterState } from '@/types/filter';
 
 interface CandidateFiltersProps {
@@ -41,6 +41,7 @@ export default function CandidateFilters({
             videoInterviewSent: false,
             videoAttended: false,
             sendToHiringManager: false,
+            profileOnly: false,
             experienceRange: 'all',
             salesExperienceRange: 'all',
         });
@@ -53,6 +54,7 @@ export default function CandidateFilters({
             filters.videoInterviewSent ||
             filters.videoAttended ||
             filters.sendToHiringManager ||
+            filters.profileOnly ||
             filters.experienceRange !== 'all' ||
             filters.salesExperienceRange !== 'all' ||
             searchTerm.trim() !== '';
@@ -157,6 +159,16 @@ export default function CandidateFilters({
                         >
                             <FaCheckCircle className="h-3 w-3 mr-2" />
                             Send to Hiring Manager
+                        </Button>
+                        <Button
+                            variant={filters.profileOnly ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilters({ ...filters, profileOnly: !filters.profileOnly })}
+                            disabled={pageLoading}
+                            className="w-full justify-start"
+                        >
+                            <FaUser className="h-3 w-3 mr-2" />
+                            Profile Only
                         </Button>
                     </div>
                 </div>
@@ -281,6 +293,18 @@ export default function CandidateFilters({
                                 <button
                                     onClick={() => setFilters({ ...filters, sendToHiringManager: false })}
                                     className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
+                                >
+                                    <FaTimes className="h-3 w-3" />
+                                </button>
+                            </span>
+                        )}
+                        {filters.profileOnly && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                                <FaUser className="h-3 w-3" />
+                                Profile Only
+                                <button
+                                    onClick={() => setFilters({ ...filters, profileOnly: false })}
+                                    className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
                                 >
                                     <FaTimes className="h-3 w-3" />
                                 </button>

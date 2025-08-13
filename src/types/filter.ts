@@ -7,6 +7,7 @@ export interface FilterState {
     videoInterviewSent: boolean;
     videoAttended: boolean;
     sendToHiringManager: boolean;
+    profileOnly: boolean; // New filter for candidates who only created profile
     
     // Experience Filters
     experienceRange: string;
