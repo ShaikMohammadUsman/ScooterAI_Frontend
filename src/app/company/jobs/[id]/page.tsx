@@ -4,10 +4,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
-import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist } from '@/lib/adminService';
+
+import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist, resetVideoInterview } from '@/lib/adminService';
 import ReactMarkdown from 'react-markdown';
 import { toast } from "@/hooks/use-toast";
 import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit } from 'react-icons/fa';
@@ -20,6 +19,7 @@ import CandidateFilters from "@/components/CandidateFilters";
 import { FilterState } from '@/types/filter';
 import ShortlistModal from '@/components/ShortlistModal';
 import InterviewStatusTimeline from '@/components/InterviewStatusTimeline';
+import ResetVideoInterviewModal from '@/components/ResetVideoInterviewModal';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -53,6 +53,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [updatingShortlist, setUpdatingShortlist] = useState<string | null>(null);
     const [isShortlistModalOpen, setIsShortlistModalOpen] = useState(false);
+
+    // Reset video interview states
+    const [isResetVideoModalOpen, setIsResetVideoModalOpen] = useState(false);
 
     // Media player toggle states
     const [showVideoPlayer, setShowVideoPlayer] = useState(false);
@@ -553,6 +556,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const openShortlistModal = (candidate: Candidate) => {
         setSelectedCandidate(candidate);
         setIsShortlistModalOpen(true);
+    };
+
+    const openResetVideoModal = (candidate: Candidate) => {
+        setSelectedCandidate(candidate);
+        setIsResetVideoModalOpen(true);
     };
 
     // Reset media player states when candidate changes
@@ -1195,6 +1203,18 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 typeof selectedCandidate?.application_status === 'string' ? 'Add Status' : 'Update Status'
                                             )}
                                         </Button>
+
+                                        {/* Reset Video Interview Button - Only show when video link was sent */}
+                                        {(selectedCandidate?.application_status === 'SendVideoLink' || selectedCandidate?.interview_status?.video_interview_url) && (
+                                            <Button
+                                                variant="outline"
+                                                className="flex-1 bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                                onClick={() => openResetVideoModal(selectedCandidate)}
+                                            >
+                                                <FaVideo className="text-white mr-2" />
+                                                Reset Video Interview
+                                            </Button>
+                                        )}
                                     </div>
 
                                     {/* Audio Interview Q&A */}
@@ -1703,6 +1723,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
                         isLoading={updatingShortlist === selectedCandidate?.profile_id}
                         currentStatus={typeof selectedCandidate?.final_shortlist === 'boolean' ? selectedCandidate.final_shortlist : null}
                         currentNote={selectedCandidate?.shortlist_status_reason}
+                    />
+
+                    {/* Reset Video Interview Modal */}
+                    <ResetVideoInterviewModal
+                        isOpen={isResetVideoModalOpen}
+                        onClose={() => setIsResetVideoModalOpen(false)}
+                        candidate={selectedCandidate}
+                        onSuccess={fetchCandidates}
                     />
                 </div>
             </div>

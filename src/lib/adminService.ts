@@ -370,6 +370,18 @@ export interface MarkFinalShortlistResponse {
     reason: string;
 }
 
+export interface ResetVideoInterviewRequest {
+    user_id: string;
+    reset_reason: string;
+}
+
+export interface ResetVideoInterviewResponse {
+    status: boolean;
+    message: string;
+    user_id?: string;
+    reset_reason?: string;
+}
+
 function getToken(): string {
     const companyDetails = localStorage.getItem('company_details');
     if (companyDetails) {
@@ -564,6 +576,35 @@ export async function markFinalShortlist(
         return await response.json();
     } catch (error) {
         console.error('Error updating final shortlist status:', error);
+        throw error;
+    }
+}
+
+/**
+ * Resets the video interview for a candidate
+ * @param request - Object containing user_id and reset_reason
+ * @returns Promise with the reset video interview response
+ */
+export async function resetVideoInterview(
+    request: ResetVideoInterviewRequest
+): Promise<ResetVideoInterviewResponse> {
+    try {
+        const response = await fetch(`${BASE_URL}/reset-video-interview/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to reset video interview');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error resetting video interview:', error);
         throw error;
     }
 } 
