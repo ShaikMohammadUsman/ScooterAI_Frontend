@@ -910,13 +910,20 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                     <FaVideo /> <FaCheck />
                                                 </span>
                                             )}
-                                            <Button
-                                                variant="outline"
-                                                className="w-full flex flex-1 items-center gap-2 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
-                                                onClick={() => setSelectedCandidate(candidate)}
-                                            >
-                                                View Details
-                                            </Button>
+
+                                            {candidate?.interview_status?.resume_url && (
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex w-full items-center gap-2 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                                    onClick={() => {
+                                                        if (candidate?.interview_status?.resume_url) {
+                                                            window.open(candidate?.interview_status?.resume_url, '_blank');
+                                                        }
+                                                    }}
+                                                >
+                                                    View Resume
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="mt-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
@@ -939,29 +946,23 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 </div>
                                             )}
 
-                                            {candidate?.interview_status?.resume_url && (
-                                                <Button
-                                                    variant="outline"
-                                                    className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-3 py-2 rounded-lg text-sm w-full sm:w-auto"
-                                                    onClick={() => {
-                                                        if (candidate?.interview_status?.resume_url) {
-                                                            window.open(candidate?.interview_status?.resume_url, '_blank');
-                                                        }
-                                                    }}
-                                                >
-                                                    View Resume
-                                                </Button>
-                                            )}
+                                            <Button
+                                                variant="outline"
+                                                className="w-full flex flex-1 items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-3 py-2 rounded-lg text-sm sm:w-auto "
+                                                onClick={() => setSelectedCandidate(candidate)}
+                                            >
+                                                View Details
+                                            </Button>
 
                                             {typeof candidate?.application_status === 'boolean' && (
                                                 <div className="flex items-center gap-2 px-3 py-2 rounded-full text-sm">
                                                     {candidate.application_status ? (
-                                                        <div className="flex items-center gap-2 bg-green-100 text-green-800">
+                                                        <div className="flex items-center gap-2 p-2 px-3 rounded-full bg-green-100 text-green-800">
                                                             <span className="font-medium">Moved to Video Round</span>
                                                             <FaCheckCircle className="text-green-600" />
                                                         </div>
                                                     ) : (
-                                                        <div className="flex items-center gap-2 bg-red-100 text-red-800">
+                                                        <div className="flex items-center gap-2 p-2 px-3 rounded-full bg-red-100 text-red-800">
                                                             <span className="font-medium">Rejected</span>
                                                             <FaTimesCircle className="text-red-600" />
                                                         </div>
