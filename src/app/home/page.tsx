@@ -1,5 +1,10 @@
 "use client"
 import React from 'react'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import dynamic from 'next/dynamic'
+import SupportTicketForm from '@/components/SupportTicketForm'
+// const SupportTicketForm = dynamic(() => import('@/components/SupportTicketForm'), { ssr: false })
 import { FaRocket, FaBriefcase, FaHandshake } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -56,6 +61,24 @@ export default function Home() {
                         <span className="text-base sm:text-lg text-white font-semibold">Apply once, showcase your skills, and get matched to roles where you'll thrive.</span>
                     </motion.div>
                 </motion.div>
+                <div className="mt-10 flex justify-center">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button
+                                className="bg-gradient-to-r from-gray-800 via-gray-500 to-gray-600 text-white font-semibold shadow-xl border border-blue-200 hover:from-gray-700 hover:via-gray-500 hover:to-gray-500 transition-colors"
+                                size="lg"
+                            >
+                                Have a query? Contact Support
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-gradient-to-tr from-gray-50 to-gray-200 border-blue-200">
+                            <DialogTitle className="text-gray-900 font-bold mb-2">
+                                Submit a support ticket
+                            </DialogTitle>
+                            <SupportTicketForm />
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </main>
 
 

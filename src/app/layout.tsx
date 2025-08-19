@@ -4,6 +4,7 @@ import "./index.css";
 import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import ClientProviders from "./ClientProviders";
+import SupportPanel from "@/components/SupportPanel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,7 @@ export default function RootLayout({
           <Suspense fallback={<InterviewLoading />}>
             {children}
           </Suspense>
+          <SupportPanel />
         </ClientProviders>
       </body>
     </html>

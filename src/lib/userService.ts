@@ -214,3 +214,44 @@ export async function createUserAccount(userData: CreateUserAccountRequest): Pro
         throw new Error(err.response?.data?.message || "Failed to create user account");
     }
 } 
+
+// ---------------------------------------------------------------------------------------------
+// Support Ticket
+
+export interface SubmitSupportTicketRequest {
+    name: string;
+    email: string;
+    phonenumber: string;
+    description: string;
+    screenshot?: File | Blob | null;
+}
+
+export interface SubmitSupportTicketResponse {
+    status?: boolean;
+    message?: string;
+    ticket_id?: string;
+}
+
+// The submit-ticket endpoint currently lives on the test cluster per product requirement
+// const TICKET_API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+
+export async function submitSupportTicket(data: SubmitSupportTicketRequest): Promise<SubmitSupportTicketResponse> {
+    try {
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('email', data.email);
+        formData.append('phonenumber', data.phonenumber);
+        formData.append('description', data.description);
+        if (data.screenshot) {
+            const fileName = (data as any).screenshot?.name || 'screenshot.png';
+            formData.append('screenshot', data.screenshot, fileName);
+        }
+
+        const response = await axios.post(`${API_BASE}/submit-ticket/`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    } catch (err: any) {
+        throw new Error(err.response?.data?.detail || err.response?.data?.message || 'Failed to submit support ticket');
+    }
+}
