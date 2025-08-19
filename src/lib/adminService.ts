@@ -20,8 +20,10 @@ export interface JobRoleData {
 }
 
 export interface Candidate {
+    user_id?: string;
     profile_id: string;
     profile_created_at: string;
+    job_fit_assessment?: string;
     basic_information: {
         full_name: string;
         current_location: string;
@@ -31,12 +33,13 @@ export interface Candidate {
         email: string;
         specific_phone_number: string;
         notice_period: string;
-        current_ctc: {
+        notice_period_days?: number;
+        current_ctc: number | {
             currencyType: string;
             value: number;
             cadence?: string;
         };
-        expected_ctc: {
+        expected_ctc: number | {
             currencyType: string;
             value: number;
             cadence?: string;
@@ -46,7 +49,9 @@ export interface Candidate {
     short_summary:string;
     application_status: boolean | string;
     application_status_reason: string;
+    application_status_updated_at?: string;
     final_shortlist: boolean;
+    shortlisted?: boolean;
     shortlist_status_reason: string;
     call_for_interview: boolean;
     call_for_interview_notes: string;
@@ -72,9 +77,12 @@ export interface Candidate {
         audio_interview_passed: boolean;
         video_interview_attended: boolean;
         audio_interview_attended: boolean;
+        video_email_sent?: boolean;
         video_interview_url: string | null;
         audio_interview_url: string | null;
         resume_url: string | null;
+        video_interview_sent?: boolean;
+        audio_uploaded?: boolean;
     };
     interview_details: {
         session_id: string;
@@ -100,9 +108,10 @@ export interface Candidate {
             summary: string;
         };
         qa_evaluations: {
+            session_id?: string;
             question_evaluations: Array<{
                 question_number: number;
-                step: string;
+                step?: string;
                 question: string;
                 answer: string;
                 skill_score: number;
@@ -110,15 +119,19 @@ export interface Candidate {
                 skill_reasoning: string;
                 trait_reasoning: string;
                 has_signal: boolean;
+                timestamp?: string;
             }>;
             overall_scores: {
                 average_skill_score: number;
                 average_trait_score: number;
                 total_questions: number;
                 questions_with_signal: number;
+                questions_answered?: number;
             };
             summary: string;
             interview_completed: boolean;
+            evaluation_timestamp?: string;
+            role?: string;
         };
     };
     audio_interview_details: {
@@ -150,6 +163,28 @@ export interface Candidate {
             audio_interview_status: boolean;
         };
     };
+    video_proctoring_details?: {
+        _id: string;
+        user_id: string;
+        email: string;
+        "screen time"?: string | number;
+        flags: any[];
+        tab_switches: number;
+        window_focus_loss: number;
+        right_clicks: number;
+        dev_tools_attempts: number;
+        multi_touch_gestures: number;
+        swipe_gestures: number;
+        orientation_changes: number;
+        interview_events: Array<{
+            event: string;
+            timestamp: string;
+            details: Record<string, any>;
+        }>;
+        interview_duration: number;
+        submission_timestamp: string;
+        updated_at: string;
+    };
 }
 
 export interface JobRole {
@@ -173,11 +208,18 @@ export interface CandidatesResponse {
         title: string;
         description: string;
         company_id: string;
+        _id?: string;
+        created_at?: string;
+        is_active?: boolean;
     };
     filters: {
-        audio_passed: boolean | null;
-        video_attended: boolean | null;
-        audio_uploaded: boolean | null;
+        audio_passed?: boolean | null;
+        video_attended?: boolean | null;
+        audio_uploaded?: boolean | null;
+        shortlisted?: boolean | null;
+        call_for_interview?: boolean | null;
+        application_status?: boolean | string | null;
+        video_interview_sent?: boolean | null;
     };
     pagination: {
         current_page: number;
@@ -475,6 +517,19 @@ export const addJobRole = async (data: JobRoleData): Promise<any> => {
     }
 };
 
+// More flexible variant that accepts any valid dictionary
+export const createJobRole = async (payload: Record<string, any>): Promise<any> => {
+    try {
+        const response = await axios.post(`${BASE_URL}/add-job-role/`, payload, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error creating job role:', error);
+        throw error;
+    }
+};
+
 // Get list of jobs for a company
 export const getCompanyJobRoles = async (companyId: string): Promise<JobRolesResponse> => {
     try {
@@ -619,6 +674,31 @@ export interface ContactsCsvFilters {
     call_for_interview?: boolean;
     shortlisted?: boolean;
     video_interview_sent?: boolean;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Job Description Generation (local service)
+
+
+export async function generateJobDescription(payload: Record<string, any>): Promise<string> {
+    try {
+        const res = await axios.post(`${BASE_URL}/generate-job-description/`, payload, {
+            headers: { 'Content-Type': 'application/json', Accept: 'text/plain, application/json' },
+            responseType: 'text',
+            transformResponse: [(data) => data],
+        });
+        // If backend returns JSON with description, try to parse; otherwise return text
+        try {
+            const maybeJson = JSON.parse(res.data);
+            if (maybeJson && typeof maybeJson.description === 'string') return maybeJson.description;
+        } catch {
+            // not JSON
+        }
+        return String(res.data || '');
+    } catch (error: any) {
+        console.error('Error generating job description:', error);
+        throw new Error(error.response?.data?.message || 'Failed to generate job description');
+    }
 }
 
 export async function downloadContactsCsv(

@@ -4,12 +4,15 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 
 import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist, resetVideoInterview, downloadContactsCsv } from '@/lib/adminService';
 import ReactMarkdown from 'react-markdown';
 import { toast } from "@/hooks/use-toast";
-import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit, FaClock, FaPlay, FaPause, FaStop, FaEye, FaEyeSlash, FaMousePointer, FaKeyboard, FaMobile, FaDesktop } from 'react-icons/fa';
 import { use } from 'react';
 // import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -20,6 +23,7 @@ import { FilterState } from '@/types/filter';
 import ShortlistModal from '@/components/ShortlistModal';
 import InterviewStatusTimeline from '@/components/InterviewStatusTimeline';
 import ResetVideoInterviewModal from '@/components/ResetVideoInterviewModal';
+import ProctoringDetailsDialog from '@/components/ProctoringDetailsDialog';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -56,6 +60,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
     // Reset video interview states
     const [isResetVideoModalOpen, setIsResetVideoModalOpen] = useState(false);
+    const [isProctorDialogOpen, setIsProctorDialogOpen] = useState(false);
 
     // Media player toggle states
     const [showVideoPlayer, setShowVideoPlayer] = useState(false);
@@ -1096,9 +1101,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-medium">Current CTC:</span>
                                                 <span className="px-2 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                                                    {selectedCandidate?.basic_information?.current_ctc?.value ?
-                                                        `${selectedCandidate?.basic_information.current_ctc.currencyType} ${selectedCandidate?.basic_information.current_ctc.value.toLocaleString()}` :
-                                                        'Not specified'}
+                                                    {(() => {
+                                                        const ctc: any = selectedCandidate?.basic_information?.current_ctc as any;
+                                                        if (!ctc) return 'Not specified';
+                                                        if (typeof ctc === 'number') return `INR ${ctc.toLocaleString()}`;
+                                                        const currency = ctc.currencyType || 'INR';
+                                                        const value = ctc?.value;
+                                                        return value != null ? `${currency} ${Number(value).toLocaleString()}` : 'Not specified';
+                                                    })()}
                                                 </span>
                                             </div>
                                             <Button
@@ -1246,6 +1256,17 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             >
                                                 <FaVideo className="text-white mr-2" />
                                                 Reset Video Interview
+                                            </Button>
+                                        )}
+
+                                        {/* View Proctoring Details Button */}
+                                        {selectedCandidate?.video_proctoring_details && (
+                                            <Button
+                                                variant="outline"
+                                                className="flex-1 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 border-slate-300 text-slate-700 hover:text-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
+                                                onClick={() => setIsProctorDialogOpen(true)}
+                                            >
+                                                View Proctoring Details
                                             </Button>
                                         )}
                                     </div>
@@ -1644,6 +1665,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             )}
                                         </div>
                                     )}
+
+                                    {/* Proctoring Details Dialog */}
+                                    <ProctoringDetailsDialog
+                                        isOpen={isProctorDialogOpen}
+                                        onOpenChange={setIsProctorDialogOpen}
+                                        candidate={selectedCandidate}
+                                    />
+
                                 </div>
                             </Card>
                         </div>
