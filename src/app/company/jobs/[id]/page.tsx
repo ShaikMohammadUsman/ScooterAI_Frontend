@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 
-import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist, resetVideoInterview } from '@/lib/adminService';
+import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist, resetVideoInterview, downloadContactsCsv } from '@/lib/adminService';
 import ReactMarkdown from 'react-markdown';
 import { toast } from "@/hooks/use-toast";
 import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit } from 'react-icons/fa';
@@ -548,6 +548,28 @@ export default function JobCandidatesPage({ params }: PageProps) {
         }
     };
 
+    const handleDownloadCSV = async () => {
+        try {
+            const csvBlob = await downloadContactsCsv(jobId, {
+                audio_attended: filters.audioAttended || undefined,
+                video_attended: filters.videoAttended || undefined,
+                shortlisted: filters.sendToHiringManager || undefined,
+                video_interview_sent: filters.videoInterviewSent || undefined,
+            })
+            const url = URL.createObjectURL(csvBlob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `contacts_${jobId}.csv`
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            URL.revokeObjectURL(url)
+            toast({ title: 'Download started', description: 'Your CSV is being downloaded.' })
+        } catch (err: any) {
+            toast({ title: 'Download failed', description: err.message || 'Unable to download CSV', variant: 'destructive' })
+        }
+    }
+
     const openStatusModal = (candidate: Candidate) => {
         setSelectedCandidate(candidate);
         setIsStatusModalOpen(true);
@@ -639,14 +661,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 {jobDetails?.title || 'Job Candidates'}
                             </h1>
                             <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-                                <Button
+                                {/* <Button
                                     variant="default"
                                     onClick={() => router.push(`/company/jobs/${jobId}/candidates?jobId=${jobId}`)}
                                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full sm:w-auto text-sm sm:text-base"
                                 >
                                     <FaExternalLinkAlt className="mr-2" />
                                     Detailed Insights
-                                </Button>
+                                </Button> */}
                                 <Button
                                     variant="outline"
                                     onClick={() => router.back()}
@@ -836,6 +858,16 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+
+                                {/* Actions */}
+                                <div className="mt-4 flex items-center justify-end">
+                                    <Button
+                                        variant="premium"
+                                        onClick={handleDownloadCSV}
+                                    >
+                                        Download Contacts
+                                    </Button>
                                 </div>
                             </div>
                         </Card>

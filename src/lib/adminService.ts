@@ -608,3 +608,40 @@ export async function resetVideoInterview(
         throw error;
     }
 } 
+
+// ---------------------------------------------------------------------------------------------
+// Contacts CSV Download
+
+export interface ContactsCsvFilters {
+    audio_attended?: boolean;
+    video_attended?: boolean;
+    application_status?: string; // e.g. 'send video link'
+    call_for_interview?: boolean;
+    shortlisted?: boolean;
+    video_interview_sent?: boolean;
+}
+
+export async function downloadContactsCsv(
+    jobId: string,
+    filters: ContactsCsvFilters = {}
+): Promise<Blob> {
+    try {
+        const params = new URLSearchParams();
+        if (filters.audio_attended !== undefined) params.append('audio_attended', String(filters.audio_attended));
+        if (filters.video_attended !== undefined) params.append('video_attended', String(filters.video_attended));
+        if (filters.application_status !== undefined) params.append('application_status', filters.application_status);
+        if (filters.call_for_interview !== undefined) params.append('call_for_interview', String(filters.call_for_interview));
+        if (filters.shortlisted !== undefined) params.append('shortlisted', String(filters.shortlisted));
+        if (filters.video_interview_sent !== undefined) params.append('video_interview_sent', String(filters.video_interview_sent));
+
+        const url = `${BASE_URL}/contacts-csv/${jobId}${params.toString() ? `?${params.toString()}` : ''}`;
+        const response = await axios.get(url, {
+            responseType: 'blob',
+            headers: { Accept: 'text/csv, application/json' },
+        });
+        return response.data as Blob;
+    } catch (error) {
+        console.error('Error downloading contacts CSV:', error);
+        throw error;
+    }
+}
