@@ -525,7 +525,7 @@ export default function PublicCandidatesPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
-                                        {[...selectedCandidate.career_overview.company_history].reverse().map((job, index) => (
+                                        {[...selectedCandidate.career_overview.company_history]?.map((job, index) => (
                                             <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                                 <div className="flex-1">
                                                     <h4 className="font-semibold text-gray-900">{job.position}</h4>
