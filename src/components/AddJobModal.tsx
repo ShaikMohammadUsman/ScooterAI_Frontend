@@ -203,11 +203,67 @@ export default function AddJobModal({ isOpen, onClose, onSuccess }: AddJobModalP
                 newJob.requirements.relocation ? 'Open to Relocation' : ''
             ].filter(Boolean);
 
+            // Minimal job_details structure to satisfy API contract
+            const job_details = {
+                role_type: {
+                    data: newJob.requirements.role_type || null,
+                    filterable: false,
+                    must_have: false,
+                },
+                position_level: {
+                    data: newJob.requirements.position_level || null,
+                    filterable: false,
+                    must_have: false,
+                },
+                industries: {
+                    data: newJob.requirements.industries || [],
+                    filterable: false,
+                    must_have: false,
+                },
+                regions: {
+                    data: newJob.requirements.regions || [],
+                    filterable: false,
+                    must_have: false,
+                },
+                crm_tools: {
+                    data: newJob.requirements.crm_tools || [],
+                    filterable: false,
+                    must_have: false,
+                },
+                experience_years: {
+                    data: newJob.requirements.experience_years || null,
+                    filterable: false,
+                    must_have: false,
+                },
+                location: {
+                    data: newJob.requirements.location || null,
+                    filterable: false,
+                    must_have: false,
+                },
+                remote_work: {
+                    data: newJob.requirements.remote_work || false,
+                    filterable: false,
+                    must_have: false,
+                },
+                relocation: {
+                    data: newJob.requirements.relocation || false,
+                    filterable: false,
+                    must_have: false,
+                },
+                created_at: new Date().toISOString(),
+                is_active: true,
+                total_candidates: 0,
+                audio_attended_count: 0,
+                video_attended_count: 0,
+                moved_to_video_round_count: 0,
+            };
+
             const response = await addJobRole({
                 title: newJob.title,
                 description: newJob.description,
                 badges,
                 company_id: companyId,
+                job_details,
             });
 
             if (response.status) {
