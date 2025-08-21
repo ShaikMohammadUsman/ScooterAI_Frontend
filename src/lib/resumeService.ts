@@ -79,6 +79,7 @@ export interface ParseResumeRequest {
   name: string;
   email: string;
   phone: string;
+  candidate_source: string; // e.g., 'naukri' | 'linkedin' | 'website' | free-text for other
 }
 
 // Parse Resume Response
@@ -222,6 +223,8 @@ export async function parseResume(parseData: ParseResumeRequest): Promise<ParseR
   formData.append("name", parseData.name);
   formData.append("email", parseData.email);
   formData.append("phone", parseData.phone);
+  // Record candidate_source only; if user provided a custom source, it's passed directly here
+  formData.append("candidate_source", parseData.candidate_source || "");
   
   try {
     const res = await axios.post(`${API_BASE}/parse-resume/`, formData, {

@@ -13,6 +13,7 @@ interface ResumeUploadSectionProps {
     profile: any;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     resumeParsed: boolean;
+    canUpload?: boolean; // additional gate for enabling upload (e.g., candidate source selected)
 }
 
 export default function ResumeUploadSection({
@@ -22,7 +23,8 @@ export default function ResumeUploadSection({
     consentToUpdates,
     profile,
     onFileChange,
-    resumeParsed
+    resumeParsed,
+    canUpload = true
 }: ResumeUploadSectionProps) {
     return (
         <>
@@ -32,14 +34,14 @@ export default function ResumeUploadSection({
                     <div className="flex items-center gap-2 w-full">
                         <label
                             htmlFor="upload-resume"
-                            className={`cursor-pointer w-full ${!consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number ? 'cursor-not-allowed opacity-50' : ''}`}
+                            className={`cursor-pointer w-full ${!consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number || !canUpload ? 'cursor-not-allowed opacity-50' : ''}`}
                         >
                             <Button
                                 variant="outline"
                                 type="button"
-                                disabled={loading || submitting || !consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number}
+                                disabled={loading || submitting || !consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number || !canUpload}
                                 onClick={() => {
-                                    if (consentToUpdates && !loading && !submitting && profile?.basic_information?.full_name && profile?.basic_information?.email && profile?.basic_information?.phone_number) {
+                                    if (consentToUpdates && !loading && !submitting && profile?.basic_information?.full_name && profile?.basic_information?.email && profile?.basic_information?.phone_number && canUpload) {
                                         document.getElementById('upload-resume')?.click();
                                     }
                                 }}
@@ -69,7 +71,7 @@ export default function ResumeUploadSection({
                         accept="application/pdf"
                         className="hidden"
                         onChange={onFileChange}
-                        disabled={loading || submitting || !consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number}
+                        disabled={loading || submitting || !consentToUpdates || !profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number || !canUpload}
                         aria-label="Select resume PDF file"
                     />
                     <p className="text-sm text-red-600 font-medium mt-2">⚠️ Please upload PDF files only!</p>

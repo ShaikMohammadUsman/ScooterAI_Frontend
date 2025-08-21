@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { parseResume, addResumeProfile, ParseResumeResponse, ResumeProfile, saveCandidateSummary } from "@/lib/resumeService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import LoadingSpinner from "@/components/ui/loadingSpinner";
 import ErrorBox from "@/components/ui/error";
 import { FiUploadCloud } from "react-icons/fi";
@@ -109,6 +111,8 @@ export default function ResumePage() {
     const [parsedUserName, setParsedUserName] = useState<string>(""); // Add state for parsed user name
     const [candidateSummary, setCandidateSummary] = useState<string>(""); // Add state for candidate summary
     const [summaryAlreadySaved, setSummaryAlreadySaved] = useState<boolean>(false); // Track if summary was already saved
+    const [candidateSource, setCandidateSource] = useState<string>("");
+    const [candidateSourceOther, setCandidateSourceOther] = useState<string>("");
 
     // Handle file upload and parse
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,11 +124,17 @@ export default function ResumePage() {
         setError(null);
 
         try {
+            if (!candidateSource) {
+                toast({ title: "Select candidate source", description: "Please choose the platform you came from.", variant: "destructive" });
+                setLoading(false);
+                return;
+            }
             const response = await parseResume({
                 file: selectedFile,
                 name: profile.basic_information.full_name,
                 email: profile.basic_information.email,
                 phone: profile.basic_information.phone_number,
+                candidate_source: candidateSource === 'other' ? (candidateSourceOther || 'Other') : candidateSource,
             });
 
             if (response.status && response.data) {
@@ -491,10 +501,14 @@ export default function ResumePage() {
 
                                     {/* Right Column - Form Sections */}
                                     <div className="space-y-6 bg-white shadow-2xl py-12 px-8 rounded-3xl border border-gray-100">
-                                        {/* User Details Form - Required for Resume Parsing */}
+                                        {/* User Details Form - Required for Resume Parsing, now with candidate source */}
                                         <UserDetailsForm
                                             profile={profile}
                                             onFieldChange={handleFieldChange}
+                                            candidateSource={candidateSource}
+                                            onCandidateSourceChange={setCandidateSource}
+                                            candidateSourceOther={candidateSourceOther}
+                                            onCandidateSourceOtherChange={setCandidateSourceOther}
                                         />
 
                                         {/* LinkedIn URL Input (optional) */}
@@ -519,6 +533,7 @@ export default function ResumePage() {
                                             profile={profile}
                                             onFileChange={handleFileChange}
                                             resumeParsed={resumeParsed}
+                                            canUpload={!!candidateSource && (candidateSource !== 'other' || !!candidateSourceOther)}
                                         />
                                     </div>
                                 </div>

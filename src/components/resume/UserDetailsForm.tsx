@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResumeProfile } from "@/lib/resumeService";
 import { isValidEmail, isValidPhoneNumber, handlePhoneInputChange, getPhoneDisplayValue } from "@/lib/formValidation";
 
@@ -18,9 +19,13 @@ const FormControl = ({ children }: { children: React.ReactNode }) => (
 interface UserDetailsFormProps {
     profile: ResumeProfile;
     onFieldChange: (section: string, key: string, value: any, subkey?: string) => void;
+    candidateSource: string;
+    onCandidateSourceChange: (value: string) => void;
+    candidateSourceOther: string;
+    onCandidateSourceOtherChange: (value: string) => void;
 }
 
-export default function UserDetailsForm({ profile, onFieldChange }: UserDetailsFormProps) {
+export default function UserDetailsForm({ profile, onFieldChange, candidateSource, onCandidateSourceChange, candidateSourceOther, onCandidateSourceOtherChange }: UserDetailsFormProps) {
     const [emailError, setEmailError] = useState<string>("");
     const [phoneError, setPhoneError] = useState<string>("");
 
@@ -101,6 +106,30 @@ export default function UserDetailsForm({ profile, onFieldChange }: UserDetailsF
                     <p className="text-xs text-red-600 mt-1">
                         {phoneError}
                     </p>
+                )}
+            </FormControl>
+
+            {/* Candidate Source */}
+            <FormControl>
+                <FormLabel>How did you reach us? *</FormLabel>
+                <Select value={candidateSource} onValueChange={onCandidateSourceChange}>
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="naukri">Naukri</SelectItem>
+                        <SelectItem value="linkedin">LinkedIn</SelectItem>
+                        <SelectItem value="website">Website</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                </Select>
+                {candidateSource === 'other' && (
+                    <Input
+                        placeholder="Please specify the source"
+                        value={candidateSourceOther}
+                        onChange={(e) => onCandidateSourceOtherChange(e.target.value)}
+                        className="mt-2"
+                    />
                 )}
             </FormControl>
         </div>
