@@ -17,6 +17,7 @@ export interface JobRoleData {
     description: string;
     badges: string[];
     company_id: string;
+    job_details: Record<string, any>;
 }
 
 export interface Candidate {
@@ -518,7 +519,7 @@ export const addJobRole = async (data: JobRoleData): Promise<any> => {
 };
 
 // More flexible variant that accepts any valid dictionary
-export const createJobRole = async (payload: Record<string, any>): Promise<any> => {
+export const createJobRole = async (payload: JobRoleData): Promise<any> => {
     try {
         const response = await axios.post(`${BASE_URL}/add-job-role/`, payload, {
             headers: { 'Content-Type': 'application/json' }
@@ -682,19 +683,25 @@ export interface ContactsCsvFilters {
 
 export async function generateJobDescription(payload: Record<string, any>): Promise<string> {
     try {
-        const res = await axios.post(`${BASE_URL}/generate-job-description/`, payload, {
-            headers: { 'Content-Type': 'application/json', Accept: 'text/plain, application/json' },
-            responseType: 'text',
-            transformResponse: [(data) => data],
+        const response = await axios.post(`${BASE_URL}/generate-job-description/`, payload, {
+            headers: { 'Content-Type': 'application/json' }
         });
-        // If backend returns JSON with description, try to parse; otherwise return text
-        try {
-            const maybeJson = JSON.parse(res.data);
-            if (maybeJson && typeof maybeJson.description === 'string') return maybeJson.description;
-        } catch {
-            // not JSON
+        
+        // Handle the expected response format
+        if (response.data && response.data.status === true && response.data.job_description) {
+            return response.data.job_description;
         }
-        return String(res.data || '');
+        
+        // Fallback for other response formats
+        if (response.data && typeof response.data === 'string') {
+            return response.data;
+        }
+        
+        if (response.data && response.data.description) {
+            return response.data.description;
+        }
+        
+        return '';
     } catch (error: any) {
         console.error('Error generating job description:', error);
         throw new Error(error.response?.data?.message || 'Failed to generate job description');

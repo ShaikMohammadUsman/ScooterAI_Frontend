@@ -19,6 +19,7 @@ interface MultiSelectProps {
     placeholder?: string;
     className?: string;
     size?: "sm" | "md" | "lg";
+    instanceId?: string; // stable id to avoid hydration mismatch
 }
 
 type OptionType = { value: string; label: string };
@@ -79,7 +80,11 @@ export function MultiSelect({
     placeholder = "Select options...",
     className,
     size = "md",
+    instanceId,
 }: MultiSelectProps) {
+    const reactId = React.useId();
+    const stableId = instanceId ?? `ms-${reactId}`;
+
     const selectOptions = options.map(option => ({
         value: option,
         label: option
@@ -194,6 +199,8 @@ export function MultiSelect({
 
     return (
         <Select
+            instanceId={stableId}
+            inputId={`${stableId}-input`}
             isMulti
             closeMenuOnSelect={false}
             hideSelectedOptions={false}
