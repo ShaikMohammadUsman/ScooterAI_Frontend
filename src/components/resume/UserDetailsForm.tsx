@@ -117,8 +117,11 @@ export default function UserDetailsForm({ profile, onFieldChange, candidateSourc
                         <SelectValue placeholder="Select a source" />
                     </SelectTrigger>
                     <SelectContent>
+                        <SelectItem value="indeed">Indeed</SelectItem>
+                        <SelectItem value="linkedIn">LinkedIn</SelectItem>
                         <SelectItem value="naukri">Naukri</SelectItem>
-                        <SelectItem value="linkedin">LinkedIn</SelectItem>
+                        <SelectItem value="revGenius">Rev Genius</SelectItem>
+                        <SelectItem value="whatsappGroups">Whatsapp Groups</SelectItem>
                         <SelectItem value="website">Website</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
