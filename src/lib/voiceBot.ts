@@ -1,15 +1,31 @@
 import { SpeechConfig, SpeechSynthesizer, AudioConfig, ResultReason } from 'microsoft-cognitiveservices-speech-sdk';
+import { SUPPORTED_LANGUAGES, SupportedLanguageCode } from './interviewService';
 
 let isSpeaking = false;
 let synthesizer: SpeechSynthesizer | null = null;
+let currentLanguage: SupportedLanguageCode | null = null;
 
-export const initializeSynthesizer = () => {
+export const initializeSynthesizer = async (language: SupportedLanguageCode = "en-IN"): Promise<boolean> => {
     try {
+        // If language changed, close existing synthesizer
+        if (currentLanguage !== language && synthesizer) {
+            synthesizer.close();
+            synthesizer = null;
+        }
+        
+        // Update current language
+        currentLanguage = language;
+        
         const speechConfig = SpeechConfig.fromSubscription(
             process.env.NEXT_PUBLIC_AZURE_API_KEY || "",
             process.env.NEXT_PUBLIC_AZURE_REGION || ""
         );
-        speechConfig.speechSynthesisVoiceName = "en-IN-ArjunNeural";
+        
+        // Get the Azure voice for the selected language
+        const languageConfig = SUPPORTED_LANGUAGES.find(lang => lang.code === language);
+        const voiceName = languageConfig?.azureVoice || "en-IN-ArjunNeural";
+        
+        speechConfig.speechSynthesisVoiceName = voiceName;
         
         // Configure audio output
         const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
@@ -17,7 +33,10 @@ export const initializeSynthesizer = () => {
         // Create new synthesizer
         synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
         
-        console.log("Synthesizer initialized successfully");
+        // Wait a bit to ensure the synthesizer is fully ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // console.log(`Synthesizer initialized successfully with voice: ${voiceName} for language: ${language}`);
         return true;
     } catch (error) {
         console.error("Failed to initialize synthesizer:", error);
@@ -38,11 +57,25 @@ export function stopSpeaking() {
     }
 }
 
+export async function resetSynthesizer() {
+    if (synthesizer) {
+        try {
+            synthesizer.close();
+            synthesizer = null;
+            currentLanguage = null;
+            console.log("Synthesizer reset successfully");
+        } catch (error) {
+            console.error("Error resetting synthesizer:", error);
+        }
+    }
+}
+
 export async function textInAudioOut(
     text: string,
     onTextReceived: (text: string) => void,
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-    setIsSpeaking?: React.Dispatch<React.SetStateAction<boolean>>
+    setIsSpeaking?: React.Dispatch<React.SetStateAction<boolean>>,
+    language: SupportedLanguageCode = "en-IN"
 ): Promise<number> {
     // console.log("Starting text-to-speech for:", text);
     
@@ -51,9 +84,18 @@ export async function textInAudioOut(
         throw new Error("Azure Speech Services configuration is missing");
     }
 
-    // Initialize synthesizer if not already initialized
-    if (!synthesizer && !initializeSynthesizer()) {
-        throw new Error("Failed to initialize speech synthesizer");
+    // Initialize synthesizer if not already initialized or if language changed
+    if (!synthesizer || currentLanguage !== language) {
+        // console.log(`Initializing synthesizer for language: ${language}`);
+        if (!await initializeSynthesizer(language)) {
+            throw new Error("Failed to initialize speech synthesizer");
+        }
+        // Double-check that synthesizer is ready
+        if (!synthesizer) {
+            throw new Error("Synthesizer not properly initialized");
+        }
+        // Small delay to ensure voice change is fully applied
+        await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     // Stop any ongoing speech
@@ -78,9 +120,13 @@ export async function textInAudioOut(
 
             // console.log("Starting speech synthesis for:", text);
             
-            // Create SSML with increased speech rate
-            const ssmlText = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-IN">
-                <voice name="en-IN-ArjunNeural">
+            // Get the Azure voice for the selected language
+            const languageConfig = SUPPORTED_LANGUAGES.find(lang => lang.code === language);
+            const voiceName = languageConfig?.azureVoice || "en-IN-ArjunNeural";
+            
+            // Create SSML with increased speech rate and appropriate voice
+            const ssmlText = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${language}">
+                <voice name="${voiceName}">
                     <prosody rate="+10%">
                         ${text}
                     </prosody>

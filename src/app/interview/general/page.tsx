@@ -5,8 +5,8 @@ import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight, FaUploa
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingDots } from "@/components/ui/loadingDots";
-import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio, updateAudioProctoringLogs } from "@/lib/interviewService";
-import { textInAudioOut } from "@/lib/voiceBot";
+import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio, updateAudioProctoringLogs, SupportedLanguageCode, SUPPORTED_LANGUAGES } from "@/lib/interviewService";
+import { textInAudioOut, resetSynthesizer } from "@/lib/voiceBot";
 import { InterviewAudioRecorder } from "@/lib/audioRecorder";
 
 import Image from "next/image";
@@ -71,6 +71,9 @@ export default function VoiceInterviewPage() {
     // Theme transition state
     const [isDarkTheme, setIsDarkTheme] = useState(false);
 
+    // Language state
+    const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguageCode>("en-IN");
+
     // New UI states for consistent design
     const [showChat, setShowChat] = useState(false);
     const [speechDuration, setSpeechDuration] = useState(0);
@@ -95,7 +98,7 @@ export default function VoiceInterviewPage() {
             details
         };
         setInterviewEvents(prev => [...prev, newEvent]);
-        console.log(`Interview Event: ${event}`, newEvent);
+        // console.log(`Interview Event: ${event}`, newEvent);
     };
 
     // Scroll to bottom on new message
@@ -175,9 +178,16 @@ export default function VoiceInterviewPage() {
     };
 
     // Start interview: fetch questions
-    const handleStart = async () => {
+    const handleStart = async (language: string = "en-IN") => {
         setLoading(true);
         setError(null);
+
+        // Store the selected language
+        setSelectedLanguage(language as SupportedLanguageCode);
+
+        // Reset synthesizer to ensure clean initialization with new language
+        await resetSynthesizer();
+
         const profile_id = localStorage.getItem('scooterUserId');
         if (!profile_id) {
             setError("No profile ID found");
@@ -189,7 +199,8 @@ export default function VoiceInterviewPage() {
         try {
             const res = await generateInterviewQuestions({
                 posting_title: searchParams?.get('role') as string || "",
-                profile_id: profile_id
+                profile_id: profile_id,
+                language: language
             });
 
 
@@ -242,7 +253,7 @@ export default function VoiceInterviewPage() {
 
             // Start the interview
             setStarted(true);
-            await askQuestion(0);
+            await askQuestion(0, language as SupportedLanguageCode);
         } catch (err: any) {
             console.error("Error starting interview:", err);
             setError(err.message || "Failed to start interview");
@@ -254,11 +265,15 @@ export default function VoiceInterviewPage() {
     };
 
     // Ask question with TTS
-    const askQuestion = async (index: number) => {
+    const askQuestion = async (index: number, language?: SupportedLanguageCode) => {
         const currentQuestions = questionsRef.current;
         if (!currentQuestions || currentQuestions.length === 0 || index >= currentQuestions.length) {
             return;
         }
+
+        // Use passed language or fall back to selectedLanguage
+        const questionLanguage = language || selectedLanguage;
+        // console.log(`askQuestion called with language: ${questionLanguage}`);
 
         setMicEnabled(false);
         setLoading(true);
@@ -294,7 +309,9 @@ export default function VoiceInterviewPage() {
                         return newMessages;
                     });
                 },
-                setLoading
+                setLoading,
+                setIsSpeaking,
+                questionLanguage
             );
             setSpeechDuration(duration || 0);
 
@@ -361,7 +378,12 @@ export default function VoiceInterviewPage() {
 
         try {
             const speechConfig = speechsdk.SpeechConfig.fromSubscription(SPEECH_KEY, SPEECH_REGION);
-            speechConfig.speechRecognitionLanguage = "en-US";
+
+            // Get the speech recognition language for the selected language
+            const languageConfig = SUPPORTED_LANGUAGES.find(lang => lang.code === selectedLanguage);
+            const recognitionLanguage = languageConfig?.speechRecognition || "en-IN";
+            speechConfig.speechRecognitionLanguage = recognitionLanguage;
+
             const audioConfig = speechsdk.AudioConfig.fromDefaultMicrophoneInput();
             const recognizer = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
             recognizerRef.current = recognizer;
@@ -468,7 +490,7 @@ export default function VoiceInterviewPage() {
             const nextQ = currentQ + 1;
             setCurrentQ(nextQ);
             // The loading state will be shown during askQuestion
-            askQuestion(nextQ);
+            askQuestion(nextQ, selectedLanguage);
         } else {
             // For last question, proceed to evaluation and audio upload
             setSubmissionSuccess(false);
