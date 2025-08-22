@@ -50,6 +50,19 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                         </div>
                     </div>
 
+                    {/* Browser Recommendation */}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                        <div className="flex items-start gap-3">
+                            <Info className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                            <div className="text-left">
+                                <h4 className="font-medium text-yellow-800 mb-1">💡 Pro Tip: Use Chrome on Desktop/Laptop</h4>
+                                <p className="text-sm text-yellow-700">
+                                    For the best interview experience and to avoid technical issues, we recommend using Google Chrome on a desktop or laptop computer. This ensures optimal audio recording and speech recognition functionality.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Resume Later Info */}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                         <div className="flex items-start gap-3">

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { FaMicrophone, FaGlobe, FaChevronDown } from "react-icons/fa";
+import { Monitor } from "lucide-react";
 import { useState } from "react";
 import { SUPPORTED_LANGUAGES, SupportedLanguageCode } from "@/lib/interviewService";
 
@@ -44,6 +45,15 @@ export function AnimatedPlaceholder({ onStart, title, description, buttonText }:
                     <div className="text-2xl font-semibold mb-2">{title}</div>
                     <div className="text-sm text-muted-foreground mb-6">
                         {description}
+                    </div>
+
+                    {/* Browser Recommendation */}
+                    <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-blue-700 text-sm">
+                            <Monitor className="w-4 h-4" />
+                            <span className="font-medium">💡 Pro Tip:</span>
+                            <span>Use Chrome on desktop/laptop for the best interview experience and to avoid technical issues.</span>
+                        </div>
                     </div>
 
                     {/* Language Selection */}

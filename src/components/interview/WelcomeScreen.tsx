@@ -260,6 +260,13 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                         <span className={`font-medium text-sm md:text-base transition-colors duration-1000 ${isDarkTheme ? 'text-indigo-200' : 'text-indigo-800'
                                             }`}>Complete in one continuous flow</span>
                                     </div>
+                                    <div className="flex items-center gap-2 md:gap-3">
+                                        <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                                            <Monitor className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className={`font-medium text-sm md:text-base transition-colors duration-1000 ${isDarkTheme ? 'text-indigo-200' : 'text-indigo-800'
+                                            }`}>Use Chrome on desktop/laptop for best experience</span>
+                                    </div>
                                 </div>
                             </motion.div>
 
