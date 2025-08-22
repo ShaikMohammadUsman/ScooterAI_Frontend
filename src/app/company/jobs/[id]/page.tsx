@@ -1146,6 +1146,20 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         </div>
                                     </div>
 
+                                    {/* Job Fit Assessment */}
+                                    {selectedCandidate?.job_fit_assessment && (
+                                        <div className="mb-6">
+                                            <h4 className="text-lg font-semibold text-gray-900 mb-3">Job Fit Assessment</h4>
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <div className="prose prose-sm max-w-none">
+                                                    <ReactMarkdown>
+                                                        {selectedCandidate.job_fit_assessment}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Company History */}
                                     <div className="mb-6">
                                         <h4 className="text-lg font-semibold text-gray-900 mb-3">Company History</h4>

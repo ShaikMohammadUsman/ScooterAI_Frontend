@@ -65,6 +65,7 @@ import ErrorBox from '@/components/ui/error';
 import InterviewEvaluationTabs from '@/components/candidates/InterviewEvaluationTabs';
 import AudioInterviewEvaluation from '@/components/candidates/AudioInterviewEvaluation';
 import ApplicationStatusSection from '@/components/candidates/ApplicationStatusSection';
+import ReactMarkdown from 'react-markdown';
 
 interface CandidatesResponse {
     status: boolean;
@@ -422,6 +423,25 @@ export default function PublicCandidatesPage() {
                                             <p className="text-gray-700 leading-relaxed">{selectedCandidate.short_summary}</p>
                                         </CardContent>
                                     </Card>
+
+                                    {/* Job Fit Assessment */}
+                                    {selectedCandidate.job_fit_assessment && (
+                                        <Card className="shadow-lg">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Brain className="h-5 w-5" />
+                                                    Job Fit Assessment
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                                                    <ReactMarkdown>
+                                                        {selectedCandidate.job_fit_assessment}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    )}
 
                                     {/* Enhanced Snapshot Grid */}
                                     <Card className="shadow-lg">
