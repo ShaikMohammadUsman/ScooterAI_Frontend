@@ -57,7 +57,7 @@ export function AnimatedPlaceholder({ onStart, title, description, buttonText }:
                     </div>
 
                     {/* Language Selection */}
-                    <div className="mb-6">
+                    {/* <div className="mb-6">
                         <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
                             Select Interview Language
                         </label>
@@ -106,7 +106,7 @@ export function AnimatedPlaceholder({ onStart, title, description, buttonText }:
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </div> */}
 
                     <button
                         onClick={handleStart}

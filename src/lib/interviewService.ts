@@ -34,16 +34,16 @@ export async function generateInterviewQuestions(
 // SUPPORTED LANGUAGES
 export const SUPPORTED_LANGUAGES = [
   { code: "en-IN", name: "English", nativeName: "English", azureVoice: "en-IN-ArjunNeural", speechRecognition: "en-IN" },
-  { code: "hi-IN", name: "Hindi", nativeName: "हिंदी", azureVoice: "hi-IN-MadhurNeural", speechRecognition: "hi-IN" },
-  { code: "bn-IN", name: "Bengali", nativeName: "বাংলা", azureVoice: "en-IN-ArjunNeural", speechRecognition: "en-IN" },
-  { code: "ta-IN", name: "Tamil", nativeName: "தமிழ்", azureVoice: "ta-IN-PallaviNeural", speechRecognition: "ta-IN" },
-  { code: "te-IN", name: "Telugu", nativeName: "తెలుగు", azureVoice: "te-IN-MohanNeural", speechRecognition: "te-IN" },
-  { code: "gu-IN", name: "Gujarati", nativeName: "ગુજરાતી", azureVoice: "gu-IN-DhwaniNeural", speechRecognition: "gu-IN" },
-  { code: "kn-IN", name: "Kannada", nativeName: "ಕನ್ನಡ", azureVoice: "kn-IN-GaganNeural", speechRecognition: "kn-IN" },
+  // { code: "hi-IN", name: "Hindi", nativeName: "हिंदी", azureVoice: "hi-IN-MadhurNeural", speechRecognition: "hi-IN" },
+  // { code: "bn-IN", name: "Bengali", nativeName: "বাংলা", azureVoice: "en-IN-ArjunNeural", speechRecognition: "en-IN" },
+  // { code: "ta-IN", name: "Tamil", nativeName: "தமிழ்", azureVoice: "ta-IN-PallaviNeural", speechRecognition: "ta-IN" },
+  // { code: "te-IN", name: "Telugu", nativeName: "తెలుగు", azureVoice: "te-IN-MohanNeural", speechRecognition: "te-IN" },
+  // { code: "gu-IN", name: "Gujarati", nativeName: "ગુજરાતી", azureVoice: "gu-IN-DhwaniNeural", speechRecognition: "gu-IN" },
+  // { code: "kn-IN", name: "Kannada", nativeName: "ಕನ್ನಡ", azureVoice: "kn-IN-GaganNeural", speechRecognition: "kn-IN" },
   // { code: "ml-IN", name: "Malayalam", nativeName: "മലയാളം", azureVoice: "ml-IN-MidhunNeural", speechRecognition: "ml-IN" },
-  { code: "mr-IN", name: "Marathi", nativeName: "मराठी", azureVoice: "mr-IN-AarohiNeural", speechRecognition: "mr-IN" },
-  { code: "pa-IN", name: "Punjabi", nativeName: "ਪੰਜਾਬੀ", azureVoice: "en-IN-ArjunNeural", speechRecognition: "en-IN" },
-  { code: "od-IN", name: "Odia", nativeName: "ଓଡ଼ିଆ", azureVoice: "en-IN-ArjunNeural", speechRecognition: "en-IN" } // Fallback to English for Odia
+  // { code: "mr-IN", name: "Marathi", nativeName: "मराठी", azureVoice: "mr-IN-AarohiNeural", speechRecognition: "mr-IN" },
+  // { code: "pa-IN", name: "Punjabi", nativeName: "ਪੰਜਾਬੀ", azureVoice: "en-IN-ArjunNeural", speechRecognition: "en-IN" },
+  // { code: "od-IN", name: "Odia", nativeName: "ଓଡ଼ିଆ", azureVoice: "en-IN-ArjunNeural", speechRecognition: "en-IN" } // Fallback to English for Odia
 ] as const;
 
 export type SupportedLanguageCode = typeof SUPPORTED_LANGUAGES[number]["code"];
