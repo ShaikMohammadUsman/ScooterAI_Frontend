@@ -267,6 +267,73 @@ export default function AudioInterviewEvaluation({ candidate }: AudioInterviewEv
                                     )}
                                 </div>
 
+                                {/* New Format Fields - Sales & ICP Information */}
+                                {(() => {
+                                    const summary = audioInterviewDetails.audio_interview_summary;
+                                    const hasNewFormatData = summary.icp_summary || summary.sales_motion_summary || summary.sales_cycle_summary;
+
+                                    if (hasNewFormatData) {
+                                        return (
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                                {summary?.icp_summary && summary?.icp_summary.length > 0 && (
+                                                    <div className="p-3 bg-blue-50 rounded-lg">
+                                                        <h5 className="font-medium text-blue-900 mb-2">Ideal Customer Profile</h5>
+                                                        <ul className="space-y-1">
+                                                            {summary.icp_summary.map((icp: string, index: number) => (
+                                                                <li key={index} className="text-sm text-blue-800 flex items-start gap-2">
+                                                                    <span className="text-blue-600 mt-1">•</span>
+                                                                    {icp}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {summary?.sales_motion_summary && summary?.sales_motion_summary.length > 0 && (
+                                                    <div className="p-3 bg-purple-50 rounded-lg">
+                                                        <h5 className="font-medium text-purple-900 mb-2">Sales Motion</h5>
+                                                        <ul className="space-y-1">
+                                                            {summary?.sales_motion_summary.map((motion: string, index: number) => (
+                                                                <li key={index} className="text-sm text-purple-800 flex items-start gap-2">
+                                                                    <span className="text-purple-600 mt-1">•</span>
+                                                                    {motion}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {summary?.sales_cycle_summary && summary?.sales_cycle_summary.length > 0 && (
+                                                    <div className="p-3 bg-indigo-50 rounded-lg">
+                                                        <h5 className="font-medium text-indigo-900 mb-2">Sales Cycle</h5>
+                                                        <ul className="space-y-1">
+                                                            {summary?.sales_cycle_summary.map((cycle: string, index: number) => (
+                                                                <li key={index} className="text-sm text-indigo-800 flex items-start gap-2">
+                                                                    <span className="text-indigo-600 mt-1">•</span>
+                                                                    {cycle}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
+                                {/* Coaching Focus - New Format */}
+                                {(() => {
+                                    const coachingFocus = audioInterviewDetails.audio_interview_summary.coaching_focus;
+                                    if (coachingFocus) {
+                                        return (
+                                            <div className="p-4 bg-yellow-50 rounded-lg">
+                                                <h5 className="font-medium text-yellow-900 mb-2">Coaching Focus</h5>
+                                                <p className="text-sm text-yellow-800">{coachingFocus}</p>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
                                 {(() => {
                                     const strengths = audioInterviewDetails.audio_interview_summary.strengths;
                                     return strengths && strengths.length > 0 ? (
@@ -390,11 +457,85 @@ export default function AudioInterviewEvaluation({ candidate }: AudioInterviewEv
                                                         );
                                                     })()}
                                                 </div>
-                                                <div className="mt-3 p-3 bg-gray-50 rounded">
-                                                    <div className="text-xs text-gray-600">
-                                                        <ReactMarkdown>
-                                                            {qa.evaluation?.summary || 'No summary available'}
-                                                        </ReactMarkdown>
+
+                                                {/* New Format Fields for Individual Questions */}
+                                                {(() => {
+                                                    const evaluation = qa.evaluation;
+                                                    const hasNewFormatData = evaluation?.highlights || evaluation?.red_flags || evaluation?.sales_motion || evaluation?.sales_cycle || evaluation?.icp;
+
+                                                    if (hasNewFormatData) {
+                                                        return (
+                                                            <div className="mt-4 space-y-3">
+                                                                {/* Highlights */}
+                                                                {evaluation?.highlights && evaluation.highlights.length > 0 && (
+                                                                    <div className="p-3 bg-green-50 rounded-lg">
+                                                                        <h6 className="font-medium text-green-900 mb-2 text-sm">Highlights</h6>
+                                                                        <ul className="space-y-1">
+                                                                            {evaluation.highlights.map((highlight: string, idx: number) => (
+                                                                                <li key={idx} className="text-xs text-green-800 flex items-start gap-2">
+                                                                                    <span className="text-green-600 mt-1">•</span>
+                                                                                    {highlight}
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Red Flags */}
+                                                                {evaluation?.red_flags && evaluation.red_flags.length > 0 && (
+                                                                    <div className="p-3 bg-red-50 rounded-lg">
+                                                                        <h6 className="font-medium text-red-900 mb-2 text-sm">Red Flags</h6>
+                                                                        <ul className="space-y-1">
+                                                                            {evaluation.red_flags.map((flag: string, idx: number) => (
+                                                                                <li key={idx} className="text-xs text-red-800 flex items-start gap-2">
+                                                                                    <span className="text-red-600 mt-1">•</span>
+                                                                                    {flag}
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Sales Information */}
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                                    {evaluation?.sales_motion && (
+                                                                        <div className="p-3 bg-purple-50 rounded-lg">
+                                                                            <h6 className="font-medium text-purple-900 mb-2 text-sm">Sales Motion</h6>
+                                                                            <p className="text-xs text-purple-800">{evaluation.sales_motion}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {evaluation?.sales_cycle && (
+                                                                        <div className="p-3 bg-indigo-50 rounded-lg">
+                                                                            <h6 className="font-medium text-indigo-900 mb-2 text-sm">Sales Cycle</h6>
+                                                                            <p className="text-xs text-indigo-800">{evaluation.sales_cycle}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {evaluation?.icp && (
+                                                                        <div className="p-3 bg-blue-50 rounded-lg">
+                                                                            <h6 className="font-medium text-blue-900 mb-2 text-sm">Ideal Customer Profile</h6>
+                                                                            <p className="text-xs text-blue-800">{evaluation.icp}</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Coaching Focus */}
+                                                                {evaluation?.coaching_focus && (
+                                                                    <div className="p-3 bg-yellow-50 rounded-lg">
+                                                                        <h6 className="font-medium text-yellow-900 mb-2 text-sm">Coaching Focus</h6>
+                                                                        <p className="text-xs text-yellow-800">{evaluation.coaching_focus}</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
+
+                                                {/* Summary/Feedback */}
+                                                <div className="mt-4">
+                                                    <p className="text-sm text-gray-600 mb-2">Summary</p>
+                                                    <div className="text-sm text-gray-700 p-3 bg-gray-50 rounded">
+                                                        <ReactMarkdown>{qa.evaluation?.summary || qa.evaluation?.fit_summary || 'No summary available'}</ReactMarkdown>
                                                     </div>
                                                 </div>
                                             </div>

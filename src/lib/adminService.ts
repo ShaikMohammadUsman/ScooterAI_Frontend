@@ -24,6 +24,7 @@ export interface Candidate {
     user_id?: string;
     profile_id: string;
     profile_created_at: string;
+    short_summary: string;
     job_fit_assessment?: string;
     basic_information: {
         full_name: string;
@@ -47,7 +48,6 @@ export interface Candidate {
         };
         languages_spoken?: string[];
     };
-    short_summary:string;
     application_status: boolean | string;
     application_status_reason: string;
     application_status_updated_at?: string;
@@ -85,7 +85,7 @@ export interface Candidate {
         video_interview_sent?: boolean;
         audio_uploaded?: boolean;
     };
-    interview_details: {
+    interview_details?: {
         session_id: string;
         created_at: string;
         communication_evaluation: {
@@ -135,41 +135,96 @@ export interface Candidate {
             role?: string;
         };
     };
-    audio_interview_details: {
+    audio_interview_details?: {
         audio_interview_id: string;
         created_at: string;
         qa_evaluations: Array<{
             question: string;
             answer: string;
             evaluation: {
-                credibility: { score: number; feedback: string };
-                ownership_depth: { score: number; feedback: string };
-                communication: { score: number; feedback: string };
-                confidence: { score: number; feedback: string };
-                overall_score: number;
-                summary: string;
+                // Old format fields
+                credibility?: { score: number; feedback: string };
+                ownership_depth?: { score: number; feedback: string };
+                communication?: { score: number; feedback: string };
+                confidence?: { score: number; feedback: string };
+                overall_score?: number;
+                summary?: string;
+                // New format fields
+                credibility_score?: number;
+                communication_score?: number;
+                sales_motion?: string;
+                sales_cycle?: string;
+                icp?: string;
+                highlights?: string[];
+                red_flags?: string[];
+                coaching_focus?: string;
+                fit_summary?: string;
             };
         }>;
         audio_interview_summary: {
             average_score: number;
-            dimension_averages: {
+            // Old format fields
+            dimension_averages?: {
                 credibility: number;
                 ownership_depth: number;
                 communication: number;
                 confidence: number;
             };
+            // New format fields
+            credibility_score?: number;
+            communication_score?: number;
             total_questions: number;
             strengths: string[];
             areas_for_improvement: string[];
+            red_flags?: string[];
+            icp_summary?: string[];
+            sales_motion_summary?: string[];
+            sales_cycle_summary?: string[];
+            coaching_focus?: string | null;
             audio_interview_status: boolean;
         };
+    };
+    // New fields from the updated API response
+    audio_proctoring_details?: {
+        _id: string;
+        user_id: string;
+        email: string;
+        "screen time"?: string | number;
+        flags: Array<{
+            message: string;
+            timestamp: string;
+            type: string;
+            severity: string;
+            details?: Record<string, any>;
+        }>;
+        tab_switches: number;
+        window_focus_loss: number;
+        right_clicks: number;
+        dev_tools_attempts: number;
+        multi_touch_gestures: number;
+        swipe_gestures: number;
+        orientation_changes: number;
+        interview_events: Array<{
+            event: string;
+            timestamp: string;
+            details: Record<string, any>;
+        }>;
+        interview_duration: number;
+        submission_timestamp: string;
+        updated_at: string;
     };
     video_proctoring_details?: {
         _id: string;
         user_id: string;
         email: string;
         "screen time"?: string | number;
-        flags: any[];
+        flags: Array<{
+            message: string;
+            timestamp: string;
+            type: string;
+            severity: string;
+            details?: Record<string, any>;
+        }>;
         tab_switches: number;
         window_focus_loss: number;
         right_clicks: number;
@@ -212,6 +267,11 @@ export interface CandidatesResponse {
         _id?: string;
         created_at?: string;
         is_active?: boolean;
+        // New fields from updated API
+        moved_to_video_round_count?: number;
+        audio_attended_count?: number;
+        video_attended_count?: number;
+        candidate_count?: number;
     };
     filters: {
         audio_passed?: boolean | null;
@@ -221,6 +281,8 @@ export interface CandidatesResponse {
         call_for_interview?: boolean | null;
         application_status?: boolean | string | null;
         video_interview_sent?: boolean | null;
+        // New fields from updated API
+        audio_attended?: boolean | null;
     };
     pagination: {
         current_page: number;
