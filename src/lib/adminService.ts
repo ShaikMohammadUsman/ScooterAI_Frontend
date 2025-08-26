@@ -507,6 +507,7 @@ export const getJobCandidates = async (
     callForInterview?: boolean,
     audioAttended?: boolean,
     videoInterviewSent?: boolean,
+    all_candidates?:boolean
 ): Promise<CandidatesResponse> => {
     try {
         const params = new URLSearchParams({
@@ -537,6 +538,8 @@ export const getJobCandidates = async (
         
         // Video interview sent filter
         if (videoInterviewSent !== undefined) params.append('video_interview_sent', videoInterviewSent.toString());
+
+        if (all_candidates !== undefined) params.append('all_candidates', all_candidates.toString());
 
         console.log(params.toString());
         const response = await axios.get(`${BASE_URL}/job-candidates/${jobId}?${params.toString()}`);
