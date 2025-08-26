@@ -1520,7 +1520,7 @@ function CommunicationInterview() {
                                     <Button
                                         onClick={() => {
                                             if (jobIdFromQuery) {
-                                                router.push(`/candidates/${jobIdFromQuery}`);
+                                                router.push(`/reports/${jobIdFromQuery}`);
                                             } else {
                                                 router.push('/candidates');
                                             }
