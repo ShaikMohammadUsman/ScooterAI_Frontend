@@ -78,7 +78,8 @@ export interface UserData {
 }
 
 // API base URL
-const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+// const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+const API_BASE = "https://scooter-demo.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 // const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
 
