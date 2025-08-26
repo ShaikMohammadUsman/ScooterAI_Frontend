@@ -133,7 +133,7 @@ export default function PublicCandidatesPage() {
                 10,
                 undefined, // application_status
                 undefined, // videoAttended
-                true,// shortlisted
+                undefined,// shortlisted
                 undefined  // callForInterview
             );
             console.log('API response:', response);
@@ -308,7 +308,7 @@ export default function PublicCandidatesPage() {
                                                         </div>
                                                     </div>
                                                     <p className="text-sm text-gray-600 mb-1">
-                                                        {candidate.career_overview.company_history[candidate.career_overview.company_history.length - 1]?.position} at {candidate.career_overview.company_history[candidate.career_overview.company_history.length - 1]?.company_name}
+                                                        {candidate.career_overview.company_history[0]?.position} at {candidate.career_overview.company_history[candidate.career_overview.company_history.length - 1]?.company_name}
                                                     </p>
                                                     <div className="flex items-center justify-between text-xs text-gray-500">
                                                         <span>{candidate.career_overview.total_years_experience} years exp • {candidate.basic_information.current_location}</span>

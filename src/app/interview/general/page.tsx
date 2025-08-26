@@ -826,11 +826,11 @@ export default function VoiceInterviewPage() {
             {showResults ? (
                 <AnimatedPlaceholder
                     onStart={() => {
-                        router.push("/");
+                        router.push("/interview/communication?demo=1");
                     }}
-                    title="Thank you for completing the interview!"
-                    description="We will reach out to you soon."
-                    buttonText="Continue to home"
+                    title="You have completed this round."
+                    description="Great job! Now, let’s move to the next round."
+                    buttonText="Proceed to Communication Round"
                 />
             ) : (
                 <>

@@ -46,6 +46,9 @@ const SPEECH_REGION = process.env.NEXT_PUBLIC_AZURE_REGION;
 function CommunicationInterview() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const isDemo = (process.env.NEXT_PUBLIC_DEMO === 'true') || (searchParams.get('demo') === '1');
+    const jobIdFromQuery = "6878c22369c40a7cff71f1c2";
+    // const jobIdFromQuery = searchParams.get('jobId');
     const [started, setStarted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -140,8 +143,17 @@ function CommunicationInterview() {
 
 
 
-    // Check for verification parameter on mount
+    // Check for verification parameter on mount (bypass in demo mode)
     useEffect(() => {
+        if (isDemo) {
+            const demoUserId = localStorage.getItem('scooterUserId') || 'demo-user';
+            setVerifiedUser({ user_id: demoUserId, full_name: 'Demo User', resume_status: true });
+            setShowUnauthorized(false);
+            setShowVerification(false);
+            setIsDarkTheme(true);
+            return;
+        }
+
         const verifyCode = searchParams.get('verify');
 
         if (!verifyCode) {
@@ -152,7 +164,7 @@ function CommunicationInterview() {
             setVerificationCode(verifyCode);
             setShowVerification(true);
         }
-    }, [searchParams]);
+    }, [searchParams, isDemo]);
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -1054,7 +1066,7 @@ function CommunicationInterview() {
             </div>
 
             {/* Unauthorized Screen */}
-            {showUnauthorized && (
+            {!isDemo && showUnauthorized && (
                 <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
                     <Card className="w-full max-w-md shadow-2xl bg-gray-800/95 backdrop-blur-sm border border-gray-700">
                         <CardHeader className="text-center pb-6">
@@ -1088,7 +1100,7 @@ function CommunicationInterview() {
             )}
 
             {/* Verification Screen */}
-            {showVerification && !verifiedUser && (
+            {!isDemo && showVerification && !verifiedUser && (
                 <div className="flex-1 flex flex-col lg:flex-row bg-gradient-to-br from-white via-slate-50 to-white">
                     {/* Instructions Section */}
                     <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
@@ -1416,11 +1428,11 @@ function CommunicationInterview() {
                             >
                                 <CardTitle className={`text-3xl font-bold mb-4 transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'
                                     }`}>
-                                    Interview Completed Successfully!
+                                    Communication Round Completed
                                 </CardTitle>
                                 <p className={`text-lg leading-relaxed transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'
                                     }`}>
-                                    Thank you for completing your communication skills assessment. Your responses have been recorded and are being evaluated.
+                                    We have completed your communication analysis. Would you like to see the results?
                                 </p>
                             </motion.div>
                         </CardHeader>
@@ -1506,20 +1518,26 @@ function CommunicationInterview() {
 
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <Button
-                                        onClick={() => router.push('/')}
+                                        onClick={() => {
+                                            if (jobIdFromQuery) {
+                                                router.push(`/candidates/${jobIdFromQuery}`);
+                                            } else {
+                                                router.push('/candidates');
+                                            }
+                                        }}
                                         className="w-full sm:w-auto h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
                                     >
-                                        Go to Home
+                                        View Results
                                     </Button>
                                     <Button
-                                        onClick={() => router.push('/home/careers')}
+                                        onClick={() => router.push('/')}
                                         variant="outline"
                                         className={`w-full sm:w-auto h-12 text-base font-semibold transition-all duration-1000 ${isDarkTheme
                                             ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
                                             : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
-                                        Explore Jobs
+                                        Go to Home
                                     </Button>
                                 </div>
                             </motion.div>
