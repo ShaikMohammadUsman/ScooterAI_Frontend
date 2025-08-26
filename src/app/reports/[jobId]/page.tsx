@@ -16,6 +16,11 @@ import {
     ArrowLeft,
     Search as SearchIcon,
     ExternalLink,
+    Video as VideoIcon,
+    Mic as MicIcon,
+    AlertTriangle,
+    Sparkles,
+    CheckCircle2,
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
@@ -365,10 +370,23 @@ export default function ReportsPage() {
                     {list.map((c) => {
                         const strengths = c.audio_interview_details?.audio_interview_summary?.strengths || [];
                         const areas = c.audio_interview_details?.audio_interview_summary?.areas_for_improvement || [];
+                        const redFlagsCount = (c.audio_interview_details?.audio_interview_summary?.red_flags?.length || 0) +
+                            (c.audio_interview_details?.qa_evaluations?.reduce((acc, q) => acc + (q.evaluation?.red_flags?.length || 0), 0) || 0);
                         const categoryBadge = getCategoryBadge(c);
 
+                        const audioStatus = c.interview_status?.audio_interview_passed
+                            ? { text: 'Audio passed', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+                            : c.interview_status?.audio_interview_attended
+                                ? { text: 'Audio attended', className: 'bg-blue-50 text-blue-700 border-blue-200' }
+                                : null;
+                        const videoStatus = c.interview_status?.video_interview_attended
+                            ? { text: 'Video attended', className: 'bg-blue-50 text-blue-700 border-blue-200' }
+                            : c.interview_status?.video_interview_sent
+                                ? { text: 'Video sent', className: 'bg-gray-50 text-gray-700 border-gray-200' }
+                                : null;
+
                         return (
-                            <Card key={c.profile_id} className="shadow-sm border border-gray-200">
+                            <Card key={c.profile_id} className="shadow-sm border border-gray-200 py-2">
                                 <CardContent className="p-5">
                                     <div className="flex items-start justify-between mb-2">
                                         <h3 className="text-lg font-semibold text-gray-900">{c.basic_information?.full_name || 'Unknown Candidate'}</h3>
@@ -397,13 +415,38 @@ export default function ReportsPage() {
                                         <p className="text-sm text-gray-700 leading-relaxed">{c.short_summary || '—'}</p>
                                     </div>
 
+                                    {/* Quick metrics */}
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        <Badge variant="outline" className="inline-flex items-center gap-1 border-emerald-200 text-emerald-700 bg-emerald-50">
+                                            <Sparkles className="h-3.5 w-3.5" /> {strengths.length} strengths
+                                        </Badge>
+                                        <Badge variant="outline" className="inline-flex items-center gap-1 border-amber-200 text-amber-700 bg-amber-50">
+                                            <AlertTriangle className="h-3.5 w-3.5" /> {areas.length} watch points
+                                        </Badge>
+                                        {redFlagsCount > 0 && (
+                                            <Badge variant="outline" className="inline-flex items-center gap-1 border-red-200 text-red-700 bg-red-50">
+                                                <AlertTriangle className="h-3.5 w-3.5" /> {redFlagsCount} red flags
+                                            </Badge>
+                                        )}
+                                        {audioStatus && (
+                                            <Badge variant="outline" className={`inline-flex items-center gap-1 ${audioStatus.className}`}>
+                                                <MicIcon className="h-3.5 w-3.5" /> {audioStatus.text}
+                                            </Badge>
+                                        )}
+                                        {videoStatus && (
+                                            <Badge variant="outline" className={`inline-flex items-center gap-1 ${videoStatus.className}`}>
+                                                <VideoIcon className="h-3.5 w-3.5" /> {videoStatus.text}
+                                            </Badge>
+                                        )}
+                                    </div>
+
                                     <Strengths c={c} />
                                     <WatchPoints c={c} />
 
                                     {/* Video Interview Section */}
                                     <div className="mt-4">
                                         <p className="text-sm font-medium text-gray-800 flex items-center gap-2 mb-2">
-                                            <span className="text-gray-600">📹</span>
+                                            <VideoIcon className="h-4 w-4 text-gray-600" />
                                             Video Interview
                                         </p>
                                         <div className="mt-2">
@@ -436,7 +479,7 @@ export default function ReportsPage() {
                                                 <div className="relative rounded-md overflow-hidden border border-gray-200">
                                                     <div className="bg-gray-100 text-gray-500 text-xs p-4 leading-relaxed min-h-[160px] flex items-center justify-center text-center">
                                                         <div className="text-center">
-                                                            <div className="text-2xl mb-2">📹</div>
+                                                            <VideoIcon className="h-5 w-5 mx-auto mb-2 text-gray-500" />
                                                             <div className="font-medium">No Video Interview</div>
                                                             <div className="text-xs mt-1">Video interview not available</div>
                                                         </div>
@@ -449,7 +492,7 @@ export default function ReportsPage() {
                                     {/* Audio Interview Section */}
                                     <div className="mt-4">
                                         <p className="text-sm font-medium text-gray-800 flex items-center gap-2 mb-2">
-                                            <span className="text-gray-600">🎤</span>
+                                            <MicIcon className="h-4 w-4 text-gray-600" />
                                             Audio Interview
                                         </p>
                                         <div className="mt-2">
@@ -482,7 +525,7 @@ export default function ReportsPage() {
                                                 <div className="relative rounded-md overflow-hidden border border-gray-200">
                                                     <div className="bg-gray-100 text-gray-500 text-xs p-4 leading-relaxed min-h-[80px] flex items-center justify-center text-center">
                                                         <div className="text-center">
-                                                            <div className="text-2xl mb-2">🎤</div>
+                                                            <MicIcon className="h-5 w-5 mx-auto mb-2 text-gray-500" />
                                                             <div className="font-medium">No Audio Interview</div>
                                                             <div className="text-xs mt-1">Audio interview not available</div>
                                                         </div>
