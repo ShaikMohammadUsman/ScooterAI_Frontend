@@ -36,6 +36,7 @@ export default function ReportsPage() {
     const [pagination, setPagination] = useState<any>(null);
     const [jobDetails, setJobDetails] = useState<any>(null);
     const [showMore, setShowMore] = useState<string | null>(null);
+    const [privacyMode, setPrivacyMode] = useState(true);
 
     // UI states
     const [search, setSearch] = useState('');
@@ -46,6 +47,18 @@ export default function ReportsPage() {
         fetchCandidates();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobId, currentPage]);
+
+    // Lock scrolling when privacy mode is enabled
+    useEffect(() => {
+        if (privacyMode) {
+            const originalOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            return () => {
+                document.body.style.overflow = originalOverflow;
+            };
+        }
+        return;
+    }, [privacyMode]);
 
     const fetchCandidates = async () => {
         setLoading(true);
@@ -582,8 +595,17 @@ export default function ReportsPage() {
                     </div>
                 )}
             </div>
-            {/* Bottom Half Blurry Overlay */}
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 h-[50vh] backdrop-blur-md bg-white/40 z-50" />
+            {/* Privacy Overlay: heavier blur at bottom, lighter towards top */}
+            {privacyMode && (
+                <div className="pointer-events-none fixed inset-0 z-50">
+                    {/* Light blur across whole screen */}
+                    <div className="absolute inset-0 backdrop-blur-[2px]" />
+                    {/* Stronger blur from bottom upwards (3/4 height) */}
+                    <div className="absolute inset-x-0 bottom-0 h-3/4 backdrop-blur-[6px]" />
+                    {/* Gradient tint to emphasize density bottom -> top */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-white/30 to-transparent" />
+                </div>
+            )}
         </div>
     );
 }
