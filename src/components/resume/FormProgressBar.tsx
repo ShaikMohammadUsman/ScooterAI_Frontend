@@ -40,7 +40,8 @@ export default function FormProgressBar({ currentStep, steps, onStepClick }: For
             </div>
 
             {/* Enhanced Step Indicators */}
-            <div className="grid grid-cols-6 gap-4">
+            {/* <div className="grid grid-cols-6 gap-4"> */}
+            <div className="flex flex-wrap justify-center gap-4">
                 {steps.map((step, index) => (
                     <div
                         key={step.id}

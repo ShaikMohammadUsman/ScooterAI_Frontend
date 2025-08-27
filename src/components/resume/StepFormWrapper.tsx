@@ -35,9 +35,9 @@ import {
     ContactInformationForm,
     SalaryExpectationsForm,
     WorkHistoryForm,
-    SalesContextForm,
-    RoleProcessExposureForm,
-    ToolsPlatformsForm,
+    // SalesContextForm,
+    // RoleProcessExposureForm,
+    // ToolsPlatformsForm,
     CandidateSummaryForm
 } from "@/components/resume";
 
@@ -127,36 +127,36 @@ export default function StepFormWrapper({
             />,
             completed: false
         },
-        {
-            id: "sales-context",
-            title: "Sales Context",
-            subtitle: "Your sales expertise",
-            icon: <TrendingUp className="w-5 h-5" />,
-            component: <SalesContextForm profile={profile} onArrayChange={onArrayChange} />,
-            completed: false
-        },
-        {
-            id: "role-process",
-            title: "Role & Process",
-            subtitle: "Your sales methodology",
-            icon: <Target className="w-5 h-5" />,
-            component: (
-                <RoleProcessExposureForm
-                    profile={profile}
-                    onFieldChange={onFieldChange}
-                    onArrayChange={onArrayChange}
-                />
-            ),
-            completed: false
-        },
-        {
-            id: "tools",
-            title: "Tools & Platforms",
-            subtitle: "Your tech stack",
-            icon: <Settings className="w-5 h-5" />,
-            component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
-            completed: false
-        }
+        // {
+        //     id: "sales-context",
+        //     title: "Sales Context",
+        //     subtitle: "Your sales expertise",
+        //     icon: <TrendingUp className="w-5 h-5" />,
+        //     component: <SalesContextForm profile={profile} onArrayChange={onArrayChange} />,
+        //     completed: false
+        // },
+        // {
+        //     id: "role-process",
+        //     title: "Role & Process",
+        //     subtitle: "Your sales methodology",
+        //     icon: <Target className="w-5 h-5" />,
+        //     component: (
+        //         <RoleProcessExposureForm
+        //             profile={profile}
+        //             onFieldChange={onFieldChange}
+        //             onArrayChange={onArrayChange}
+        //         />
+        //     ),
+        //     completed: false
+        // },
+        // {
+        //     id: "tools",
+        //     title: "Tools & Platforms",
+        //     subtitle: "Your tech stack",
+        //     icon: <Settings className="w-5 h-5" />,
+        //     component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
+        //     completed: false
+        // }
     ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, parsedUserName, onSummaryGenerated, onSummarySaved, contactError, salaryError, workError, workInvalidIndex]);
 
     // Move salaryError and salaryStepIndex below steps definition
@@ -217,17 +217,17 @@ export default function StepFormWrapper({
                 case "summary":
                     isCompleted = true; // Optional step - always considered complete
                     break;
-                case "sales-context":
-                    isCompleted = !!(profile?.sales_context?.sales_type?.length > 0 ||
-                        profile?.sales_context?.sales_motion?.length > 0);
-                    break;
-                case "role-process":
-                    isCompleted = !!(profile?.role_process_exposure?.sales_role_type ||
-                        profile?.role_process_exposure?.position_level);
-                    break;
-                case "tools":
-                    isCompleted = true; // Optional step
-                    break;
+                // case "sales-context":
+                //     isCompleted = !!(profile?.sales_context?.sales_type?.length > 0 ||
+                //         profile?.sales_context?.sales_motion?.length > 0);
+                //     break;
+                // case "role-process":
+                //     isCompleted = !!(profile?.role_process_exposure?.sales_role_type ||
+                //         profile?.role_process_exposure?.position_level);
+                //     break;
+                // case "tools":
+                //     isCompleted = true; // Optional step
+                //     break;
             }
 
             if (isCompleted) {
