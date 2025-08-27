@@ -531,18 +531,17 @@ export default function VoiceInterviewPage() {
                 await submitAnswer();
             }
 
-            // Submit current progress and audio
+            // Complete the interview in-flow (no redirect)
             const profile_id = localStorage.getItem('scooterUserId');
             if (profile_id && qaPairs.length > 0) {
                 await evaluateInterviewResults(qaPairs);
             } else if (profile_id) {
                 // Upload proctoring logs even if no Q&A pairs
                 await uploadAudioProctoringLogs(profile_id);
+                // Show results state even if minimal data
+                setShowResults(true);
+                setProctoringActive(false);
             }
-
-            // Deactivate proctoring and navigate
-            setProctoringActive(false);
-            router.push("/");
         } catch (error) {
             console.error("Error during leave process:", error);
             setError("Failed to save your progress. Please try again.");
