@@ -35,6 +35,7 @@ export default function ReportsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<any>(null);
     const [jobDetails, setJobDetails] = useState<any>(null);
+    const [showMore, setShowMore] = useState<string | null>(null);
 
     // UI states
     const [search, setSearch] = useState('');
@@ -238,15 +239,15 @@ export default function ReportsPage() {
                             {jobDetails?.title || 'Candidate Shortlist'}
                         </h1>
                         {jobDetails?.description && (
-                            <p className="text-base text-gray-600 max-w-4xl mb-4">{jobDetails.description}</p>
+                            <p className="text-base text-gray-600 max-w-4xl mb-4">{jobDetails.description.trim().slice(0, 1).toUpperCase() + jobDetails.description.trim().slice(1)}</p>
                         )}
 
                         {/* Role Context Section */}
-                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 max-w-4xl">
+                        <div className="bg-blue-100 rounded-lg border border-gray-200 p-4 max-w-4xl">
                             <div className="flex items-start gap-3">
                                 <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
                                 <div>
-                                    <h3 className="font-semibold text-blue-600 mb-2">• Role Context</h3>
+                                    <h3 className="font-semibold text-blue-600 mb-2">Role Context</h3>
                                     <p className="text-gray-700 text-sm leading-relaxed">
                                         Looking for experienced sales professionals to drive SME acquisition in the AMER market.
                                         Candidates should have full-cycle sales experience, preferably in B2B SaaS or fintech environments.
@@ -280,9 +281,11 @@ export default function ReportsPage() {
                             variant={activeFilter === 'all' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setActiveFilter('all')}
-                            className={activeFilter === 'all'
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            className={
+                                (activeFilter === 'all'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ) + ' p-5 text-[0.8em] font-semibold'
                             }
                         >
                             All Candidates
@@ -294,9 +297,11 @@ export default function ReportsPage() {
                             variant={activeFilter === 'top' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setActiveFilter('top')}
-                            className={activeFilter === 'top'
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            className={
+                                (activeFilter === 'top'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-5 text-[0.8em] font-semibold'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ) + ' p-5 text-[0.8em] font-semibold'
                             }
                         >
                             Top candidates
@@ -308,9 +313,11 @@ export default function ReportsPage() {
                             variant={activeFilter === 'solid' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setActiveFilter('solid')}
-                            className={activeFilter === 'solid'
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            className={
+                                (activeFilter === 'solid'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-5 text-[0.8em] font-semibold'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ) + ' p-5 text-[0.8em] font-semibold'
                             }
                         >
                             Solid performers
@@ -322,9 +329,11 @@ export default function ReportsPage() {
                             variant={activeFilter === 'dev' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setActiveFilter('dev')}
-                            className={activeFilter === 'dev'
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            className={
+                                (activeFilter === 'dev'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-5 text-[0.8em] font-semibold'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ) + ' p-5 text-[0.8em] font-semibold'
                             }
                         >
                             Development candidates
@@ -336,9 +345,11 @@ export default function ReportsPage() {
                             variant={activeFilter === 'more' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setActiveFilter('more')}
-                            className={activeFilter === 'more'
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            className={
+                                (activeFilter === 'more'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-5 text-[0.8em] font-semibold'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ) + ' p-5 text-[0.8em] font-semibold'
                             }
                         >
                             More evaluation needed
@@ -350,9 +361,11 @@ export default function ReportsPage() {
                             variant={activeFilter === 'training' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setActiveFilter('training')}
-                            className={activeFilter === 'training'
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            className={
+                                (activeFilter === 'training'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-5 text-[0.8em] font-semibold'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ) + ' p-5 text-[0.8em] font-semibold'
                             }
                         >
                             Training investment required
@@ -387,7 +400,7 @@ export default function ReportsPage() {
 
                         return (
                             <Card key={c.profile_id} className="shadow-sm border border-gray-200 py-2">
-                                <CardContent className="p-5">
+                                <CardContent className="p-5 text-[0.8em] font-semibold">
                                     <div className="flex items-start justify-between mb-2">
                                         <h3 className="text-lg font-semibold text-gray-900">{c.basic_information?.full_name || 'Unknown Candidate'}</h3>
                                         <Badge
@@ -412,7 +425,21 @@ export default function ReportsPage() {
 
                                     <div className="mb-4">
                                         <p className="text-sm font-semibold text-gray-900 mb-2">Professional Persona</p>
-                                        <p className="text-sm text-gray-700 leading-relaxed">{c.short_summary || '—'}</p>
+                                        <div className='max-h-64 overflow-y-auto scrollbar-thin '>
+                                            {
+                                                showMore && showMore === c.profile_id ? (
+                                                    <div>
+                                                        <p className="text-sm text-gray-700 leading-relaxed">{c.short_summary}</p>
+                                                        <span className="text-sm text-gray-700 leading-relaxed font-bold cursor-pointer" onClick={() => setShowMore(null)}>see less</span>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <p className="text-sm text-gray-700 leading-relaxed">{c.short_summary.slice(0, 100) + '...'}</p>
+                                                        <span className="text-sm text-gray-700 leading-relaxed font-bold cursor-pointer" onClick={() => setShowMore(c.profile_id)}>see more</span>
+                                                    </div>
+                                                )
+                                            }
+                                        </div>
                                     </div>
 
                                     {/* Quick metrics */}
@@ -555,6 +582,8 @@ export default function ReportsPage() {
                     </div>
                 )}
             </div>
+            {/* Bottom Half Blurry Overlay */}
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 h-[50vh] backdrop-blur-md bg-white/40 z-50" />
         </div>
     );
 }
