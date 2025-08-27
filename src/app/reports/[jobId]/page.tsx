@@ -50,14 +50,14 @@ export default function ReportsPage() {
 
     // Lock scrolling when privacy mode is enabled
     useEffect(() => {
-        if (privacyMode) {
-            const originalOverflow = document.body.style.overflow;
-            document.body.style.overflow = 'hidden';
-            return () => {
-                document.body.style.overflow = originalOverflow;
-            };
-        }
-        return;
+        // if (privacyMode) {
+        //     const originalOverflow = document.body.style.overflow;
+        //     document.body.style.overflow = 'hidden';
+        //     return () => {
+        //         document.body.style.overflow = originalOverflow;
+        //     };
+        // }
+        // return;
     }, [privacyMode]);
 
     const fetchCandidates = async () => {
@@ -235,8 +235,10 @@ export default function ReportsPage() {
         training: categorized.training.length,
     };
 
+    const contentBlurClass = privacyMode ? "pointer-events-none select-none blur-[3px] md:blur-[6px]" : "";
+
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white" onContextMenu={(e) => e.preventDefault()}>
             {/* Header */}
             <div className="bg-white border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -414,6 +416,7 @@ export default function ReportsPage() {
                         return (
                             <Card key={c.profile_id} className="shadow-sm border border-gray-200 py-2">
                                 <CardContent className="p-5 text-[0.8em] font-semibold">
+                                    {/* Heading (kept visible) */}
                                     <div className="flex items-start justify-between mb-2">
                                         <h3 className="text-lg font-semibold text-gray-900">{c.basic_information?.full_name || 'Unknown Candidate'}</h3>
                                         <Badge
@@ -423,10 +426,10 @@ export default function ReportsPage() {
                                             {categoryBadge.text}
                                         </Badge>
                                     </div>
-
-                                    <div className="mb-4">
+                                    {/* Blurred, non-interactive content */}
+                                    <div className={"mb-4"}>
                                         <span className="text-sm text-gray-600">Expected CTC: </span>
-                                        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
+                                        <Badge variant="outline" className={"text-xs bg-gray-50 text-gray-700 border-gray-200" + contentBlurClass}>
                                             {c.basic_information?.expected_ctc
                                                 ? (typeof c.basic_information.expected_ctc === 'object'
                                                     ? `${c.basic_information.expected_ctc.value / 100000} LPA`
@@ -435,10 +438,9 @@ export default function ReportsPage() {
                                             }
                                         </Badge>
                                     </div>
-
-                                    <div className="mb-4">
+                                    <div className={"mb-4 "}>
                                         <p className="text-sm font-semibold text-gray-900 mb-2">Professional Persona</p>
-                                        <div className='max-h-64 overflow-y-auto scrollbar-thin '>
+                                        <div className={'max-h-64 overflow-y-auto scrollbar-thin ' + contentBlurClass}>
                                             {
                                                 showMore && showMore === c.profile_id ? (
                                                     <div>
@@ -454,10 +456,9 @@ export default function ReportsPage() {
                                             }
                                         </div>
                                     </div>
-
                                     {/* Quick metrics */}
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        <Badge variant="outline" className="inline-flex items-center gap-1 border-emerald-200 text-emerald-700 bg-emerald-50">
+                                    <div className={"flex flex-wrap gap-2 mb-4 "}>
+                                        <Badge variant="outline" className={"inline-flex items-center gap-1 border-emerald-200 text-emerald-700 bg-emerald-50"}>
                                             <Sparkles className="h-3.5 w-3.5" /> {strengths.length} strengths
                                         </Badge>
                                         <Badge variant="outline" className="inline-flex items-center gap-1 border-amber-200 text-amber-700 bg-amber-50">
@@ -479,17 +480,18 @@ export default function ReportsPage() {
                                             </Badge>
                                         )}
                                     </div>
-
-                                    <Strengths c={c} />
-                                    <WatchPoints c={c} />
+                                    <div className={""}>
+                                        <Strengths c={c} />
+                                        <WatchPoints c={c} />
+                                    </div>
 
                                     {/* Video Interview Section */}
-                                    <div className="mt-4">
+                                    <div className={"mt-4 "}>
                                         <p className="text-sm font-medium text-gray-800 flex items-center gap-2 mb-2">
                                             <VideoIcon className="h-4 w-4 text-gray-600" />
                                             Video Interview
                                         </p>
-                                        <div className="mt-2">
+                                        <div className={"mt-2" + contentBlurClass}>
                                             {c.interview_status?.video_interview_url ? (
                                                 <div className="relative rounded-md overflow-hidden border border-gray-200">
                                                     <video
@@ -530,12 +532,12 @@ export default function ReportsPage() {
                                     </div>
 
                                     {/* Audio Interview Section */}
-                                    <div className="mt-4">
+                                    <div className={"mt-4 "}>
                                         <p className="text-sm font-medium text-gray-800 flex items-center gap-2 mb-2">
                                             <MicIcon className="h-4 w-4 text-gray-600" />
                                             Audio Interview
                                         </p>
-                                        <div className="mt-2">
+                                        <div className={"mt-2" + contentBlurClass}>
                                             {c.interview_status?.audio_interview_url ? (
                                                 <div className="relative rounded-md overflow-hidden border border-gray-200">
                                                     <audio
@@ -595,17 +597,7 @@ export default function ReportsPage() {
                     </div>
                 )}
             </div>
-            {/* Privacy Overlay: heavier blur at bottom, lighter towards top */}
-            {privacyMode && (
-                <div className="pointer-events-none fixed inset-0 z-50">
-                    {/* Light blur across whole screen */}
-                    <div className="absolute inset-0 backdrop-blur-[2px]" />
-                    {/* Stronger blur from bottom upwards (3/4 height) */}
-                    <div className="absolute inset-x-0 bottom-0 h-3/4 backdrop-blur-[6px]" />
-                    {/* Gradient tint to emphasize density bottom -> top */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-white/30 to-transparent" />
-                </div>
-            )}
+            {/* Removed full-screen privacy overlay; blur is applied to card content only */}
         </div>
     );
 }
