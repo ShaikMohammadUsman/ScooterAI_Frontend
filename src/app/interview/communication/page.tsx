@@ -40,8 +40,42 @@ import AISpeakingAnimation from "@/components/interview/AISpeakingAnimation";
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
 const SPEECH_REGION = process.env.NEXT_PUBLIC_AZURE_REGION;
+// Dev/preview flag to bypass verification without removing functionality
+const BYPASS_VIDEO_VERIFICATION = process?.env?.NEXT_PUBLIC_BYPASS_VIDEO_VERIFICATION === 'true';
 
+// Utility function to get the best supported video format
+const getBestSupportedVideoFormat = () => {
+    // Priority order:
+    // 1) MP4 H.264 High/Main/Baseline + AAC-LC
+    // 2) Generic MP4 fallbacks
+    // 3) WebM H.264/Opus, VP9/Opus, AV1/Opus, generic WebM
+    const formats = [
+        // MP4 preferred variants (video+audio)
+        { mimeType: 'video/mp4;codecs=h264,aac', fileExtension: 'mp4', description: 'MP4 H.264/AAC' },
+        { mimeType: 'video/mp4;codecs="avc1.64001F, mp4a.40.2"', fileExtension: 'mp4', description: 'MP4 H.264 High + AAC-LC' },
+        { mimeType: 'video/mp4;codecs="avc1.4D401E, mp4a.40.2"', fileExtension: 'mp4', description: 'MP4 H.264 Main + AAC-LC' },
+        { mimeType: 'video/mp4;codecs="avc1.42E01E, mp4a.40.2"', fileExtension: 'mp4', description: 'MP4 H.264 Baseline + AAC-LC' },
+        // Generic MP4 fallbacks (let browser choose profiles)
+        { mimeType: 'video/mp4;codecs=avc1', fileExtension: 'mp4', description: 'MP4 H.264 (unspecified profile), audio decided by UA' },
+        { mimeType: 'video/mp4', fileExtension: 'mp4', description: 'MP4 (container only, codecs decided by UA)' },
+        // WebM variants
+        { mimeType: 'video/webm;codecs=h264,opus', fileExtension: 'webm', description: 'WebM H.264/Opus' },
+        { mimeType: 'video/webm;codecs=vp9,opus', fileExtension: 'webm', description: 'WebM VP9/Opus' },
+        { mimeType: 'video/webm;codecs=av1,opus', fileExtension: 'webm', description: 'WebM AV1/Opus' },
+        { mimeType: 'video/webm', fileExtension: 'webm', description: 'WebM (default)' }
+    ];
 
+    for (const format of formats) {
+        if (MediaRecorder.isTypeSupported(format.mimeType)) {
+            console.log(`Using video format: ${format.description}`);
+            return format;
+        }
+    }
+
+    // Fallback to default WebM if nothing else is supported
+    console.warn('No preferred video formats supported, using default WebM');
+    return { mimeType: 'video/webm', fileExtension: 'webm', description: 'WebM (default)' };
+};
 
 function CommunicationInterview() {
     const router = useRouter();
@@ -87,7 +121,7 @@ function CommunicationInterview() {
             details
         };
         setInterviewEvents(prev => [...prev, newEvent]);
-        console.log(`Video Interview Event: ${event}`, newEvent);
+        // console.log(`Video Interview Event: ${event}`, newEvent);
     };
 
     const recognizerRef = useRef<any>(null);
@@ -95,6 +129,7 @@ function CommunicationInterview() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const videoStreamRef = useRef<MediaStream | null>(null);
+    const recordingFormatRef = useRef<{ fileExtension: string; mimeType: string }>({ fileExtension: 'mp4', mimeType: 'video/mp4;codecs=h264,aac' });
 
     // Verification states
     const [showVerification, setShowVerification] = useState(false);
@@ -138,10 +173,19 @@ function CommunicationInterview() {
     // const { isVideoOn, toggleVideo } = useMediaStream();
     const [showVideo, setShowVideo] = useState(true);
 
-
-
-    // Check for verification parameter on mount
+    // Check for verification parameter on mount (with optional bypass)
     useEffect(() => {
+        // If bypass flag is enabled, set a dummy verified user and skip verification UI
+        if (BYPASS_VIDEO_VERIFICATION) {
+            const userId = localStorage.getItem('scooterUserId');
+            setVerifiedUser({ user_id: userId || '', full_name: 'Developer', resume_status: true });
+            setShowVerification(false);
+            setShowUnauthorized(false);
+            // Trigger dark theme transition for consistency
+            setTimeout(() => setIsDarkTheme(true), 100);
+            return;
+        }
+
         const verifyCode = searchParams.get('verify');
 
         if (!verifyCode) {
@@ -345,9 +389,15 @@ function CommunicationInterview() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoStreamRef.current = stream;
 
+            // Get the best supported video format
+            const format = getBestSupportedVideoFormat();
+
             const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'video/webm;codecs=vp9,opus'
+                mimeType: format.mimeType
             });
+
+            // Store format info in ref for later use
+            recordingFormatRef.current = { fileExtension: format.fileExtension, mimeType: format.mimeType };
 
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
@@ -366,14 +416,17 @@ function CommunicationInterview() {
     };
 
     // Stop video recording
-    const stopRecording = async (): Promise<Blob> => {
+    const stopRecording = async (): Promise<{ blob: Blob; fileExtension: string; mimeType: string }> => {
         return new Promise((resolve) => {
             if (mediaRecorderRef.current && isRecording) {
                 mediaRecorderRef.current.onstop = () => {
+                    const { fileExtension, mimeType } = recordingFormatRef.current;
+
                     const blob = new Blob(recordedChunksRef.current, {
-                        type: 'video/webm'
+                        type: mimeType
                     });
-                    resolve(blob);
+
+                    resolve({ blob, fileExtension, mimeType });
                 };
                 mediaRecorderRef.current.stop();
                 setIsRecording(false);
@@ -645,7 +698,7 @@ function CommunicationInterview() {
                 }, 900000); // 15 minutes timeout
 
                 // Stop recording and get final video
-                const videoBlob = await stopRecording();
+                const { blob, fileExtension, mimeType } = await stopRecording();
                 const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
                 if (userId) {
@@ -658,8 +711,8 @@ function CommunicationInterview() {
                         addInterviewEvent('video_upload_started', { timestamp: new Date() });
 
                         await uploadInterviewVideo({
-                            file: new File([videoBlob], `interview_${Date.now()}.webm`, {
-                                type: 'video/webm;codecs=vp9,opus'
+                            file: new File([blob], `interview_${Date.now()}.${fileExtension}`, {
+                                type: mimeType
                             }),
                             user_id: userId,
                             onProgress: (progress) => {
@@ -814,7 +867,7 @@ function CommunicationInterview() {
             }
 
             // Stop recording
-            const videoBlob = await stopRecording();
+            const { blob, fileExtension, mimeType } = await stopRecording();
             const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
             if (userId) {
@@ -827,8 +880,8 @@ function CommunicationInterview() {
                     addInterviewEvent('early_video_upload_started', { timestamp: new Date() });
 
                     await uploadInterviewVideo({
-                        file: new File([videoBlob], `interview_${Date.now()}.webm`, {
-                            type: 'video/webm;codecs=vp9,opus'
+                        file: new File([blob], `interview_${Date.now()}.${fileExtension}`, {
+                            type: mimeType
                         }),
                         user_id: userId
                     });
