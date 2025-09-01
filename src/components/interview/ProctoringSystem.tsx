@@ -4,7 +4,7 @@ import { Eye, EyeOff, AlertTriangle, X, Maximize, Minimize } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
+// import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ProctoringSystemProps {
@@ -170,11 +170,11 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
             setActivityLog(prev => [...prev.slice(-50), logEntry]); // Keep last 50 entries
 
             // Show warning toast
-            toast({
-                title: severity === 'critical' ? "Proctoring Alert" : "Proctoring Warning",
-                description: message,
-                variant: severity === 'critical' ? "destructive" : "default",
-            });
+            // toast({
+            //     title: severity === 'critical' ? "Proctoring Alert" : "Proctoring Warning",
+            //     description: message,
+            //     variant: severity === 'critical' ? "destructive" : "default",
+            // });
 
             // Show warning modal for critical violations
             if (severity === 'critical') {
@@ -554,11 +554,11 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
                     }, 1500);
                 }
 
-                toast({
-                    title: "Proctoring Active",
-                    description: "Your interview session is now being monitored. Please stay focused and avoid switching tabs or windows.",
-                    variant: "default",
-                });
+                // toast({
+                //     title: "Proctoring Active",
+                //     description: "Your interview session is now being monitored. Please stay focused and avoid switching tabs or windows.",
+                //     variant: "default",
+                // });
             }
         }, [isActive, isWatching, isFullscreen]);
 
