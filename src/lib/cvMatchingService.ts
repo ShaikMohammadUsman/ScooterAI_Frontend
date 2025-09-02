@@ -69,7 +69,7 @@ export async function uploadResumesZip(params: {
 
 export async function listReports(): Promise<ReportsListResponse> {
     console.log(`${CLIENT_API_BASE}/list-reports`)
-  const res = await axios.get(`${CLIENT_API_BASE}/list-reports`);
+  const res = await axios.get(`${CLIENT_API_BASE}/list-reports/`);
   return res.data as ReportsListResponse;
 }
 
