@@ -11,22 +11,66 @@ import {
     Clock,
     XCircle
 } from 'lucide-react';
+import { Candidate } from '@/lib/adminService';
 
 interface InterviewStatusTimelineProps {
-    candidate: {
-        interview_status: {
-            video_interview_attended: boolean;
-            audio_interview_attended: boolean;
-            video_interview_url: string | null;
-            video_email_sent?: boolean; // Make optional
-        };
-        application_status: boolean | string;
-        final_shortlist: boolean;
-        call_for_interview: boolean;
-    };
+    candidate: Candidate;
 }
 
 export default function InterviewStatusTimeline({ candidate }: InterviewStatusTimelineProps) {
+
+    // Get timestamp for each step
+    const getStepTimestamp = (step: number) => {
+        switch (step) {
+            case 1: // Profile created
+                return candidate.profile_created_at;
+            case 2: // Audio interview attempted
+                return candidate.audio_interview_details?.created_at;
+            case 3: // Marked for sending video link
+                return candidate.application_status_updated_at; // When status was updated to SendVideoLink
+            case 4: // Video link sent
+                return candidate.interview_status.video_email_sent ? candidate.application_status_updated_at : null;
+            case 5: // Video attempted
+                return candidate.interview_details?.created_at;
+            case 6: // Marked for company review
+                return candidate.final_shortlist ? candidate.application_status_updated_at : null; // When final_shortlist was set
+            case 7: // Company selected
+                return candidate.call_for_interview ? candidate.application_status_updated_at : null; // When call_for_interview was set
+            default:
+                return null;
+        }
+    };
+
+    // Format timestamp for display
+    const formatTimestamp = (timestamp: string | null | undefined) => {
+        if (!timestamp) return null;
+
+        try {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+            if (diffInHours < 24) {
+                // Show time if within 24 hours
+                return date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            } else if (diffInHours < 168) { // 7 days
+                // Show day name if within a week
+                return date.toLocaleDateString('en-US', { weekday: 'short' });
+            } else {
+                // Show date for older entries
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+        } catch (error) {
+            return null;
+        }
+    };
 
     // Individual step completion tracking
     const getStepCompletionStatus = (step: number) => {
@@ -115,14 +159,16 @@ export default function InterviewStatusTimeline({ candidate }: InterviewStatusTi
                         circle: 'bg-red-600 text-white',
                         icon: 'text-white',
                         label: 'text-red-800 font-medium',
-                        border: 'border-red-200'
+                        border: 'border-red-200',
+                        timestamp: 'text-red-600'
                     };
                 }
                 return {
                     circle: 'bg-green-600 text-white',
                     icon: 'text-white',
                     label: 'text-green-800 font-medium',
-                    border: 'border-green-200'
+                    border: 'border-green-200',
+                    timestamp: 'text-green-600'
                 };
             case 'pending':
                 if (isCurrent) {
@@ -130,14 +176,16 @@ export default function InterviewStatusTimeline({ candidate }: InterviewStatusTi
                         circle: 'bg-yellow-500 text-white',
                         icon: 'text-white',
                         label: 'text-yellow-800 font-medium',
-                        border: 'border-yellow-200'
+                        border: 'border-yellow-200',
+                        timestamp: 'text-yellow-600'
                     };
                 } else {
                     return {
                         circle: 'bg-gray-200 text-gray-600',
                         icon: 'text-gray-600',
                         label: 'text-gray-500',
-                        border: 'border-gray-200'
+                        border: 'border-gray-200',
+                        timestamp: 'text-gray-400'
                     };
                 }
             default:
@@ -145,7 +193,8 @@ export default function InterviewStatusTimeline({ candidate }: InterviewStatusTi
                     circle: 'bg-gray-200 text-gray-600',
                     icon: 'text-gray-600',
                     label: 'text-gray-500',
-                    border: 'border-gray-200'
+                    border: 'border-gray-200',
+                    timestamp: 'text-gray-400'
                 };
         }
     };
@@ -171,6 +220,10 @@ export default function InterviewStatusTimeline({ candidate }: InterviewStatusTi
                         const showNudgeForAudio = candidate.application_status === 'NudgeForAudio' && step === 2;
                         const showNudgeForVideo = candidate.application_status === 'NudgeForVideo' && step === 4;
                         const showNudge = showNudgeForAudio || showNudgeForVideo;
+
+                        // Get timestamp for this step
+                        const timestamp = getStepTimestamp(step);
+                        const formattedTimestamp = formatTimestamp(timestamp);
 
                         return (
                             <div key={step} className="flex flex-col items-center relative flex-1 min-w-0">
@@ -212,6 +265,13 @@ export default function InterviewStatusTimeline({ candidate }: InterviewStatusTi
                                     <p className={`text-xs sm:text-sm leading-tight ${colors.label} break-words font-medium`}>
                                         {getStepLabel(step)}
                                     </p>
+
+                                    {/* Timestamp */}
+                                    {formattedTimestamp && (
+                                        <p className={`text-xs ${colors.timestamp} mt-1 font-mono`}>
+                                            {formattedTimestamp}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         );
