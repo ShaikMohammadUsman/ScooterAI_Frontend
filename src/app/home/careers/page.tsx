@@ -108,7 +108,12 @@ function CareersPage() {
                     {jobs.map((job) => (
                         <Card key={job.job_id} className="bg-card shadow-lg hover:shadow-xl transition-shadow">
                             <CardHeader>
-                                <CardTitle className="text-xl">{job.title}</CardTitle>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    {job.title}
+                                    {job?.is_active === false && (
+                                        <Badge variant="destructive">Inactive</Badge>
+                                    )}
+                                </CardTitle>
                                 <p className="text-sm text-muted-foreground">
                                     {job.company.company_name} • {job.company.address}
                                 </p>
@@ -126,8 +131,10 @@ function CareersPage() {
                                     <Button
                                         className="my-2 px-8 py-2 text-base font-semibold"
                                         onClick={() => router.push(`/resume?role=${encodeURIComponent(job.title)}&job_id=${job.job_id}`)}
+                                        disabled={job.is_active === false}
+                                        variant={job.is_active === false ? 'secondary' : 'default'}
                                     >
-                                        Apply Now
+                                        {job.is_active === false ? 'Inactive' : 'Apply Now'}
                                     </Button>
                                     <p className="text-sm text-muted-foreground">
                                         Posted {new Date(job.created_at).toLocaleDateString()}

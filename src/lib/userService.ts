@@ -17,6 +17,7 @@ export interface Job {
     badges: string[];
     created_at: string;
     company: Company;
+    is_active?: boolean;
 }
 
 export interface PaginationInfo {
