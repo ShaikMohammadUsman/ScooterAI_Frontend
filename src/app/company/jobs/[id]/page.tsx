@@ -24,6 +24,8 @@ import ShortlistModal from '@/components/ShortlistModal';
 import InterviewStatusTimeline from '@/components/InterviewStatusTimeline';
 import ResetVideoInterviewModal from '@/components/ResetVideoInterviewModal';
 import ProctoringDetailsDialog from '@/components/ProctoringDetailsDialog';
+import InterviewScoreCompact from '@/components/candidates/InterviewScoreCompact';
+import InterviewScoreCard from '@/components/candidates/InterviewScoreCard';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -930,14 +932,20 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                     {candidate?.career_overview?.years_sales_experience} years sales
                                                 </span>
                                             </div>
+                                            <div className='flex flex-row items-center justify-between gap-2 mt-4'>
+                                                {/* Interview Process Status */}
+                                                <div className="relative z-[50]">
+                                                    <InterviewStatusTimeline candidate={candidate} />
+                                                </div>
 
-                                            {/* Interview Process Status */}
-                                            <div className="mt-4">
-                                                <InterviewStatusTimeline candidate={candidate} />
+                                                {/* Interview Scores */}
+                                                <div className="">
+                                                    <InterviewScoreCompact candidate={candidate} />
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="w-full sm:w-auto flex flex-row items-center gap-2 flex-shrink-0">
-                                            {candidate?.interview_status?.audio_interview_passed && (
+                                            {/* {candidate?.interview_status?.audio_interview_passed && (
                                                 <span className="flex items-center gap-2 p-2 text-green-600 bg-green-50 rounded-full">
                                                     <FaMicrophone /> <FaCheck />
                                                 </span>
@@ -946,7 +954,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 <span className="flex items-center gap-2 p-2 text-blue-600 bg-blue-50 rounded-full">
                                                     <FaVideo /> <FaCheck />
                                                 </span>
-                                            )}
+                                            )} */}
 
                                             {candidate?.interview_status?.resume_url && (
                                                 <Button
@@ -1283,6 +1291,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 View Proctoring Details
                                             </Button>
                                         )}
+                                    </div>
+
+                                    {/* Interview Performance Scores */}
+                                    <div className="mt-8">
+                                        <InterviewScoreCard candidate={selectedCandidate} />
                                     </div>
 
                                     {/* Audio Interview Q&A */}
