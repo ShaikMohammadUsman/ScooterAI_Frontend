@@ -207,10 +207,10 @@ export default function InterviewStatusTimeline({ candidate }: InterviewStatusTi
             {/* Timeline Container */}
             <div className="relative">
                 {/* Horizontal Line */}
-                <div className="absolute top-6 sm:top-8 left-0 right-0 h-1 bg-gray-300 z-0"></div>
+                <div className="absolute top-6 sm:top-8 left-0 right-0 h-1 bg-gray-300"></div>
 
                 {/* Steps */}
-                <div className="relative z-10 flex justify-between items-start gap-2 sm:gap-4 lg:gap-6">
+                <div className="relative  flex justify-between items-start gap-2 sm:gap-4 lg:gap-6">
                     {[1, 2, 3, 4, 5, 6, 7].map((step) => {
                         const colors = getStepColors(step);
                         const completionStatus = getStepCompletionStatus(step);

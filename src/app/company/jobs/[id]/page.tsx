@@ -934,7 +934,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             </div>
                                             <div className='flex flex-row items-center justify-between gap-2 mt-4'>
                                                 {/* Interview Process Status */}
-                                                <div className="relative z-[50]">
+                                                <div className="">
                                                     <InterviewStatusTimeline candidate={candidate} />
                                                 </div>
 
