@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const CLIENT_API_BASE = "http://scooter-client.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+const CLIENT_API_BASE = "https://scooter-client.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
 export interface UploadResumesResponseOK {
   results: {
