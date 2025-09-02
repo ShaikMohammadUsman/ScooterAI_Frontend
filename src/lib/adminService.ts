@@ -607,7 +607,6 @@ export const getCompanyJobRoles = async (companyId: string): Promise<JobRolesRes
     }
 };
 
-
 // Search profiles
 export const searchProfiles = async (data: SearchProfileData, exact: boolean = false): Promise<SearchProfilesResponse> => {
     try {
@@ -745,7 +744,6 @@ export interface ContactsCsvFilters {
 // ---------------------------------------------------------------------------------------------
 // Job Description Generation (local service)
 
-
 export async function generateJobDescription(payload: Record<string, any>): Promise<string> {
     try {
         const response = await axios.post(`${BASE_URL}/generate-job-description/`, payload, {
@@ -794,6 +792,45 @@ export async function downloadContactsCsv(
         return response.data as Blob;
     } catch (error) {
         console.error('Error downloading contacts CSV:', error);
+        throw error;
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Job role status update
+
+export interface UpdateJobRoleStatusRequest {
+    job_id: string;
+    status: boolean;
+}
+
+export interface UpdateJobRoleStatusResponse {
+    status: boolean;
+    message: string;
+    job_id: string;
+    new_status: boolean;
+}
+
+export async function updateJobRoleStatus(
+    request: UpdateJobRoleStatusRequest
+): Promise<UpdateJobRoleStatusResponse> {
+    try {
+        const response = await fetch(`${BASE_URL}/job-role-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update job role status');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating job role status:', error);
         throw error;
     }
 }

@@ -54,6 +54,8 @@ import {
     ComposedChart,
     LabelList
 } from 'recharts';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { updateJobRoleStatus } from '@/lib/adminService';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -109,6 +111,7 @@ export default function DashboardPage() {
     const videoInviteConversionRate = useSelector(selectVideoInviteConversionRate);
     const videoCompletionConversionRate = useSelector(selectVideoCompletionConversionRate);
     const [showAddJob, setShowAddJob] = useState(false);
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     useEffect(() => {
         const companyId = localStorage.getItem('company_id');
@@ -194,6 +197,22 @@ export default function DashboardPage() {
         }, []).sort((a, b) => a.month.localeCompare(b.month));
 
         return monthlyData;
+    };
+
+    const handleUpdateStatus = async (jobId: string, nextStatus: boolean) => {
+        try {
+            setUpdatingId(jobId);
+            await updateJobRoleStatus({ job_id: jobId, status: nextStatus });
+            toast({ title: 'Status updated', description: `Job marked as ${nextStatus ? 'Active' : 'Inactive'}.` });
+            const companyId = localStorage.getItem('company_id');
+            if (companyId) {
+                dispatch(fetchJobRoles(companyId));
+            }
+        } catch (error: any) {
+            toast({ title: 'Failed to update status', description: 'Please try again.', variant: 'destructive' });
+        } finally {
+            setUpdatingId(null);
+        }
     };
 
     if (loading) {
@@ -446,10 +465,28 @@ export default function DashboardPage() {
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-4 text-center">
-                                                <Badge variant={job.is_active ? "default" : "destructive"}>
-                                                    {job.is_active ? 'Active' : 'Inactive'}
-                                                </Badge>
+                                                <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                    <Badge variant={job.is_active ? "default" : "destructive"}>
+                                                        {job.is_active ? 'Active' : 'Inactive'}
+                                                    </Badge>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button size="sm" variant="outline" disabled={updatingId === job._id}>
+                                                                {updatingId === job._id ? 'Updating...' : 'Set Status'}
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent className='bg-white' align="end">
+                                                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleUpdateStatus(job._id, true); }}>
+                                                                Mark Active
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleUpdateStatus(job._id, false); }}>
+                                                                Mark Inactive
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
                                             </td>
+
                                         </tr>
                                     );
                                 })}
