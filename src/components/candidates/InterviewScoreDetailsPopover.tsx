@@ -23,7 +23,7 @@ export default function InterviewScoreDetailsPopover({
     if (!isOpen || !position) return null;
 
     // Helper function to get score color
-    const getScoreColor = (score: number, maxScore: number = 100) => {
+    const getScoreColor = (score: number, maxScore: number = 5) => {
         const percentage = (score / maxScore) * 100;
         if (percentage >= 80) return 'text-green-600 bg-green-50';
         if (percentage >= 60) return 'text-yellow-600 bg-yellow-50';
@@ -31,7 +31,7 @@ export default function InterviewScoreDetailsPopover({
     };
 
     // Helper function to get score background color
-    const getScoreBgColor = (score: number, maxScore: number = 100) => {
+    const getScoreBgColor = (score: number, maxScore: number = 5) => {
         const percentage = (score / maxScore) * 100;
         if (percentage >= 80) return 'bg-green-500';
         if (percentage >= 60) return 'bg-yellow-500';
@@ -44,10 +44,10 @@ export default function InterviewScoreDetailsPopover({
 
         const evaluation = candidate?.interview_details?.communication_evaluation;
         return {
-            contentAndThought: evaluation?.content_and_thought.score,
-            verbalDelivery: evaluation?.verbal_delivery.score,
-            nonVerbal: evaluation?.non_verbal.score,
-            presenceAndAuthenticity: evaluation?.presence_and_authenticity.score,
+            contentAndThought: evaluation?.content_and_thought?.score,
+            verbalDelivery: evaluation?.verbal_delivery?.score,
+            nonVerbal: evaluation?.non_verbal?.score,
+            presenceAndAuthenticity: evaluation?.presence_and_authenticity?.score,
             overall: evaluation?.overall_score
         };
     };
@@ -81,7 +81,7 @@ export default function InterviewScoreDetailsPopover({
         }
 
         if (audioScores) {
-            totalScore += audioScores.averageScore * 0.4; // Audio has 40% weight
+            totalScore += (audioScores.averageScore / 20) * 0.4; // Audio has 40% weight, normalized to 5-point scale
             totalWeight += 0.4;
         }
 
@@ -130,7 +130,7 @@ export default function InterviewScoreDetailsPopover({
                                 <h3 className="text-sm font-bold text-gray-800">Overall Performance</h3>
                             </div>
                             <div className="text-2xl font-bold text-blue-600">
-                                {overallScore.toFixed(1)}/100
+                                {overallScore.toFixed(1)}/5
                             </div>
                         </div>
                     )}
@@ -193,9 +193,9 @@ export default function InterviewScoreDetailsPopover({
                                 </div>
                                 <div className="space-y-2">
                                     {[
-                                        { label: 'Average Score', score: audioScores.averageScore, max: 100 },
-                                        { label: 'Credibility', score: audioScores.credibilityScore, max: 100 },
-                                        { label: 'Communication', score: audioScores.communicationScore, max: 100 }
+                                        { label: 'Average Score', score: ((audioScores.averageScore || 0) / 20), max: 5 },
+                                        { label: 'Credibility', score: ((audioScores.credibilityScore || 0) / 20), max: 5 },
+                                        { label: 'Communication', score: ((audioScores.communicationScore || 0) / 20), max: 5 }
                                     ].map((item, index) => (
                                         <div key={index} className="space-y-1">
                                             <div className="flex justify-between items-center">
@@ -205,7 +205,7 @@ export default function InterviewScoreDetailsPopover({
                                                 </Badge>
                                             </div>
                                             <Progress
-                                                value={item.score}
+                                                value={(item.score / item.max) * 100}
                                                 className="h-1.5"
                                                 style={{
                                                     '--progress-background': getScoreBgColor(item?.score || 0, item.max)

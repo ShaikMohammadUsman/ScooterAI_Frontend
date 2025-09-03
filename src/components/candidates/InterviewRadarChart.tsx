@@ -221,7 +221,7 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
                     {audioScores && (
                         <div className="text-center">
                             <div className="text-lg font-bold text-green-600">
-                                {audioScores.averageScore.toFixed(1)}/100
+                                {((audioScores.averageScore / 100) * 5).toFixed(1)}/5
                             </div>
                             <div className="text-xs text-gray-600">Audio Overall</div>
                         </div>

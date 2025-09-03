@@ -44,7 +44,7 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
     }, [isPopoverOpen]);
 
     // Helper function to get score color
-    const getScoreColor = (score: number, maxScore: number = 100) => {
+    const getScoreColor = (score: number, maxScore: number = 5) => {
         const percentage = (score / maxScore) * 100;
         if (percentage >= 80) return 'bg-green-100 text-green-800 border-green-200';
         if (percentage >= 60) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -57,10 +57,10 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
 
         const evaluation = candidate.interview_details.communication_evaluation;
         return {
-            contentAndThought: evaluation?.content_and_thought.score,
-            verbalDelivery: evaluation?.verbal_delivery.score,
-            nonVerbal: evaluation?.non_verbal.score,
-            presenceAndAuthenticity: evaluation?.presence_and_authenticity.score,
+            contentAndThought: evaluation?.content_and_thought?.score,
+            verbalDelivery: evaluation?.verbal_delivery?.score,
+            nonVerbal: evaluation?.non_verbal?.score,
+            presenceAndAuthenticity: evaluation?.presence_and_authenticity?.score,
             overall: evaluation?.overall_score
         };
     };
@@ -94,7 +94,7 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
         }
 
         if (audioScores) {
-            totalScore += audioScores.averageScore * 0.4; // Audio has 40% weight
+            totalScore += (audioScores.averageScore / 20) * 0.4; // Audio has 40% weight, normalized to 5-point scale
             totalWeight += 0.4;
         }
 
@@ -137,7 +137,7 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
                     <div className="flex items-center gap-2">
                         <FaStar className="text-yellow-500 text-sm" />
                         <Badge className={`font-bold ${getScoreColor(overallScore)}`}>
-                            {overallScore.toFixed(1)}/100
+                            {overallScore.toFixed(1)}/5
                         </Badge>
                         <span className="text-xs text-gray-500">Overall</span>
                         <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">ⓘ</span>
@@ -158,8 +158,8 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
                     {audioScores && (
                         <div className="flex items-center gap-1">
                             <FaMicrophone className="text-green-600 text-xs" />
-                            <Badge className={`text-xs ${getScoreColor(audioScores.averageScore)}`}>
-                                {audioScores.averageScore.toFixed(1)}/100
+                            <Badge className={`text-xs ${getScoreColor(audioScores.averageScore / 20)}`}>
+                                {(audioScores.averageScore / 20).toFixed(1)}/5
                             </Badge>
                         </div>
                     )}
