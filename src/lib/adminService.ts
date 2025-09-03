@@ -257,6 +257,21 @@ export interface JobRole {
     moved_to_video_round_count: number;
 }
 
+export interface JobRoleWithTimeframe extends JobRole {
+    overall: {
+        total_candidates: number;
+        audio_attended: number;
+        video_attended: number;
+        moved_to_video_round: number;
+    };
+    timeframe: {
+        total_candidates: number;
+        audio_attended: number;
+        video_attended: number;
+        moved_to_video_round: number;
+    };
+}
+
 export interface CandidatesResponse {
     status: boolean;
     message: string;
@@ -487,6 +502,12 @@ export interface ResetVideoInterviewResponse {
     reset_reason?: string;
 }
 
+export interface JobRolesWithTimeframeResponse {
+    status: boolean;
+    message: string;
+    roles: JobRoleWithTimeframe[];
+}
+
 function getToken(): string {
     const companyDetails = localStorage.getItem('company_details');
     if (companyDetails) {
@@ -596,13 +617,56 @@ export const createJobRole = async (payload: JobRoleData): Promise<any> => {
     }
 };
 
-// Get list of jobs for a company
-export const getCompanyJobRoles = async (companyId: string): Promise<JobRolesResponse> => {
+// Get list of jobs for a company (old one)
+// export const getCompanyJobRoles = async (companyId: string): Promise<JobRolesResponse> => {
+//     try {
+//         const response = await axios.get(`${BASE_URL}/company-job-roles/${companyId}`);
+//         return response.data;
+//     } catch (error) {
+//         console.error('Error fetching company job roles:', error);
+//         throw error;
+//     }
+// };
+
+// Get company job roles with custom time range
+export const getCompanyJobRolesWithTimeRange = async (
+    companyId: string,
+    fromTime?: string,
+    toTime?: string
+): Promise<JobRolesWithTimeframeResponse> => {
     try {
-        const response = await axios.get(`${BASE_URL}/company-job-roles/${companyId}`);
+        let requestBody: any = {};
+        
+        // If both fromTime and toTime are provided
+        if (fromTime && toTime) {
+            requestBody = {
+                from_time: fromTime,
+                to_time: toTime
+            };
+        }
+        // If only fromTime is provided, use current time as end time
+        else if (fromTime && !toTime) {
+            const currentTime = new Date().toISOString();
+            requestBody = {
+                from_time: fromTime,
+                to_time: currentTime
+            };
+        }
+        // If only toTime is provided, this might be an edge case but handle it
+        else if (!fromTime && toTime) {
+            requestBody = {
+                to_time: toTime
+            };
+        }
+        // If neither is provided, send empty object
+        else {
+            requestBody = {};
+        }
+        
+        const response = await axios.post(`${BASE_URL}/ccompany-job-roles/${companyId}`, requestBody);
         return response.data;
     } catch (error) {
-        console.error('Error fetching company job roles:', error);
+        console.error('Error fetching company job roles with time range:', error);
         throw error;
     }
 };

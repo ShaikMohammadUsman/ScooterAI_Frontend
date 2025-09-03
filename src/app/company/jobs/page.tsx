@@ -7,38 +7,54 @@ import { AppDispatch } from '@/app/store';
 import { fetchJobRoles } from '@/features/jobRoles/jobRolesSlice';
 import {
     selectJobRoles,
+    selectJobRolesWithTimeframe,
     selectJobRolesLoading,
     selectJobRolesHasLoaded,
-    selectTotalCandidates,
-    selectTotalAudioAttended,
-    selectTotalVideoAttended,
-    selectTotalVideoInvites,
-    selectAudioConversionRate,
-    selectVideoInviteConversionRate,
-    selectVideoCompletionConversionRate
+    selectTotalCandidatesOverall,
+    selectTotalAudioAttendedOverall,
+    selectTotalVideoAttendedOverall,
+    selectTotalVideoInvitesOverall,
+    selectAudioConversionRateOverall,
+    selectVideoInviteConversionRateOverall,
+    selectVideoCompletionConversionRateOverall
 } from '@/features/jobRoles/selectors';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FaPlus } from 'react-icons/fa';
 import AddJobModal from '@/components/AddJobModal';
+import TimeframeFilter from '@/components/TimeframeFilter';
 import { Badge } from "@/components/ui/badge";
 
 
 export default function JobsPage() {
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
-    const jobRoles = useSelector(selectJobRoles);
+    const jobRoles = useSelector(selectJobRolesWithTimeframe);
     const loading = useSelector(selectJobRolesLoading);
     const hasLoaded = useSelector(selectJobRolesHasLoaded);
-    const totalCandidates = useSelector(selectTotalCandidates);
-    const totalAudioAttended = useSelector(selectTotalAudioAttended);
-    const totalVideoAttended = useSelector(selectTotalVideoAttended);
-    const totalMovedToVideo = useSelector(selectTotalVideoInvites);
-    const audioConversionRate = useSelector(selectAudioConversionRate);
-    const videoConversionRate = useSelector(selectVideoInviteConversionRate);
-    const overallConversionRate = useSelector(selectVideoCompletionConversionRate);
+    const totalCandidates = useSelector(selectTotalCandidatesOverall);
+    const totalAudioAttended = useSelector(selectTotalAudioAttendedOverall);
+    const totalVideoAttended = useSelector(selectTotalVideoAttendedOverall);
+    const totalMovedToVideo = useSelector(selectTotalVideoInvitesOverall);
+    const audioConversionRate = useSelector(selectAudioConversionRateOverall);
+    const videoConversionRate = useSelector(selectVideoInviteConversionRateOverall);
+    const overallConversionRate = useSelector(selectVideoCompletionConversionRateOverall);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddJob, setShowAddJob] = useState(false);
+
+    // Helper function to get data with timeframe-first logic
+    const getJobData = (job: any) => {
+        // Use timeframe data first, fall back to overall data if timeframe is null/undefined
+        const timeframeData = job.timeframe;
+        const overallData = job.overall;
+
+        return {
+            totalCandidates: timeframeData?.total_candidates ?? overallData?.total_candidates ?? 0,
+            audioAttended: timeframeData?.audio_attended ?? overallData?.audio_attended ?? 0,
+            videoAttended: timeframeData?.video_attended ?? overallData?.video_attended ?? 0,
+            movedToVideo: timeframeData?.moved_to_video_round ?? overallData?.moved_to_video_round ?? 0
+        };
+    };
 
     useEffect(() => {
         const companyId = localStorage.getItem('company_id');
@@ -86,6 +102,11 @@ export default function JobsPage() {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Timeframe Filter */}
+                <div className="mb-8">
+                    <TimeframeFilter companyId="6833e6384946844df0a22a2e" showOverallData={false} />
+                </div>
+
                 {/* Analytics Summary */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
                     <Card className="p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
@@ -144,9 +165,12 @@ export default function JobsPage() {
                 {/* Job List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredJobs.map((job) => {
-                        const audioRate = job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100).toFixed(1) : '0';
-                        const videoInviteRate = job.audio_attended_count > 0 ? ((job.moved_to_video_round_count / job.audio_attended_count) * 100).toFixed(1) : '0';
-                        const videoCompleteRate = job.moved_to_video_round_count > 0 ? ((job.video_attended_count / job.moved_to_video_round_count) * 100).toFixed(1) : '0';
+                        const jobData = getJobData(job);
+                        const { totalCandidates, audioAttended, videoAttended, movedToVideo } = jobData;
+
+                        const audioRate = totalCandidates > 0 ? ((audioAttended / totalCandidates) * 100).toFixed(1) : '0';
+                        const videoInviteRate = audioAttended > 0 ? ((movedToVideo / audioAttended) * 100).toFixed(1) : '0';
+                        const videoCompleteRate = movedToVideo > 0 ? ((videoAttended / movedToVideo) * 100).toFixed(1) : '0';
                         return (
                             <Card key={job._id} className="p-6">
                                 <div className="flex items-center justify-between mb-2">
@@ -172,19 +196,19 @@ export default function JobsPage() {
                                 <div className="grid grid-cols-2 gap-2 mt-4 mb-4 border-2 border-gray-200 rounded-lg p-2">
                                     <div className="flex flex-col items-center">
                                         <span className="text-xs text-gray-500">Candidates</span>
-                                        <span className="font-bold text-blue-700">{job.total_candidates}</span>
+                                        <span className="font-bold text-blue-700">{totalCandidates}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className="text-xs text-gray-500">Audio Attended</span>
-                                        <span className="font-bold text-green-700">{job.audio_attended_count}</span>
+                                        <span className="font-bold text-green-700">{audioAttended}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className="text-xs text-gray-500">Video Round Invites</span>
-                                        <span className="font-bold text-orange-700">{job.moved_to_video_round_count}</span>
+                                        <span className="font-bold text-orange-700">{movedToVideo}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className="text-xs text-gray-500">Video Attended</span>
-                                        <span className="font-bold text-purple-700">{job.video_attended_count}</span>
+                                        <span className="font-bold text-purple-700">{videoAttended}</span>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mb-2">

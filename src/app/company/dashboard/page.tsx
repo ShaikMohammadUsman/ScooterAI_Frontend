@@ -7,15 +7,16 @@ import { AppDispatch } from '@/app/store';
 import { fetchJobRoles } from '@/features/jobRoles/jobRolesSlice';
 import {
     selectJobRoles,
+    selectJobRolesWithTimeframe,
     selectJobRolesLoading,
     selectJobRolesHasLoaded,
-    selectTotalCandidates,
-    selectTotalAudioAttended,
-    selectTotalVideoAttended,
-    selectTotalVideoInvites,
-    selectAudioConversionRate,
-    selectVideoInviteConversionRate,
-    selectVideoCompletionConversionRate
+    selectTotalCandidatesOverall,
+    selectTotalAudioAttendedOverall,
+    selectTotalVideoAttendedOverall,
+    selectTotalVideoInvitesOverall,
+    selectAudioConversionRateOverall,
+    selectVideoInviteConversionRateOverall,
+    selectVideoCompletionConversionRateOverall
 } from '@/features/jobRoles/selectors';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ import {
     FaTable
 } from 'react-icons/fa';
 import AddJobModal from '@/components/AddJobModal';
+import TimeframeFilter from '@/components/TimeframeFilter';
 import {
     LineChart,
     Line,
@@ -100,18 +102,32 @@ const ConversionRateTooltip = ({ active, payload, label }: any) => {
 export default function DashboardPage() {
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
-    const jobRoles = useSelector(selectJobRoles);
+    const jobRoles = useSelector(selectJobRolesWithTimeframe);
     const loading = useSelector(selectJobRolesLoading);
     const hasLoaded = useSelector(selectJobRolesHasLoaded);
-    const totalCandidates = useSelector(selectTotalCandidates);
-    const totalAudioAttended = useSelector(selectTotalAudioAttended);
-    const totalVideoAttended = useSelector(selectTotalVideoAttended);
-    const totalVideoInvites = useSelector(selectTotalVideoInvites);
-    const audioConversionRate = useSelector(selectAudioConversionRate);
-    const videoInviteConversionRate = useSelector(selectVideoInviteConversionRate);
-    const videoCompletionConversionRate = useSelector(selectVideoCompletionConversionRate);
+    const totalCandidates = useSelector(selectTotalCandidatesOverall);
+    const totalAudioAttended = useSelector(selectTotalAudioAttendedOverall);
+    const totalVideoAttended = useSelector(selectTotalVideoAttendedOverall);
+    const totalVideoInvites = useSelector(selectTotalVideoInvitesOverall);
+    const audioConversionRate = useSelector(selectAudioConversionRateOverall);
+    const videoInviteConversionRate = useSelector(selectVideoInviteConversionRateOverall);
+    const videoCompletionConversionRate = useSelector(selectVideoCompletionConversionRateOverall);
     const [showAddJob, setShowAddJob] = useState(false);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+    // Helper function to get data with timeframe-first logic
+    const getJobData = (job: any) => {
+        // Use timeframe data first, fall back to overall data if timeframe is null/undefined
+        const timeframeData = job.timeframe;
+        const overallData = job.overall;
+
+        return {
+            totalCandidates: timeframeData?.total_candidates ?? overallData?.total_candidates ?? 0,
+            audioAttended: timeframeData?.audio_attended ?? overallData?.audio_attended ?? 0,
+            videoAttended: timeframeData?.video_attended ?? overallData?.video_attended ?? 0,
+            movedToVideo: timeframeData?.moved_to_video_round ?? overallData?.moved_to_video_round ?? 0
+        };
+    };
 
     useEffect(() => {
         const companyId = localStorage.getItem('company_id');
@@ -127,13 +143,18 @@ export default function DashboardPage() {
 
     // Prepare data for charts
     const prepareCandidateMetricsData = () => {
-        return jobRoles.map(job => ({
-            name: job.title.length > 15 ? job.title.substring(0, 15) + '...' : job.title,
-            total: job.total_candidates,
-            audio: job.audio_attended_count,
-            video: job.video_attended_count,
-            movedToVideo: job.moved_to_video_round_count
-        })).sort((a, b) => b.total - a.total);
+        return jobRoles.map(job => {
+            const jobData = getJobData(job);
+            const { totalCandidates, audioAttended, videoAttended, movedToVideo } = jobData;
+
+            return {
+                name: job.title.length > 15 ? job.title.substring(0, 15) + '...' : job.title,
+                total: totalCandidates,
+                audio: audioAttended,
+                video: videoAttended,
+                movedToVideo
+            };
+        }).sort((a, b) => b.total - a.total);
     };
 
     const prepareConversionFunnelData = () => {
@@ -148,15 +169,16 @@ export default function DashboardPage() {
     const prepareJobTimelineData = () => {
         const timelineData = jobRoles.reduce((acc: any[], job) => {
             const date = new Date(job.created_at).toLocaleDateString();
+            const jobData = getJobData(job);
             const existingEntry = acc.find(entry => entry.date === date);
             if (existingEntry) {
                 existingEntry.count++;
-                existingEntry.candidates += job.total_candidates;
+                existingEntry.candidates += jobData.totalCandidates;
             } else {
                 acc.push({
                     date,
                     count: 1,
-                    candidates: job.total_candidates
+                    candidates: jobData.totalCandidates
                 });
             }
             return acc;
@@ -166,31 +188,37 @@ export default function DashboardPage() {
     };
 
     const preparePerformanceComparison = () => {
-        return jobRoles.map(job => ({
-            name: job.title.length > 12 ? job.title.substring(0, 12) + '...' : job.title,
-            audioRate: job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100) : 0,
-            videoInviteRate: job.audio_attended_count > 0 ? ((job.moved_to_video_round_count / job.audio_attended_count) * 100) : 0,
-            videoCompletionRate: job.moved_to_video_round_count > 0 ? ((job.video_attended_count / job.moved_to_video_round_count) * 100) : 0
-        }));
+        return jobRoles.map(job => {
+            const jobData = getJobData(job);
+            const { totalCandidates, audioAttended, videoAttended, movedToVideo } = jobData;
+
+            return {
+                name: job.title.length > 12 ? job.title.substring(0, 12) + '...' : job.title,
+                audioRate: totalCandidates > 0 ? ((audioAttended / totalCandidates) * 100) : 0,
+                videoInviteRate: audioAttended > 0 ? ((movedToVideo / audioAttended) * 100) : 0,
+                videoCompletionRate: movedToVideo > 0 ? ((videoAttended / movedToVideo) * 100) : 0
+            };
+        });
     };
 
     const prepareMonthlyTrends = () => {
         const monthlyData = jobRoles.reduce((acc: any[], job) => {
             const date = new Date(job.created_at);
             const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const jobData = getJobData(job);
             const existingEntry = acc.find(entry => entry.month === monthYear);
             if (existingEntry) {
                 existingEntry.jobs++;
-                existingEntry.candidates += job.total_candidates;
-                existingEntry.audioAttended += job.audio_attended_count;
-                existingEntry.videoAttended += job.video_attended_count;
+                existingEntry.candidates += jobData.totalCandidates;
+                existingEntry.audioAttended += jobData.audioAttended;
+                existingEntry.videoAttended += jobData.videoAttended;
             } else {
                 acc.push({
                     month: monthYear,
                     jobs: 1,
-                    candidates: job.total_candidates,
-                    audioAttended: job.audio_attended_count,
-                    videoAttended: job.video_attended_count
+                    candidates: jobData.totalCandidates,
+                    audioAttended: jobData.audioAttended,
+                    videoAttended: jobData.videoAttended
                 });
             }
             return acc;
@@ -244,6 +272,11 @@ export default function DashboardPage() {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Timeframe Filter */}
+                <div className="mb-8">
+                    <TimeframeFilter companyId="6833e6384946844df0a22a2e" />
+                </div>
+
                 {/* Key Metrics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <Card className="p-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
@@ -435,9 +468,12 @@ export default function DashboardPage() {
                             </thead>
                             <tbody>
                                 {jobRoles.map((job, index) => {
-                                    const audioRate = job.total_candidates > 0 ? ((job.audio_attended_count / job.total_candidates) * 100).toFixed(1) : '0';
-                                    const inviteRate = job.audio_attended_count > 0 ? ((job.moved_to_video_round_count / job.audio_attended_count) * 100).toFixed(1) : '0';
-                                    const completionRate = job.moved_to_video_round_count > 0 ? ((job.video_attended_count / job.moved_to_video_round_count) * 100).toFixed(1) : '0';
+                                    const jobData = getJobData(job);
+                                    const { totalCandidates, audioAttended, videoAttended, movedToVideo } = jobData;
+
+                                    const audioRate = totalCandidates > 0 ? ((audioAttended / totalCandidates) * 100).toFixed(1) : '0';
+                                    const inviteRate = audioAttended > 0 ? ((movedToVideo / audioAttended) * 100).toFixed(1) : '0';
+                                    const completionRate = movedToVideo > 0 ? ((videoAttended / movedToVideo) * 100).toFixed(1) : '0';
                                     return (
                                         <tr
                                             key={job._id}
@@ -445,10 +481,10 @@ export default function DashboardPage() {
                                             onClick={() => router.push(`/company/jobs/${job._id}`)}
                                         >
                                             <td className="py-3 px-4 font-medium text-gray-900">{job.title}</td>
-                                            <td className="py-3 px-4 text-center text-gray-700">{job.total_candidates}</td>
-                                            <td className="py-3 px-4 text-center text-gray-700">{job.audio_attended_count}</td>
-                                            <td className="py-3 px-4 text-center text-gray-700">{job.moved_to_video_round_count}</td>
-                                            <td className="py-3 px-4 text-center text-gray-700">{job.video_attended_count}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{totalCandidates}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{audioAttended}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{movedToVideo}</td>
+                                            <td className="py-3 px-4 text-center text-gray-700">{videoAttended}</td>
                                             <td className="py-3 px-4 text-center">
                                                 <Badge variant={parseFloat(audioRate) > 50 ? "default" : "secondary"}>
                                                     {audioRate}%
