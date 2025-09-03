@@ -129,7 +129,7 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
         <div className="relative" >
             <div
                 ref={containerRef}
-                className="space-y-3 flex flex-col items-center justify-center gap-2 border-2 w-fit p-2 rounded-md cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+                className="space-y-3 flex flex-col items-center justify-center gap-2 border-2 w-fit p-2 rounded-md cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group z-0"
                 onClick={handleClick}
             >
                 {/* Overall Score */}

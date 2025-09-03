@@ -81,7 +81,7 @@ export default function InterviewScoreDetailsPopover({
         }
 
         if (audioScores) {
-            totalScore += (audioScores.averageScore / 20) * 0.4; // Audio has 40% weight, normalized to 5-point scale
+            totalScore += (audioScores?.averageScore / 20) * 0.4; // Audio has 40% weight, normalized to 5-point scale
             totalWeight += 0.4;
         }
 
@@ -155,16 +155,16 @@ export default function InterviewScoreDetailsPopover({
                                     ].map((item, index) => (
                                         <div key={index} className="space-y-1">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-xs text-gray-700">{item.label}</span>
-                                                <Badge className={`text-xs ${getScoreColor(item.score, item.max)}`}>
-                                                    {item.score}/{item.max}
+                                                <span className="text-xs text-gray-700">{item?.label}</span>
+                                                <Badge className={`text-xs ${getScoreColor(item?.score, item?.max)}`}>
+                                                    {item?.score}/{item?.max}
                                                 </Badge>
                                             </div>
                                             <Progress
-                                                value={(item.score / item.max) * 100}
+                                                value={(item?.score / item?.max) * 100}
                                                 className="h-1.5"
                                                 style={{
-                                                    '--progress-background': getScoreBgColor(item.score, item.max)
+                                                    '--progress-background': getScoreBgColor(item?.score, item?.max)
                                                 } as React.CSSProperties}
                                             />
                                         </div>
@@ -193,22 +193,22 @@ export default function InterviewScoreDetailsPopover({
                                 </div>
                                 <div className="space-y-2">
                                     {[
-                                        { label: 'Average Score', score: ((audioScores.averageScore || 0) / 20), max: 5 },
-                                        { label: 'Credibility', score: ((audioScores.credibilityScore || 0) / 20), max: 5 },
-                                        { label: 'Communication', score: ((audioScores.communicationScore || 0) / 20), max: 5 }
+                                        { label: 'Average Score', score: ((audioScores?.averageScore || 0) / 20), max: 5 },
+                                        { label: 'Credibility', score: ((audioScores?.credibilityScore || 0) / 20), max: 5 },
+                                        { label: 'Communication', score: ((audioScores?.communicationScore || 0) / 20), max: 5 }
                                     ].map((item, index) => (
                                         <div key={index} className="space-y-1">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-xs text-gray-700">{item.label}</span>
-                                                <Badge className={`text-xs ${getScoreColor(item?.score || 0, item.max)}`}>
-                                                    {item?.score?.toFixed(1)}/{item.max}
+                                                <span className="text-xs text-gray-700">{item?.label}</span>
+                                                <Badge className={`text-xs ${getScoreColor(item?.score || 0, item?.max)}`}>
+                                                    {item?.score?.toFixed(1)}/{item?.max}
                                                 </Badge>
                                             </div>
                                             <Progress
-                                                value={(item.score / item.max) * 100}
+                                                value={(item?.score / item?.max) * 100}
                                                 className="h-1.5"
                                                 style={{
-                                                    '--progress-background': getScoreBgColor(item?.score || 0, item.max)
+                                                    '--progress-background': getScoreBgColor(item?.score || 0, item?.max)
                                                 } as React.CSSProperties}
                                             />
                                         </div>
@@ -217,7 +217,7 @@ export default function InterviewScoreDetailsPopover({
                                 <div className="pt-2 border-t border-green-200">
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                         <div className="text-center">
-                                            <div className="font-bold text-green-600">{audioScores.totalQuestions}</div>
+                                            <div className="font-bold text-green-600">{audioScores?.totalQuestions}</div>
                                             <div className="text-gray-600">Questions</div>
                                         </div>
                                         <div className="text-center">

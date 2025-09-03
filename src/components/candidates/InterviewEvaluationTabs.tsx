@@ -7,6 +7,7 @@ import { BarChart3, Mic, MessageSquare, Brain, Target, Zap, Pause, Play, Video, 
 import { Candidate } from '@/lib/adminService';
 import { Button } from '../ui/button';
 import ReactMarkdown from 'react-markdown';
+import VideoPlayer from '@/components/interview/VideoPlayer';
 
 interface InterviewEvaluationTabsProps {
     candidate: Candidate;
@@ -77,12 +78,11 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
                             <Video className="h-4 w-4" />
                             Video Interview
                         </h4>
-                        <video
-                            controls
-                            autoPlay
-                            // preload='auto'
+                        <VideoPlayer
+                            videoUrl={candidate.interview_status.video_interview_url}
+                            controls={true}
+                            autoPlay={true}
                             className="w-full rounded-lg"
-                            src={candidate.interview_status.video_interview_url}
                         />
                     </div>
                 )}

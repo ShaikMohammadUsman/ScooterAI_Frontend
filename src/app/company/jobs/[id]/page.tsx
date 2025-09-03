@@ -26,6 +26,7 @@ import ResetVideoInterviewModal from '@/components/ResetVideoInterviewModal';
 import ProctoringDetailsDialog from '@/components/ProctoringDetailsDialog';
 import InterviewScoreCompact from '@/components/candidates/InterviewScoreCompact';
 import InterviewScoreCard from '@/components/candidates/InterviewScoreCard';
+import VideoPlayer from '@/components/interview/VideoPlayer';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -1647,18 +1648,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             {showVideoPlayer && selectedCandidate?.interview_status?.video_interview_url && (
                                                 <div className="mb-6 bg-gray-50 p-4 rounded-lg">
                                                     <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-                                                        <video
-                                                            className="w-full h-full rounded-lg shadow-lg"
-                                                            controls
-                                                            preload="metadata"
+                                                        <VideoPlayer
+                                                            videoUrl={selectedCandidate.interview_status.video_interview_url}
                                                             poster="/public/assets/images/scooterLogo.png"
-                                                            autoPlay
-                                                        >
-                                                            <source src={selectedCandidate.interview_status.video_interview_url} type="video/mp4" />
-                                                            <source src={selectedCandidate.interview_status.video_interview_url} type="video/webm" />
-                                                            <source src={selectedCandidate.interview_status.video_interview_url} type="video/ogg" />
-                                                            Your browser does not support the video tag.
-                                                        </video>
+                                                            autoPlay={true}
+                                                            controls={true}
+                                                            preload="metadata"
+                                                            className="w-full h-full rounded-lg shadow-lg"
+                                                        />
                                                     </div>
 
                                                     {/* Download Button */}

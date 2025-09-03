@@ -41,6 +41,7 @@ import LoadingSpinner from '@/components/ui/loadingSpinner';
 import ErrorBox from '@/components/ui/error';
 import InterviewStatusIndicator from '@/components/InterviewStatusIndicator';
 import InterviewStatusCompact from '@/components/InterviewStatusCompact';
+import VideoPlayer from '@/components/interview/VideoPlayer';
 
 interface CandidatesResponse {
     status: boolean;
@@ -364,10 +365,10 @@ export default function CandidatesPage() {
 
                                         {videoPlaying === selectedCandidate.profile_id && selectedCandidate.interview_status.video_interview_url && (
                                             <div className="mb-4">
-                                                <video
-                                                    controls
+                                                <VideoPlayer
+                                                    videoUrl={selectedCandidate.interview_status.video_interview_url}
+                                                    controls={true}
                                                     className="w-full rounded-lg"
-                                                    src={selectedCandidate.interview_status.video_interview_url}
                                                 />
                                             </div>
                                         )}
