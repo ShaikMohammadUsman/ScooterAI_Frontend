@@ -15,10 +15,10 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
 
         const evaluation = candidate.interview_details.communication_evaluation;
         return {
-            contentAndThought: (evaluation?.content_and_thought.score / 5) * 100,
-            verbalDelivery: (evaluation?.verbal_delivery.score / 5) * 100,
-            nonVerbal: (evaluation?.non_verbal.score / 5) * 100,
-            presenceAndAuthenticity: (evaluation?.presence_and_authenticity.score / 5) * 100,
+            contentAndThought: (evaluation?.content_and_thought?.score / 5) * 100,
+            verbalDelivery: (evaluation?.verbal_delivery?.score / 5) * 100,
+            nonVerbal: (evaluation?.non_verbal?.score / 5) * 100,
+            presenceAndAuthenticity: (evaluation?.presence_and_authenticity?.score / 5) * 100,
             overall: (evaluation?.overall_score / 5) * 100
         };
     };
@@ -27,11 +27,11 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
     const getAudioScores = () => {
         if (!candidate.audio_interview_details?.audio_interview_summary) return null;
 
-        const summary = candidate.audio_interview_details.audio_interview_summary;
+        const summary = candidate?.audio_interview_details?.audio_interview_summary;
         return {
-            averageScore: summary.average_score,
-            credibilityScore: summary.credibility_score,
-            communicationScore: summary.communication_score
+            averageScore: summary?.average_score,
+            credibilityScore: summary?.credibility_score,
+            communicationScore: summary?.communication_score
         };
     };
 
@@ -49,18 +49,18 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
 
         if (videoScores) {
             data.push(
-                { name: 'Content & Thought', video: videoScores.contentAndThought, audio: 0 },
-                { name: 'Verbal Delivery', video: videoScores.verbalDelivery, audio: 0 },
-                { name: 'Non-verbal', video: videoScores.nonVerbal, audio: 0 },
-                { name: 'Presence & Auth', video: videoScores.presenceAndAuthenticity, audio: 0 }
+                { name: 'Content & Thought', video: videoScores?.contentAndThought, audio: 0 },
+                { name: 'Verbal Delivery', video: videoScores?.verbalDelivery, audio: 0 },
+                { name: 'Non-verbal', video: videoScores?.nonVerbal, audio: 0 },
+                { name: 'Presence & Auth', video: videoScores?.presenceAndAuthenticity, audio: 0 }
             );
         }
 
         if (audioScores) {
             data.push(
-                { name: 'Credibility', video: 0, audio: audioScores.credibilityScore },
-                { name: 'Communication', video: 0, audio: audioScores.communicationScore },
-                { name: 'Average Score', video: 0, audio: audioScores.averageScore }
+                { name: 'Credibility', video: 0, audio: audioScores?.credibilityScore },
+                { name: 'Communication', video: 0, audio: audioScores?.communicationScore },
+                { name: 'Average Score', video: 0, audio: audioScores?.averageScore }
             );
         }
 
@@ -136,8 +136,8 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
         };
 
         // Create score polygons
-        const videoScores = radarData.map(item => item.video || 0);
-        const audioScores = radarData.map(item => item.audio || 0);
+        const videoScores = radarData.map(item => item?.video || 0);
+        const audioScores = radarData.map(item => item?.audio || 0);
 
         return (
             <svg width={size} height={size} className="mx-auto">
@@ -213,7 +213,7 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
                     {videoScores && (
                         <div className="text-center">
                             <div className="text-lg font-bold text-blue-600">
-                                {((videoScores.overall / 100) * 5).toFixed(1)}/5
+                                {((videoScores?.overall / 100) * 5).toFixed(1)}/5
                             </div>
                             <div className="text-xs text-gray-600">Video Overall</div>
                         </div>
@@ -221,7 +221,7 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
                     {audioScores && (
                         <div className="text-center">
                             <div className="text-lg font-bold text-green-600">
-                                {((audioScores.averageScore / 100) * 5).toFixed(1)}/5
+                                {((audioScores?.averageScore / 100) * 5).toFixed(1)}/5
                             </div>
                             <div className="text-xs text-gray-600">Audio Overall</div>
                         </div>
