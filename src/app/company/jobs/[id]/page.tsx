@@ -1761,14 +1761,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                     )}
 
                                                     {/* Summary */}
-                                                    {selectedCandidate?.interview_details?.qa_evaluations?.summary && (
+                                                    {/* {selectedCandidate?.interview_details?.qa_evaluations?.summary && (
                                                         <div className="bg-blue-50 p-4 rounded-lg mb-6">
                                                             <h5 className="font-medium text-blue-900 mb-2">Evaluation Summary</h5>
                                                             <div className="text-sm text-blue-700">
                                                                 <ReactMarkdown>{selectedCandidate?.interview_details?.qa_evaluations?.summary || ''}</ReactMarkdown>
                                                             </div>
                                                         </div>
-                                                    )}
+                                                    )} */}
 
                                                     {/* Question Evaluations */}
                                                     <Accordion type="single" collapsible className="space-y-4">
