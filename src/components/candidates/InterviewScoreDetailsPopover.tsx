@@ -99,11 +99,13 @@ export default function InterviewScoreDetailsPopover({
 
     return (
         <div
-            className="fixed z-[100]"
+            className="absolute z-[100]"
             data-score-popover="true"
             style={{
-                left: `${position.x}px`,
-                top: `${position.y}px`,
+                // top: `${position.y}px`,
+                // left: `${position.x}px`,
+                top: `50%`,
+                left: `-10px`,
                 transform: 'translate(-100%, -50%)',
                 marginLeft: '-10px'
             }}
