@@ -22,8 +22,8 @@ export default function TimeframeTest() {
                 toTime || undefined
             );
             setResult(response);
-        } catch (error) {
-            setResult({ error: error.message });
+        } catch (error: any) {
+            setResult({ error: error?.message || String(error) || "Unknown error" });
         } finally {
             setLoading(false);
         }
