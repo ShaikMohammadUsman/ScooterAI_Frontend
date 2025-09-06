@@ -111,24 +111,57 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         return `${years} years ${months} months`;
     };
 
-    const parseJobFitAssessment = (assessment: string) => {
-        if (!assessment) return { experienceLevel: false, industryAlignment: false, salesSkills: false };
+    const parseJobFitAssessment = (text: string) => {
+        const result: any = {};
 
-        const experienceLevelMatch = assessment.match(/- \*\*Experience Level\*\*: ([^-\n]+)/);
-        const industryAlignmentMatch = assessment.match(/- \*\*Industry Alignment\*\*: ([^-\n]+)/);
-        const salesSkillsMatch = assessment.match(/- \*\*Sales Skills\*\*: ([^-\n]+)/);
+        // Extract overall Job Fit Assessment value
+        const jobFitMatch = text.match(/\*\*Job Fit Assessment:\s*(.*?)\*\*/i);
+        result.job_fit = jobFitMatch ? jobFitMatch[1].trim() : null;
+
+        // Extract Rationale Section
+        const rationaleMatch = text.match(/\*\*Rationale:\*\*([\s\S]*?)(?=\nOverall|$)/i);
+        const rationaleText = rationaleMatch ? rationaleMatch[1].trim() : "";
+
+        // Extract bullet points
+        //@ts-ignore
+        const bullets = [...rationaleText.matchAll(/- \*\*(.*?)\*\*:?[\s]*(.*?)(?=\n-|\n*$)/gs)];
+        bullets.forEach(([_, key, value]) => {
+            result[key.toLowerCase().replace(/\s+/g, "_")] = value.trim();
+        });
+
+        // Extract overall summary or fallback
+        // The 's' (dotAll) flag is not supported in ES2017 and below, so we remove it.
+        // The 'i' flag (case-insensitive) is sufficient for this use case.
+        const overallMatch = text.match(/Overall[,:]?\s*(.*)$/i);
+        if (overallMatch) {
+            result.overall_summary = overallMatch[1].trim();
+        } else if (bullets.length > 0) {
+            result.overall_summary = bullets[bullets.length - 1][2].trim();
+        } else {
+            result.overall_summary = null;
+        }
+
+        // Debug logging
+        console.log('parseJobFitAssessment - Full Result:', result);
 
         // Check for positive indicators in each section
-        const experienceLevel = experienceLevelMatch ?
-            /over \d+ years|extensive|strong|progressive|leadership|capabilities/i.test(experienceLevelMatch[1]) : false;
+        const experienceLevel = result.experience_level ?
+            /over \d+ years|extensive|strong|progressive|leadership|capabilities|total of \d+ years|demonstrated|proven|senior roles|aligns well|career trajectory/i.test(result.experience_level) : false;
 
-        const industryAlignment = industryAlignmentMatch ?
-            /aligns well|extensive experience|relevant|matches|suitable/i.test(industryAlignmentMatch[1]) : false;
+        const industryAlignment = result.industry_alignment ?
+            /aligns well|extensive experience|relevant|matches|suitable|deep understanding|sector|industry|education sector|edtech|coaching institutes|IT training sector/i.test(result.industry_alignment) : false;
 
-        const salesSkills = salesSkillsMatch ?
-            /strong|demonstrated|robust|proven|achieving|managing/i.test(salesSkillsMatch[1]) : false;
+        const salesSkills = result.sales_skills ?
+            /strong|demonstrated|robust|proven|achieving|managing|proficiency|experience shows|crucial for|track record|sales skills|B2C|B2B|sales pipeline|cold calls|inbound|outbound/i.test(result.sales_skills) : false;
 
-        return { experienceLevel, industryAlignment, salesSkills };
+        console.log('parseJobFitAssessment - Boolean Results:', { experienceLevel, industryAlignment, salesSkills });
+
+        return {
+            experienceLevel,
+            industryAlignment,
+            salesSkills,
+            parsedData: result // Include the full parsed data for display
+        };
     };
 
     if (loading) {
@@ -136,6 +169,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+
                     <p className="mt-4 text-text-primary">Loading candidate details...</p>
                 </div>
             </div>
@@ -146,6 +180,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
+
                     <h2 className="text-2xl font-bold text-text-primary mb-4">No Candidates Found</h2>
                     <p className="text-text-primary">No candidates with video interviews found for this job.</p>
                 </div>
@@ -154,6 +189,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     }
 
     return (
+
         <div className="min-h-screen bg-bg-main relative">
             {/* Logo */}
             <div className="bg-bg-main px-8 py-4 border-b-2 border-gray-200 sm:mx-4">
@@ -169,6 +205,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                 </div>
             </div>
 
+
             {/* Header */}
             <div className="bg-bg-main border-b-2 border-gray-200 px-8 py-6 mx-2">
                 <div className="flex items-center justify-between">
@@ -181,24 +218,30 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                 <span className="text-sm text-text-primary">{selectedCandidate.basic_information?.current_location || 'Location not specified'}</span>
                             </div>
                             {selectedCandidate.basic_information?.open_to_relocation && (
+
                                 <Badge className="bg-bg-secondary-3 text-black px-3 py-1 text-xs font-medium rounded-none mt-4">
                                     Open To Relocation
                                 </Badge>
                             )}
+
                         </div>
                     </div>
+
 
                     {/* Center Section - Show Candidates Button */}
                     <div className="flex-1 flex justify-center items-center">
                         <div className="text-center">
                             <Button
                                 onClick={() => setShowCandidateList(!showCandidateList)}
+
                                 className="mx-auto bg-cta-primary hover:bg-green-800 text-white rounded-full w-16 h-16 flex items-center justify-center mb-2"
                             >
+
                                 {
                                     showCandidateList ? <FaPause className="text-xl" /> : <FaPlay className="text-xl" />
                                 }
                             </Button>
+
                             <p className="text-sm text-text-primary font-medium">
                                 {showCandidateList ? 'Hide' : 'See Them All'} ({candidates.length})
                             </p>
@@ -242,14 +285,15 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                             {/* On Paper Section */}
                             <div className="space-y-6">
+
                                 <h3 className="text-xl font-bold text-text-primary text-center">On Paper</h3>
 
-                                <div className="bg-bg-main rounded-none p-6 shadow-sm">
-                                    {/* <p className="text-gray-600 mb-6">
+                                {/* <div className="bg-bg-main rounded-none p-6 shadow-sm">
+                                    <p className="text-gray-600 mb-6">
                                         {selectedCandidate?.short_summary || ''}
-                                    </p> */}
+                                    </p>
 
-                                    {/* Match Table (Horizontal Tabular) */}
+                                    Match Table (Horizontal Tabular)
                                     {(() => {
                                         const jobFitData = parseJobFitAssessment(selectedCandidate.job_fit_assessment || '');
                                         return (
@@ -271,7 +315,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             </table>
                                         );
                                     })()}
-                                </div>
+                                </div> */}
 
                                 {/* Job Fit Analysis Accordion */}
                                 <Accordion type="single" collapsible className="mb-6">
@@ -281,40 +325,104 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                         </AccordionTrigger>
                                         <AccordionContent className="px-4 pb-4">
                                             {(() => {
-                                                const jobFitData = parseJobFitAssessment(selectedCandidate.job_fit_assessment || '');
                                                 const assessment = selectedCandidate.job_fit_assessment || '';
 
-                                                const industryAlignmentMatch = assessment.match(/- \*\*Industry Alignment\*\*: ([^-\n]+)/);
-                                                const experienceLevelMatch = assessment.match(/- \*\*Experience Level\*\*: ([^-\n]+)/);
-                                                const salesSkillsMatch = assessment.match(/- \*\*Sales Skills\*\*: ([^-\n]+)/);
+                                                // Extract the overall rating (HIGH/MEDIUM/LOW)
+                                                const ratingMatch = assessment.match(/\*\*Job Fit Assessment:\s*(\w+)\*\*/);
+                                                const rating = ratingMatch ? ratingMatch[1].toUpperCase() : 'MEDIUM';
+
+                                                // Determine color based on rating
+                                                const getRatingColor = (rating: string) => {
+                                                    switch (rating) {
+                                                        case 'HIGH': return 'bg-element-1';
+                                                        case 'MEDIUM': return 'bg-element-2';
+                                                        case 'LOW': return 'bg-element-4';
+                                                        default: return 'bg-element-2';
+                                                    }
+                                                };
+
+                                                // Use the new parseJobFitAssessment function
+                                                const parsedAssessment = parseJobFitAssessment(assessment);
+                                                const { parsedData } = parsedAssessment;
+
+                                                // Debug logging
+                                                console.log('Assessment:', assessment);
+                                                console.log('Parsed Assessment Data:', parsedData);
+                                                console.log('experience_Level:', parsedData["experience_level:"]);
+                                                console.log('industry_Alignment:', parsedData["industry_alignment:"]);
+                                                console.log('sales_Skills:', parsedData["sales_skills:"]);
 
                                                 return (
-                                                    <div className="space-y-3 text-sm text-text-primary">
+                                                    <div className="space-y-4 text-sm text-text-primary">
+                                                        {/* Overall Rating */}
+                                                        {/* <div className={`${getRatingColor(rating)} p-3 rounded-none`}>
+                                                            <h5 className="font-bold text-text-primary mb-2">Overall Assessment: {rating}</h5>
+                                                            <p className="text-xs text-text-primary">
+                                                                {assessment.split('**Rationale:**')[1]?.split('- **Experience Level:**')[0]?.trim() || 'Assessment details not available'}
+                                                            </p>
+                                                        </div> */}
+
+                                                        {/* Experience Level */}
                                                         <div>
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="font-medium">Industry Alignment:</span>
-                                                                {getMatchIcon(jobFitData.industryAlignment)}
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="font-medium text-text-primary">Experience Level:</span>
                                                             </div>
-                                                            {industryAlignmentMatch && (
-                                                                <p className="text-xs text-text-primary ml-4">{industryAlignmentMatch[1].trim()}</p>
+                                                            {parsedData["experience_level:"] || parsedData["experience_level"] ? (
+                                                                <div className="bg-bg-main p-3 rounded-none border-l-4 border-element-1">
+                                                                    <p className="text-sm text-text-primary whitespace-pre-wrap">{parsedData["experience_level:"] || parsedData["experience_level"]}</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-bg-main p-3 rounded-none border-l-4 border-gray-300">
+                                                                    <p className="text-sm text-text-primary">Experience level details not available</p>
+                                                                </div>
                                                             )}
                                                         </div>
+
+                                                        {/* Sales Skills */}
                                                         <div>
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="font-medium">Experience Level:</span>
-                                                                {getMatchIcon(jobFitData.experienceLevel)}
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="font-medium text-text-primary">Sales Skills:</span>
                                                             </div>
-                                                            {experienceLevelMatch && (
-                                                                <p className="text-xs text-text-primary ml-4">{experienceLevelMatch[1].trim()}</p>
+                                                            {parsedData["sales_skills:"] || parsedData["sales_skills"] ? (
+                                                                <div className="bg-bg-main p-3 rounded-none border-l-4 border-element-1">
+                                                                    <p className="text-sm text-text-primary whitespace-pre-wrap">{parsedData["sales_skills:"] || parsedData["sales_skills"]}</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-bg-main p-3 rounded-none border-l-4 border-gray-300">
+                                                                    <p className="text-sm text-text-primary">Sales skills details not available</p>
+                                                                </div>
                                                             )}
                                                         </div>
+
+                                                        {/* Industry Alignment */}
                                                         <div>
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="font-medium">Sales Skills:</span>
-                                                                {getMatchIcon(jobFitData.salesSkills)}
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="font-medium text-text-primary">Industry Alignment:</span>
                                                             </div>
-                                                            {salesSkillsMatch && (
-                                                                <p className="text-xs text-text-primary ml-4">{salesSkillsMatch[1].trim()}</p>
+                                                            {parsedData["industry_alignment:"] || parsedData["industry_alignment"] ? (
+                                                                <div className="bg-bg-main p-3 rounded-none border-l-4 border-element-1">
+                                                                    <p className="text-sm text-text-primary whitespace-pre-wrap">{parsedData["industry_alignment:"] || parsedData["industry_alignment"]}</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-bg-main p-3 rounded-none border-l-4 border-gray-300">
+                                                                    <p className="text-sm text-text-primary">Industry alignment details not available</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Location Fit */}
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="font-medium text-text-primary">Location Fit:</span>
+                                                            </div>
+                                                            {parsedData.location_fit ? (
+                                                                <div className="bg-bg-main p-3 rounded-none border-l-4 border-element-1">
+                                                                    <p className="text-sm text-text-primary whitespace-pre-wrap">{parsedData.location_fit}</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-bg-main p-3 rounded-none border-l-4 border-gray-300">
+                                                                    <p className="text-sm text-text-primary">Location fit details not available</p>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -598,19 +706,23 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                     <span className={`font-medium ${selectedCandidate.final_shortlist ? 'text-green-600' : 'text-red-600'}`}>
                                                         {selectedCandidate.final_shortlist ? 'Yes' : 'No'}
                                                     </span>
-                                                </div>
-                                            </div>
+                                    </div>
+                                    </div>
+
                                         </div> */}
                                     </div>
+
                                 </AccordionContent>
                             </AccordionItem>
                         </Accordion>
 
                         {/* Action Buttons */}
                         <div className="flex justify-center gap-4">
+
                             <Button variant="outline" className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-8 py-3">
                                 Shortlist
                             </Button>
+
                             <Button variant="outline" className="bg-cta-primary-text text-cta-primary border-cta-primary hover:bg-cta-primary hover:text-cta-primary-text hover:border-cta-outline px-8 py-3">
                                 Remove
                             </Button>
@@ -620,8 +732,10 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             </div>
             {/* Candidate List Sidebar */}
             {showCandidateList && (
+
                 <div className="fixed right-0 top-0 z-[101] w-1/3 h-full overflow-y-auto scrollbar-thin bg-bg-main border-l border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-4">
+
                         <h3 className="text-lg font-bold text-text-primary">Candidates</h3>
                         <Button
                             variant="ghost"
@@ -643,15 +757,19 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     }`}
                                 onClick={() => setSelectedCandidate(candidate)}
                             >
-                                <CardContent className="p-4">
+
+                                <CardContent className="p-4 min-h-auto h-fit">
                                     <div className="flex self-center items-center justify-center gap-3 py-4">
                                         <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+
                                             <FaUser className="text-text-primary" />
                                         </div>
                                         <div className="flex-1">
+
                                             <h4 className="font-medium text-text-primary">
                                                 {candidate.basic_information?.full_name}
                                             </h4>
+
                                             <p className="text-sm text-text-primary">
                                                 {candidate.basic_information?.current_location}
                                             </p>
@@ -674,6 +792,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             >
                                 Previous
                             </Button>
+
                             <span className="flex items-center px-3 text-sm text-text-primary">
                                 Page {currentPage} of {pagination.total_pages}
                             </span>
@@ -692,3 +811,4 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         </div>
     );
 }
+
