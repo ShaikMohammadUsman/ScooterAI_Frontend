@@ -431,7 +431,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             <li>• Relevant industry experience and knowledge</li>
                                             <li>• Proven track record of meeting sales targets</li>
                                         </ul> */}
-                                        <div className='text-md'>
+                                        <div className='text-sm'>
                                             <ReactMarkdown>{selectedCandidate?.short_summary}</ReactMarkdown>
                                         </div>
                                     </CardContent>
