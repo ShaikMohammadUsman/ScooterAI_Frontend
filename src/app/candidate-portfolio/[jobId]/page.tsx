@@ -208,7 +208,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
             {/* Header */}
             <div className="bg-bg-main border-b-2 border-gray-200 px-8 py-6 mx-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     {/* Left Section - Candidate Information */}
                     <div className="flex-1">
                         <div>
@@ -233,15 +233,10 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         <div className="text-center">
                             <Button
                                 onClick={() => setShowCandidateList(!showCandidateList)}
-
                                 className="mx-auto bg-cta-primary hover:bg-green-800 text-white rounded-full w-16 h-16 flex items-center justify-center mb-2"
                             >
-
-                                {
-                                    showCandidateList ? <FaPause className="text-xl" /> : <FaPlay className="text-xl" />
-                                }
+                                {showCandidateList ? <FaPause className="text-xl" /> : <FaPlay className="text-xl" />}
                             </Button>
-
                             <p className="text-sm text-text-primary font-medium">
                                 {showCandidateList ? 'Hide' : 'See Them All'} ({candidates.length})
                             </p>
@@ -733,7 +728,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             {/* Candidate List Sidebar */}
             {showCandidateList && (
 
-                <div className="fixed right-0 top-0 z-[101] w-1/3 h-full overflow-y-auto scrollbar-thin bg-bg-main border-l border-gray-200 p-6">
+                <div className="fixed right-0 top-0 z-[101] w-[90%] sm:w-1/3 h-full overflow-y-auto scrollbar-thin bg-bg-main border-l border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-4">
 
                         <h3 className="text-lg font-bold text-text-primary">Candidates</h3>
