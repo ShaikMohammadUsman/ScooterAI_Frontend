@@ -90,6 +90,8 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         if (!ctc) return 'Not specified';
         if (typeof ctc === 'number') {
             return `${(ctc / 100000).toFixed(1)} Lac/per annum`;
+        } else {
+            return `${ctc.currencyType || '₹'}${(ctc.value / 100000).toFixed(1)}L`;
         }
         return ctc.toString();
     };
@@ -134,7 +136,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading candidate details...</p>
+                    <p className="mt-4 text-text-primary">Loading candidate details...</p>
                 </div>
             </div>
         );
@@ -144,17 +146,17 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">No Candidates Found</h2>
-                    <p className="text-gray-600">No candidates with video interviews found for this job.</p>
+                    <h2 className="text-2xl font-bold text-text-primary mb-4">No Candidates Found</h2>
+                    <p className="text-text-primary">No candidates with video interviews found for this job.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-white relative">
+        <div className="min-h-screen bg-bg-main relative">
             {/* Logo */}
-            <div className="bg-white px-8 py-4 border-b-2 border-gray-200 sm:mx-4">
+            <div className="bg-bg-main px-8 py-4 border-b-2 border-gray-200 sm:mx-4">
                 <div className="flex items-center gap-3">
                     <Image
                         src="/assets/images/scooterLogo.png"
@@ -163,23 +165,23 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         width={32}
                         height={32}
                     />
-                    <h1 className="text-3xl font-thin text-gray-900">scooter</h1>
+                    <h1 className="text-3xl font-thin text-text-primary">scooter</h1>
                 </div>
             </div>
 
             {/* Header */}
-            <div className="bg-white border-b-2 border-gray-200 px-8 py-6 mx-2">
+            <div className="bg-bg-main border-b-2 border-gray-200 px-8 py-6 mx-2">
                 <div className="flex items-center justify-between">
                     {/* Left Section - Candidate Information */}
                     <div className="flex-1">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-1">{selectedCandidate.basic_information?.full_name}</h2>
-                            <div className="flex items-center gap-2 text-gray-500 mb-2">
+                            <h2 className="text-2xl font-bold text-text-primary mb-1">{selectedCandidate.basic_information?.full_name}</h2>
+                            <div className="flex items-center gap-2 text-text-primary mb-2">
                                 <FaMapMarkerAlt className="text-md font-semibold" />
-                                <span className="text-sm">{selectedCandidate.basic_information?.current_location || 'Location not specified'}</span>
+                                <span className="text-sm text-text-primary">{selectedCandidate.basic_information?.current_location || 'Location not specified'}</span>
                             </div>
                             {selectedCandidate.basic_information?.open_to_relocation && (
-                                <Badge className="bg-lime-500 text-black px-3 py-1 text-xs font-medium rounded-none mt-4">
+                                <Badge className="bg-bg-secondary-3 text-black px-3 py-1 text-xs font-medium rounded-none mt-4">
                                     Open To Relocation
                                 </Badge>
                             )}
@@ -191,13 +193,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         <div className="text-center">
                             <Button
                                 onClick={() => setShowCandidateList(!showCandidateList)}
-                                className="mx-auto bg-green-800 hover:bg-green-600 text-white rounded-full w-16 h-16 flex items-center justify-center mb-2"
+                                className="mx-auto bg-cta-primary hover:bg-green-800 text-white rounded-full w-16 h-16 flex items-center justify-center mb-2"
                             >
                                 {
                                     showCandidateList ? <FaPause className="text-xl" /> : <FaPlay className="text-xl" />
                                 }
                             </Button>
-                            <p className="text-sm text-green-800 font-medium">
+                            <p className="text-sm text-text-primary font-medium">
                                 {showCandidateList ? 'Hide' : 'See Them All'} ({candidates.length})
                             </p>
                         </div>
@@ -206,22 +208,22 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                     {/* Right Section - Contact Information */}
                     <div className="flex-1 flex justify-end">
                         <div className="flex flex-col">
-                            <h3 className="text-lg font-bold text-gray-800 mb-3">Contact</h3>
+                            <h3 className="text-xl font-bold text-text-primary mb-3">Contact</h3>
                             <div className="space-y-2">
                                 {selectedCandidate.basic_information?.linkedin_url && (
-                                    <div className="flex items-center justify-start gap-2 text-sm text-gray-600">
+                                    <div className="flex items-center justify-start gap-2 text-sm text-text-primary">
                                         <FaLinkedin className="text-blue-600" />
                                         <span>{selectedCandidate.basic_information.linkedin_url}</span>
                                     </div>
                                 )}
                                 {selectedCandidate.basic_information?.phone_number && (
-                                    <div className="flex items-center justify-start gap-2 text-sm text-gray-600">
+                                    <div className="flex items-center justify-start gap-2 text-sm text-text-primary">
                                         <FaPhone className="text-green-600" />
                                         <span>{selectedCandidate.basic_information.phone_number}</span>
                                     </div>
                                 )}
                                 {selectedCandidate.basic_information?.email && (
-                                    <div className="flex items-center justify-start gap-2 text-sm text-gray-600">
+                                    <div className="flex items-center justify-start gap-2 text-sm text-text-primary">
                                         <FaEnvelope className="text-yellow-600" />
                                         <span>{selectedCandidate.basic_information.email}</span>
                                     </div>
@@ -240,9 +242,9 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                             {/* On Paper Section */}
                             <div className="space-y-6">
-                                <h3 className="text-xl font-bold text-gray-800 text-center">On Paper</h3>
+                                <h3 className="text-xl font-bold text-text-primary text-center">On Paper</h3>
 
-                                <div className="bg-white rounded-lg p-6 shadow-sm">
+                                <div className="bg-bg-main rounded-none p-6 shadow-sm">
                                     {/* <p className="text-gray-600 mb-6">
                                         {selectedCandidate?.short_summary || ''}
                                     </p> */}
@@ -251,12 +253,12 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     {(() => {
                                         const jobFitData = parseJobFitAssessment(selectedCandidate.job_fit_assessment || '');
                                         return (
-                                            <table className="min-w-full border-2 rounded-lg bg-white text-center">
+                                            <table className="min-w-full border-2 rounded-none bg-bg-main text-center">
                                                 <thead>
                                                     <tr>
-                                                        <th className="px-6 py-2 text-sm font-semibold text-gray-800 border-r border-b">Industry Match</th>
-                                                        <th className="px-6 py-2 text-sm font-semibold text-gray-800 border-r border-b">Experience Level Match</th>
-                                                        <th className="px-6 py-2 text-sm font-semibold text-gray-800 border-b">Sales Match</th>
+                                                        <th className="px-6 py-2 text-sm font-semibold text-text-primary border-r border-b">Industry Match</th>
+                                                        <th className="px-6 py-2 text-sm font-semibold text-text-primary border-r border-b">Experience Level Match</th>
+                                                        <th className="px-6 py-2 text-sm font-semibold text-text-primary border-b">Sales Match</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -271,64 +273,73 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     })()}
                                 </div>
 
+                                {/* Job Fit Analysis Accordion */}
+                                <Accordion type="single" collapsible className="mb-6">
+                                    <AccordionItem value="job-fit-analysis" className="bg-bg-main border-purple-200 rounded-none">
+                                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 rounded-none">
+                                            <h4 className="font-bold text-text-primary">Job Fit Analysis</h4>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="px-4 pb-4">
+                                            {(() => {
+                                                const jobFitData = parseJobFitAssessment(selectedCandidate.job_fit_assessment || '');
+                                                const assessment = selectedCandidate.job_fit_assessment || '';
+
+                                                const industryAlignmentMatch = assessment.match(/- \*\*Industry Alignment\*\*: ([^-\n]+)/);
+                                                const experienceLevelMatch = assessment.match(/- \*\*Experience Level\*\*: ([^-\n]+)/);
+                                                const salesSkillsMatch = assessment.match(/- \*\*Sales Skills\*\*: ([^-\n]+)/);
+
+                                                return (
+                                                    <div className="space-y-3 text-sm text-text-primary">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-medium">Industry Alignment:</span>
+                                                                {getMatchIcon(jobFitData.industryAlignment)}
+                                                            </div>
+                                                            {industryAlignmentMatch && (
+                                                                <p className="text-xs text-text-primary ml-4">{industryAlignmentMatch[1].trim()}</p>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-medium">Experience Level:</span>
+                                                                {getMatchIcon(jobFitData.experienceLevel)}
+                                                            </div>
+                                                            {experienceLevelMatch && (
+                                                                <p className="text-xs text-text-primary ml-4">{experienceLevelMatch[1].trim()}</p>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-medium">Sales Skills:</span>
+                                                                {getMatchIcon(jobFitData.salesSkills)}
+                                                            </div>
+                                                            {salesSkillsMatch && (
+                                                                <p className="text-xs text-text-primary ml-4">{salesSkillsMatch[1].trim()}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
+
                                 {/* Expandable Sections */}
-                                <Accordion type="multiple" className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <AccordionItem value="icp" className="bg-white border-purple-200 rounded-lg">
-                                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-purple-100 rounded-none">
-                                            <h4 className="font-bold text-gray-800">ICP</h4>
+                                <Accordion type="multiple" defaultValue={['icp', 'sales-motion', 'sales-cycle']} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <AccordionItem value="icp" className="bg-bg-main border-purple-200 rounded-none">
+                                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 rounded-none">
+                                            <h4 className="font-bold text-text-primary">ICP</h4>
                                         </AccordionTrigger>
                                         <AccordionContent className="px-4 pb-4">
                                             <div className="space-y-3">
-                                                <p className="text-sm text-gray-600">
+                                                <p className="text-sm text-text-primary">
                                                     Ideal customer profile analysis and targeting strategies based on candidate's experience.
                                                 </p>
-                                                {/* {(() => {
-                                                    const jobFitData = parseJobFitAssessment(selectedCandidate.job_fit_assessment || '');
-                                                    const assessment = selectedCandidate.job_fit_assessment || '';
 
-                                                    const industryAlignmentMatch = assessment.match(/- \*\*Industry Alignment\*\*: ([^-\n]+)/);
-                                                    const experienceLevelMatch = assessment.match(/- \*\*Experience Level\*\*: ([^-\n]+)/);
-                                                    const salesSkillsMatch = assessment.match(/- \*\*Sales Skills\*\*: ([^-\n]+)/);
-
-                                                    return (
-                                                        <div className="bg-white p-3 rounded-lg border">
-                                                            <h5 className="font-medium text-gray-800 mb-3">Job Fit Analysis:</h5>
-                                                            <div className="space-y-3 text-sm text-gray-600">
-                                                                <div>
-                                                                    <div className="flex items-center gap-2 mb-1">
-                                                                        <span className="font-medium">Industry Alignment:</span>
-                                                                        {getMatchIcon(jobFitData.industryAlignment)}
-                                                                    </div>
-                                                                    {industryAlignmentMatch && (
-                                                                        <p className="text-xs text-gray-500 ml-4">{industryAlignmentMatch[1].trim()}</p>
-                                                                    )}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="flex items-center gap-2 mb-1">
-                                                                        <span className="font-medium">Experience Level:</span>
-                                                                        {getMatchIcon(jobFitData.experienceLevel)}
-                                                                    </div>
-                                                                    {experienceLevelMatch && (
-                                                                        <p className="text-xs text-gray-500 ml-4">{experienceLevelMatch[1].trim()}</p>
-                                                                    )}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="flex items-center gap-2 mb-1">
-                                                                        <span className="font-medium">Sales Skills:</span>
-                                                                        {getMatchIcon(jobFitData.salesSkills)}
-                                                                    </div>
-                                                                    {salesSkillsMatch && (
-                                                                        <p className="text-xs text-gray-500 ml-4">{salesSkillsMatch[1].trim()}</p>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })()} */}
                                                 {selectedCandidate.audio_interview_details?.audio_interview_summary?.icp_summary && (
-                                                    <div className="bg-white p-3 rounded-lg border">
-                                                        <h5 className="font-medium text-gray-800 mb-2">Identified ICPs:</h5>
-                                                        <ul className="space-y-1 text-sm text-gray-600">
+                                                    <div className="bg-bg-main p-3 rounded-none ">
+                                                        <h5 className="font-medium text-text-primary mb-2">Identified ICPs:</h5>
+                                                        <ul className="space-y-1 text-sm text-text-primary">
                                                             {selectedCandidate.audio_interview_details.audio_interview_summary.icp_summary.map((icp, index) => (
                                                                 <li key={index}>• {icp}</li>
                                                             ))}
@@ -339,19 +350,19 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                         </AccordionContent>
                                     </AccordionItem>
 
-                                    <AccordionItem value="sales-motion" className="bg-white border-purple-200 rounded-lg">
-                                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-purple-100 rounded-none">
-                                            <h4 className="font-bold text-gray-800">Sales Motion</h4>
+                                    <AccordionItem value="sales-motion" className="bg-bg-main border-purple-200 rounded-none">
+                                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 rounded-none">
+                                            <h4 className="font-bold text-text-primary">Sales Motion</h4>
                                         </AccordionTrigger>
                                         <AccordionContent className="px-4 pb-4">
                                             <div className="space-y-3">
-                                                <p className="text-sm text-gray-600">
+                                                <p className="text-sm text-text-primary">
                                                     Sales methodology and approach used by the candidate in previous roles.
                                                 </p>
                                                 {selectedCandidate.audio_interview_details?.audio_interview_summary?.sales_motion_summary && (
-                                                    <div className="bg-white p-3 rounded-lg border">
-                                                        <h5 className="font-medium text-gray-800 mb-2">Sales Motion Types:</h5>
-                                                        <ul className="space-y-1 text-sm text-gray-600">
+                                                    <div className="bg-bg-main p-3 rounded-none">
+                                                        <h5 className="font-medium text-text-primary mb-2">Sales Motion Types:</h5>
+                                                        <ul className="space-y-1 text-sm text-text-primary">
                                                             {selectedCandidate.audio_interview_details.audio_interview_summary.sales_motion_summary.map((motion, index) => (
                                                                 <li key={index}>• {motion}</li>
                                                             ))}
@@ -362,19 +373,19 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                         </AccordionContent>
                                     </AccordionItem>
 
-                                    <AccordionItem value="sales-cycle" className="bg-white border-purple-200 rounded-lg">
-                                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-purple-100 rounded-none">
-                                            <h4 className="font-bold text-gray-800">Sales Cycle</h4>
+                                    <AccordionItem value="sales-cycle" className="bg-bg-main border-purple-200 rounded-none">
+                                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 rounded-none">
+                                            <h4 className="font-bold text-text-primary">Sales Cycle</h4>
                                         </AccordionTrigger>
                                         <AccordionContent className="px-4 pb-4">
                                             <div className="space-y-3">
-                                                <p className="text-sm text-gray-600">
+                                                <p className="text-sm text-text-primary">
                                                     Typical sales cycle length and process management capabilities.
                                                 </p>
                                                 {selectedCandidate.audio_interview_details?.audio_interview_summary?.sales_cycle_summary && (
-                                                    <div className="bg-white p-3 rounded-lg border">
-                                                        <h5 className="font-medium text-gray-800 mb-2">Sales Cycle Types:</h5>
-                                                        <ul className="space-y-1 text-sm text-gray-600">
+                                                    <div className="bg-bg-main p-3 rounded-none">
+                                                        <h5 className="font-medium text-text-primary mb-2">Sales Cycle Types:</h5>
+                                                        <ul className="space-y-1 text-sm text-text-primary">
                                                             {selectedCandidate.audio_interview_details.audio_interview_summary.sales_cycle_summary.map((cycle, index) => (
                                                                 <li key={index}>• {cycle}</li>
                                                             ))}
@@ -388,22 +399,22 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             </div>
 
                             {/* In Person Section */}
-                            <div className="space-y-6">
-                                <h3 className="text-xl font-bold text-gray-800 text-center">In Person</h3>
+                            <div className="space-y-6 border-l-2 pl-8 border-gray-200">
+                                <h3 className="text-xl font-bold text-text-primary text-center">In Person</h3>
 
                                 {/* Video Player */}
-                                <div className="bg-white rounded-lg p-6 shadow-sm">
+                                <div className="bg-bg-main rounded-none p-6 shadow-sm">
                                     {selectedCandidate.interview_status?.video_interview_url ? (
                                         <VideoPlayer
                                             videoUrl={selectedCandidate.interview_status.video_interview_url}
-                                            className="w-full h-64 rounded-lg"
+                                            className="w-full h-80 rounded-none"
                                             controls={true}
                                         />
                                     ) : (
-                                        <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                                        <div className="w-full h-64 bg-gray-200 rounded-none flex items-center justify-center">
                                             <div className="text-center">
                                                 <FaPlay className="text-4xl text-gray-400 mx-auto mb-2" />
-                                                <p className="text-gray-500">No video available</p>
+                                                <p className="text-text-primary">No video available</p>
                                             </div>
                                         </div>
                                     )}
@@ -412,15 +423,17 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                 {/* Highlights */}
                                 <Card className=" py-4 rounded-none shadow-none">
                                     <CardContent className="p-4">
-                                        <div className="w-fit flex items-center justify-center bg-purple-100 p-2 mx-auto mb-3">
-                                            <h4 className="font-bold text-gray-800 text-center">Highlights</h4>
+                                        <div className="w-fit flex items-center justify-center bg-element-3 p-2 mx-auto mb-3">
+                                            <h4 className="font-bold text-text-primary text-center">Highlights</h4>
                                         </div>
                                         {/* <ul className="space-y-2 text-sm text-gray-600">
                                             <li>• Strong communication skills demonstrated in video interview</li>
                                             <li>• Relevant industry experience and knowledge</li>
                                             <li>• Proven track record of meeting sales targets</li>
                                         </ul> */}
-                                        <ReactMarkdown>{selectedCandidate?.job_fit_assessment}</ReactMarkdown>
+                                        <div className='text-md'>
+                                            <ReactMarkdown>{selectedCandidate?.short_summary}</ReactMarkdown>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </div>
@@ -429,15 +442,15 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         {/* Bottom Section */}
                         <Accordion autoFocus={true} type="multiple" defaultValue={["experience", "budget", "notice-period", "additional-info"]} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                             {/* Experience Summary */}
-                            <AccordionItem value="experience" className="bg-white border-purple-200 rounded-lg">
-                                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-purple-100 rounded-none">
-                                    <h4 className="font-bold text-gray-800">{getExperienceYears(selectedCandidate)}</h4>
+                            <AccordionItem value="experience" className="bg-bg-main border-purple-200 rounded-none">
+                                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 rounded-none">
+                                    <h4 className="font-bold text-text-primary">{getExperienceYears(selectedCandidate)}</h4>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
                                     <div className="space-y-3">
-                                        <div className="bg-white p-3 rounded-lg border">
-                                            <h5 className="font-medium text-gray-800 mb-2">Career Overview</h5>
-                                            <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="bg-bg-main p-3 rounded-none">
+                                            <h5 className="font-medium text-text-primary mb-2">Career Overview</h5>
+                                            <div className="space-y-2 text-sm text-text-primary">
                                                 <div>Total Experience: {selectedCandidate.career_overview?.total_years_experience || 0} years</div>
                                                 <div>Sales Experience: {selectedCandidate.career_overview?.years_sales_experience || 0} years</div>
                                                 <div>Average Tenure: {selectedCandidate.career_overview?.average_tenure_per_role || 0} years per role</div>
@@ -447,14 +460,14 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             </div>
                                         </div>
                                         {selectedCandidate.career_overview?.company_history && (
-                                            <div className="bg-white p-3 rounded-lg border">
-                                                <h5 className="font-medium text-gray-800 mb-2">Company History</h5>
-                                                <div className="space-y-2 text-sm text-gray-600">
+                                            <div className="bg-bg-main p-3 rounded-none">
+                                                <h5 className="font-medium text-text-primary mb-2">Company History</h5>
+                                                <div className="space-y-2 text-sm text-text-primary">
                                                     {selectedCandidate.career_overview.company_history.map((company, index) => (
                                                         <div key={index} className="border-l-2 border-gray-200 pl-3">
                                                             <div className="font-medium">{company.position}</div>
-                                                            <div className="text-gray-500">{company.company_name}</div>
-                                                            <div className="text-gray-500">
+                                                            <div className="text-text-primary">{company.company_name}</div>
+                                                            <div className="text-text-primary">
                                                                 {company.start_date} - {company.is_current ? 'Present' : company.end_date}
                                                                 {company.duration_months > 0 && (
                                                                     <span className="ml-2">({company.duration_months} months)</span>
@@ -470,15 +483,15 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             </AccordionItem>
 
                             {/* Budget Information */}
-                            <AccordionItem value="budget" className="bg-white border-purple-200 rounded-lg">
-                                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-purple-100 rounded-none">
-                                    <h4 className="font-bold text-gray-800">Budget Analysis</h4>
+                            <AccordionItem value="budget" className="bg-bg-main border-purple-200 rounded-none">
+                                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 rounded-none">
+                                    <h4 className="font-bold text-text-primary">Budget Analysis</h4>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
                                     <div className="space-y-3">
-                                        <div className="bg-white p-3 rounded-lg border">
-                                            <h5 className="font-medium text-gray-800 mb-2">Compensation Details</h5>
-                                            <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="bg-bg-main p-3 rounded-none">
+                                            <h5 className="font-medium text-text-primary mb-2">Compensation Details</h5>
+                                            <div className="space-y-2 text-sm text-text-primary">
                                                 <div className="flex justify-between">
                                                     <span>Current CTC:</span>
                                                     <span className="font-medium">{formatCTC(selectedCandidate.basic_information?.current_ctc)}</span>
@@ -510,15 +523,15 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             </AccordionItem>
 
                             {/* Notice Period */}
-                            <AccordionItem value="notice-period" className="bg-white border-purple-200 rounded-lg">
-                                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-purple-100 rounded-none">
-                                    <h4 className="font-bold text-gray-800">Notice Period</h4>
+                            <AccordionItem value="notice-period" className="bg-bg-main border-purple-200 rounded-none">
+                                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 rounded-none">
+                                    <h4 className="font-bold text-text-primary">Notice Period</h4>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
                                     <div className="space-y-3">
-                                        <div className="bg-white p-3 rounded-lg border">
-                                            <h5 className="font-medium text-gray-800 mb-2">Availability</h5>
-                                            <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="bg-bg-main p-3 rounded-none">
+                                            <h5 className="font-medium text-text-primary mb-2">Availability</h5>
+                                            <div className="space-y-2 text-sm text-text-primary">
                                                 <div className="flex justify-between">
                                                     <span>Notice Period:</span>
                                                     <span className="font-medium">
@@ -542,26 +555,26 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             </AccordionItem>
 
                             {/* Additional Info */}
-                            <AccordionItem value="additional-info" className="bg-white border-purple-200 rounded-lg">
-                                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-purple-100 rounded-none">
-                                    <h4 className="font-bold text-gray-800">Additional Info</h4>
+                            <AccordionItem value="additional-info" className="bg-bg-main border-purple-200 rounded-none">
+                                <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 rounded-none">
+                                    <h4 className="font-bold text-text-primary">Additional Info</h4>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
                                     <div className="space-y-3">
-                                        <div className="bg-white p-3 rounded-lg border">
-                                            <h5 className="font-medium text-gray-800 mb-2">Contact Information</h5>
-                                            <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="bg-bg-main p-3 rounded-none">
+                                            <h5 className="font-medium text-text-primary mb-2">Contact Information</h5>
+                                            <div className="space-y-2 text-sm text-text-primary">
                                                 <div className="flex items-center gap-2">
-                                                    <FaPhone className="text-gray-400" />
+                                                    <FaPhone className="text-text-primary" />
                                                     <span>{selectedCandidate.basic_information?.phone_number || 'Not provided'}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <FaEnvelope className="text-gray-400" />
+                                                    <FaEnvelope className="text-text-primary" />
                                                     <span>{selectedCandidate.basic_information?.email || 'Not provided'}</span>
                                                 </div>
                                                 {selectedCandidate.basic_information?.linkedin_url && (
                                                     <div className="flex items-center gap-2">
-                                                        <FaLinkedin className="text-gray-400" />
+                                                        <FaLinkedin className="text-text-primary" />
                                                         <a href={selectedCandidate.basic_information.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                                                             LinkedIn Profile
                                                         </a>
@@ -569,9 +582,9 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="bg-white p-3 rounded-lg border">
-                                            <h5 className="font-medium text-gray-800 mb-2">Application Status</h5>
-                                            <div className="space-y-2 text-sm text-gray-600">
+                                        {/* <div className="bg-bg-main p-3 rounded-none border">
+                                            <h5 className="font-medium text-text-primary mb-2">Application Status</h5>
+                                            <div className="space-y-2 text-sm text-text-primary">
                                                 <div className="flex justify-between">
                                                     <span>Status:</span>
                                                     <span className="font-medium">{selectedCandidate.application_status || 'Unknown'}</span>
@@ -587,7 +600,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
@@ -595,10 +608,10 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
                         {/* Action Buttons */}
                         <div className="flex justify-center gap-4">
-                            <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3">
+                            <Button variant="outline" className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-8 py-3">
                                 Shortlist
                             </Button>
-                            <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50 px-8 py-3">
+                            <Button variant="outline" className="bg-cta-primary-text text-cta-primary border-cta-primary hover:bg-cta-primary hover:text-cta-primary-text hover:border-cta-outline px-8 py-3">
                                 Remove
                             </Button>
                         </div>
@@ -607,9 +620,9 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             </div>
             {/* Candidate List Sidebar */}
             {showCandidateList && (
-                <div className="fixed right-0 top-0 z-[101] w-1/3 h-full overflow-y-auto scrollbar-thin bg-white border-l border-gray-200 p-6">
+                <div className="fixed right-0 top-0 z-[101] w-1/3 h-full overflow-y-auto scrollbar-thin bg-bg-main border-l border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-gray-800">Candidates</h3>
+                        <h3 className="text-lg font-bold text-text-primary">Candidates</h3>
                         <Button
                             variant="ghost"
                             size="sm"
@@ -633,13 +646,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                 <CardContent className="p-4">
                                     <div className="flex self-center items-center justify-center gap-3 py-4">
                                         <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                                            <FaUser className="text-gray-600" />
+                                            <FaUser className="text-text-primary" />
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="font-medium text-gray-800">
+                                            <h4 className="font-medium text-text-primary">
                                                 {candidate.basic_information?.full_name}
                                             </h4>
-                                            <p className="text-sm text-gray-600">
+                                            <p className="text-sm text-text-primary">
                                                 {candidate.basic_information?.current_location}
                                             </p>
                                         </div>
@@ -661,7 +674,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             >
                                 Previous
                             </Button>
-                            <span className="flex items-center px-3 text-sm text-gray-600">
+                            <span className="flex items-center px-3 text-sm text-text-primary">
                                 Page {currentPage} of {pagination.total_pages}
                             </span>
                             <Button

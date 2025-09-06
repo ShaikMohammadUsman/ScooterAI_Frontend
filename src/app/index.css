@@ -20,6 +20,35 @@
     --color-location: #ede9fe;
     --font-sans: var(--font-geist-sans), Arial, sans-serif;
     --font-mono: var(--font-geist-mono), monospace;
+
+    /* New Color Palette - Background Colors */
+    --color-bg-main: #F9F9F5;
+    --color-bg-secondary-1: #FFEF8A;
+    --color-bg-secondary-2: #FC8861;
+    --color-bg-secondary-3: #BADD26;
+
+    /* New Color Palette - CTA Colors */
+    --color-cta-primary: #1C4C15;
+    --color-cta-primary-text: #F9F9F5;
+    --color-cta-secondary: #F9F9F5;
+    --color-cta-secondary-text: #1C4C15;
+    --color-cta-outline: #1C4C15;
+
+    /* New Color Palette - Element Colors */
+    --color-element-1: #FFEF8A;
+    --color-element-2: #FC8861;
+    --color-element-3: #C9BFFF;
+    --color-element-4: #BADD26;
+
+    /* New Color Palette - Text Colors */
+    --color-text-primary: #414141;
+    --color-text-secondary: #F9F9F5;
+
+    /* New Color Palette - Tint Colors */
+    --color-tint-1: #FFEF8A;
+    --color-tint-2: #FC8861;
+    --color-tint-3: #C9BFFF;
+    --color-tint-4: #BADD26;
 }
 
 @theme inline {
