@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { getJobCandidates, Candidate, CandidatesResponse } from '@/lib/adminService';
+import { getJobCandidates, Candidate, CandidatesResponse, callForInterview, markFinalShortlist } from '@/lib/adminService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import VideoPlayer from '@/components/interview/VideoPlayer';
 import VerticalVideoPlayer from '@/components/interview/VerticalVideoPlayer';
 import InterviewScoreCompact from '@/components/candidates/InterviewScoreCompact';
@@ -53,6 +55,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     const [showVideoModal, setShowVideoModal] = useState(false);
     const [selectedVideoUrl, setSelectedVideoUrl] = useState<string>('');
     const [showVerticalVideoPlayer, setShowVerticalVideoPlayer] = useState(false);
+
+    // Dialog states for shortlist/remove actions
+    const [showShortlistDialog, setShowShortlistDialog] = useState(false);
+    const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+    const [shortlistReason, setShortlistReason] = useState('');
+    const [removeReason, setRemoveReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Candidate highlights data
     const candidateHighlights = {
@@ -312,6 +321,67 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
     const handleCloseVerticalVideoPlayer = () => {
         setShowVerticalVideoPlayer(false);
+    };
+
+    // Shortlist dialog handlers
+    const handleShortlistClick = () => {
+        // Don't open dialog if already shortlisted
+        if (selectedCandidate?.call_for_interview === true) return;
+
+        setShowShortlistDialog(true);
+        setShortlistReason('');
+    };
+
+    const handleShortlistSubmit = async () => {
+        if (!selectedCandidate?.profile_id) return;
+
+        setIsSubmitting(true);
+        try {
+            await callForInterview({
+                user_id: selectedCandidate.profile_id,
+                call_for_interview: true,
+                notes: shortlistReason || 'Candidate shortlisted for interview'
+            });
+
+            // Refresh candidates data
+            await fetchCandidates();
+            setShowShortlistDialog(false);
+            setShortlistReason('');
+        } catch (error) {
+            console.error('Error shortlisting candidate:', error);
+            // You might want to show a toast notification here
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Remove dialog handlers
+    const handleRemoveClick = () => {
+        setShowRemoveDialog(true);
+        setRemoveReason('');
+    };
+
+    const handleRemoveSubmit = async () => {
+        if (!selectedCandidate?.profile_id || !removeReason.trim()) return;
+
+        setIsSubmitting(true);
+        try {
+            await markFinalShortlist({
+                user_id: selectedCandidate.profile_id,
+                final_shortlist: false,
+                reason: removeReason
+            });
+
+            // Refresh candidates data
+            await fetchCandidates();
+            setShowRemoveDialog(false);
+            setRemoveReason('');
+        } catch (error) {
+            console.error('Error removing candidate:', error);
+            // You might want to show a toast notification here
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Create video data array for vertical video player
@@ -993,11 +1063,23 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
                                     {/* Action Buttons */}
                                     <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-                                        <Button variant="outline" className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-6 sm:px-8 py-3 rounded-full">
-                                            Shortlist
+                                        <Button
+                                            onClick={handleShortlistClick}
+                                            variant="outline"
+                                            disabled={selectedCandidate?.call_for_interview === true}
+                                            className={`px-6 sm:px-8 py-3 rounded-full ${selectedCandidate?.call_for_interview === true
+                                                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                                                : 'bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white'
+                                                }`}
+                                        >
+                                            {selectedCandidate?.call_for_interview === true ? 'Shortlisted' : 'Shortlist'}
                                         </Button>
 
-                                        <Button variant="outline" className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-6 sm:px-8 py-3 rounded-full">
+                                        <Button
+                                            onClick={handleRemoveClick}
+                                            variant="outline"
+                                            className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-6 sm:px-8 py-3 rounded-full"
+                                        >
                                             Remove
                                         </Button>
                                     </div>
@@ -1208,6 +1290,94 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                     </div>
                 </div>
             )}
+
+            {/* Shortlist Dialog */}
+            <Dialog open={showShortlistDialog} onOpenChange={setShowShortlistDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Shortlist Candidate</DialogTitle>
+                        <DialogDescription>
+                            Add a reason for shortlisting this candidate (optional)
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <label htmlFor="shortlist-reason" className="block text-sm font-medium text-gray-700 mb-2">
+                                Reason for Shortlisting
+                            </label>
+                            <Textarea
+                                id="shortlist-reason"
+                                placeholder="Enter reason for shortlisting (optional)..."
+                                value={shortlistReason}
+                                onChange={(e) => setShortlistReason(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowShortlistDialog(false)}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleShortlistSubmit}
+                            disabled={isSubmitting}
+                            className="bg-cta-primary hover:bg-cta-primary-text text-white"
+                        >
+                            {isSubmitting ? 'Shortlisting...' : 'Shortlist'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Remove Dialog */}
+            <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Remove Candidate</DialogTitle>
+                        <DialogDescription>
+                            Please provide a reason for removing this candidate from consideration
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <label htmlFor="remove-reason" className="block text-sm font-medium text-gray-700 mb-2">
+                                Reason for Removal <span className="text-red-500">*</span>
+                            </label>
+                            <Textarea
+                                id="remove-reason"
+                                placeholder="Enter reason for removal..."
+                                value={removeReason}
+                                onChange={(e) => setRemoveReason(e.target.value)}
+                                rows={3}
+                                className={!removeReason.trim() ? 'border-red-300 focus:border-red-500' : ''}
+                            />
+                            {!removeReason.trim() && (
+                                <p className="text-red-500 text-xs mt-1">Reason is required</p>
+                            )}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowRemoveDialog(false)}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleRemoveSubmit}
+                            disabled={isSubmitting || !removeReason.trim()}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            {isSubmitting ? 'Removing...' : 'Remove'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
