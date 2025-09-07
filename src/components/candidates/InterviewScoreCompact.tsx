@@ -8,9 +8,11 @@ import InterviewScoreDetailsPopover from './InterviewScoreDetailsPopover';
 
 interface InterviewScoreCompactProps {
     candidate: Candidate;
+    showPopOver?: boolean;
+    containerStyle?: string;
 }
 
-export default function InterviewScoreCompact({ candidate }: InterviewScoreCompactProps) {
+export default function InterviewScoreCompact({ candidate, showPopOver = true, containerStyle }: InterviewScoreCompactProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -129,7 +131,7 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
         <div className="relative" >
             <div
                 ref={containerRef}
-                className="space-y-3 flex flex-col items-center justify-center gap-2 border-2 w-fit p-2 rounded-md cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group z-0"
+                className={`space-y-3 flex flex-col items-center justify-center gap-2 shadow-lg w-fit p-2 rounded-md cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group z-0 ${containerStyle}`}
                 onClick={handleClick}
             >
                 {/* Overall Score */}
@@ -145,7 +147,7 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
                 )}
 
                 {/* Individual Scores */}
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-1">
                     {videoScores && (
                         <div className="flex items-center gap-1">
                             <FaVideo className="text-blue-600 text-xs" />
@@ -168,13 +170,19 @@ export default function InterviewScoreCompact({ candidate }: InterviewScoreCompa
             </div>
 
             {/* Popover */}
-            <InterviewScoreDetailsPopover
-                key={`popover-${candidate.user_id || candidate.profile_id}`}
-                candidate={candidate}
-                isOpen={isPopoverOpen}
-                onClose={() => setIsPopoverOpen(false)}
-                position={popoverPosition}
-            />
+            {
+                showPopOver && (
+                    <InterviewScoreDetailsPopover
+                        key={`popover-${candidate.user_id || candidate.profile_id}`}
+                        candidate={candidate}
+                        isOpen={isPopoverOpen}
+                        onClose={() => setIsPopoverOpen(false)}
+                        position={popoverPosition}
+                    />
+                )
+            }
+
+
         </div>
     );
 }
