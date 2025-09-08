@@ -83,17 +83,16 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             main_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Amal Nambiar Edited Video.m3u8",
             magic_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Amal Nambiar Magic Clip.m3u8",
             why_they_match: [
-                "High-volume calling experience: 100-150 calls per day with 50-60 connections",
-                "Consultative approach: Focuses on helping rather than selling",
-                "Strong objection handling: Effective ROI discussions and value positioning",
-                "Growth mindset: Shows resilience and persistence in face of rejection"
+                "Shows resilience for 100-150 daily call volume requirement",
+                "Value-based selling approach fits education sales perfectly",
+                "Growth mindset adapts well to 8-touchpoint follow-up process",
+                "Natural counseling style matches healthcare professional guidance"
             ],
             development_required: [
-                "Communication clarity: Excessive filler words and unclear structure",
-                "Healthcare industry knowledge: No experience with medical professionals",
-                "Technical precision: Needs improvement in verbal delivery and grammar"
+                "Communication confidence for high-volume calling",
+                "Deeper consultative questioning techniques"
             ],
-            overall_assessment: "Promising candidate with strong sales fundamentals but needs communication refinement. Good fit for high-volume role with training on clarity and healthcare industry knowledge."
+            overall_assessment: "Strong resilience and customer focus, but needs work on communication confidence. Good fit for high-volume calling role with some training."
         },
         "68b2b00cf6363c9cad069e7c": {
             name: "Khushboo Changulani",
@@ -113,17 +112,16 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             main_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Khusbhoo Edited Video.m3u8",
             magic_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Khushboo Magic Clipp.m3u8",
             why_they_match: [
-                "Healthcare background: Comes from medical family, understands doctor mindset and challenges",
-                "Consultative approach: Strong listening skills and data-driven counseling methodology",
-                "Proven track record: 900+ admissions achievement shows volume capability and persistence",
-                "Value-based selling: Effectively shifts focus from cost to value and ROI discussions"
+                "Strong consultative approach perfect for healthcare education counseling",
+                "Value-focused selling using success stories and program benefits",
+                "Sales experience with genuine excitement for guiding medical professionals",
+                "Natural relationship builder who connects well and builds trust"
             ],
             development_required: [
-                "Communication clarity: Needs improvement in verbal delivery and structure",
-                "Healthcare industry knowledge: Limited specific experience with medical professionals",
-                "Technical precision: Some grammatical errors and unclear phrasing affect credibility"
+                "Structured discovery questioning during calls",
+                "Organized presentation delivery"
             ],
-            overall_assessment: "Strong sales foundation with healthcare understanding, but needs communication refinement. Excellent fit for consultative sales role with training on clarity and structure."
+            overall_assessment: "Excellent consultative skills and healthcare passion. Strong fit with minor presentation refinement needed."
         },
         "68ba71a5c5e3293919bed866": {
             name: "Sarik Khan",
@@ -143,17 +141,16 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             main_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Sarik Khan Edited Video.m3u8",
             magic_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Sarik Khan Magic clip.m3u8",
             why_they_match: [
-                "Volume capability: Shows resilience for 100-150 daily calls requirement",
-                "Value-based approach: Naturally focuses on course benefits rather than price - crucial for education sales",
-                "Growth mindset: Will adapt well to 8-touchpoint follow-up process and learn from rejections",
-                "Counseling approach: Natural tendency to help and guide fits the role"
+                "Maintains positive attitude through rejection cycles",
+                "Customer-focused approach emphasizing product benefits",
+                "Understands enrollment urgency tactics and discount strategies",
+                "Respectful communication showing consideration for prospects"
             ],
             development_required: [
-                "Communication confidence: Critical for high-volume calling success",
-                "Consultative skills: Need stronger discovery techniques to convert leads effectively",
-                "Healthcare audience knowledge: No proven experience with medical/healthcare professionals"
+                "Structured discovery and objection handling frameworks",
+                "Communication clarity and specificity"
             ],
-            overall_assessment: "Strong resilience and customer focus, but needs work on communication confidence. Good fit for high-volume calling role with some training."
+            overall_assessment: "Positive attitude and customer focus, but lacks structured sales approach. Suitable for role with comprehensive training."
         },
         "68a6980adba7e6e92fd34f50": {
             name: "Baini Bala Vardhan",
@@ -173,18 +170,16 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             main_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Baini Bala Vardhan Edited video.m3u8",
             magic_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Baini Bala Vardhan Magic Clipp.m3u8",
             why_they_match: [
-                "Education sector experience: Current role at Extramarks with school partnerships",
-                "Structured approach: Uses interest-skills-goals framework for needs analysis",
-                "Resilience and adaptability: Shows growth mindset after rejections",
-                "Quick deal closure: Closed deal in 10 days that colleague couldn't close in months"
+                "Adapts approach based on customer feedback and specific needs",
+                "Structured resilience methods with manager support systems",
+                "Basic needs analysis covering interest, skills, and career goals",
+                "Team-oriented mindset values collaborative sales environment"
             ],
             development_required: [
-                "Communication clarity: Excessive filler words and unclear structure",
-                "Healthcare industry knowledge: No experience with medical professionals",
-                "Cold prospect conversion: Acknowledges weakness in convincing cold prospects",
-                "Technical precision: Needs improvement in verbal delivery and grammar"
+                "Call opening structure and discovery depth",
+                "Communication clarity and confidence"
             ],
-            overall_assessment: "Promising MBA graduate with education sector experience but needs significant communication improvement. Good potential with proper training on clarity and healthcare industry knowledge."
+            overall_assessment: "Good systematic thinking and adaptability, but communication needs improvement. Decent fit with focused training."
         },
         "68a54eb867ab9d61d5328564": {
             name: "Shaik Mujahid",
@@ -204,18 +199,16 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             main_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Shaik Mujahid Edited Video.m3u8",
             magic_video_url: "https://scooter.blob.core.windows.net/scooter-processed-videos/Shaik Mujahid Magic Clip.m3u8",
             why_they_match: [
-                "Extensive experience: 13 years in sales coordination and management roles",
-                "IT training sector background: Relevant experience in education/training industry",
-                "Student counseling experience: Demonstrated ability to guide students on course selection",
-                "Team leadership: 5 years as Sr. Sales Coordinator & Team Leader"
+                "Solution-focused mindset maintaining positive attitude",
+                "Understands career investment value proposition for education",
+                "Learning-oriented approach willing to improve after feedback",
+                "Appreciates team collaboration for professional growth"
             ],
             development_required: [
-                "Communication clarity: Poor verbal delivery with excessive filler words and unclear structure",
-                "Healthcare industry knowledge: No experience with medical professionals",
-                "Interview preparedness: Avoided multiple questions in audio interview",
-                "Technical precision: Significant grammar issues and lack of precision in responses"
+                "Communication structure and message clarity",
+                "Systematic sales approach and frameworks"
             ],
-            overall_assessment: "Experienced sales professional with strong background but significant communication challenges. High experience level offset by poor interview performance and communication issues."
+            overall_assessment: "Right mindset and attitude, but lacks communication clarity and sales structure."
         }
     };
 
