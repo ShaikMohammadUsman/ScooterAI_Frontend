@@ -527,7 +527,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                     ) : (jobDetails?.title && (
                         <div className="hidden md:block text-center">
                             <h1 className="text-lg sm:text-xl font-bold text-text-primary">
-                                {jobDetails.title}
+                                {/* {jobDetails.title} */}
                             </h1>
                         </div>
                     )
