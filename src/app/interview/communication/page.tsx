@@ -162,6 +162,7 @@ function CommunicationInterview() {
     // Retake functionality
     const [currentAnswer, setCurrentAnswer] = useState(""); // Track current answer for retake
     const [retakeCount, setRetakeCount] = useState<number[]>([]);
+    const [isRetaking, setIsRetaking] = useState(false); // Track if user is currently retaking
 
     // Track current question index for retake counting
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -532,6 +533,7 @@ function CommunicationInterview() {
 
             setMicEnabled(true);
             setCurrentAnswer(""); // Reset current answer for new question
+            setIsRetaking(false); // Reset retaking state
         } catch (err: any) {
             console.error("Error starting actual interview:", err);
             setError(err.message || "Failed to start interview");
@@ -563,6 +565,15 @@ function CommunicationInterview() {
                     if (recognizedText.trim()) {
                         // Retake logic is now handled by retakeCount state
                     }
+
+                    // Track retake recording end if user was retaking
+                    if (isRetaking) {
+                        addInterviewEvent('answer_retake_recording_ended', {
+                            questionIndex: currentQuestionIndex,
+                            timestamp: new Date(),
+                            recognizedText: recognizedText
+                        });
+                    }
                 } catch (error) {
                     console.error("Error stopping recognition:", error);
                     setError("Failed to stop recording");
@@ -579,6 +590,14 @@ function CommunicationInterview() {
 
         // Track user response start
         handleUserResponseStart();
+
+        // Track retake recording start if user is retaking
+        if (isRetaking) {
+            addInterviewEvent('answer_retake_recording_started', {
+                questionIndex: currentQuestionIndex,
+                timestamp: new Date()
+            });
+        }
 
         try {
             const speechConfig = speechsdk.SpeechConfig.fromSubscription(SPEECH_KEY, SPEECH_REGION);
@@ -623,6 +642,16 @@ function CommunicationInterview() {
         setLoading(true);
         setIsProcessingResponse(true);
 
+        // Track retake end event if user was retaking
+        if (isRetaking) {
+            addInterviewEvent('answer_retake_ended', {
+                questionIndex: currentQuestionIndex,
+                timestamp: new Date(),
+                retakenAnswer: textToSend
+            });
+            setIsRetaking(false);
+        }
+
         // Track user response end
         handleUserResponseEnd(textToSend);
 
@@ -649,6 +678,7 @@ function CommunicationInterview() {
         // Don't clear recognizedText yet - keep it for retake functionality
         setCurrentAnswer(recognizedText); // Store current answer for retake
         // Retake not available until user answers the new question
+        console.log("messages", messages);
         try {
             // If the server marked the currently shown question as final (step "done"),
             // show the submitting modal immediately after sending the answer to reflect backend processing.
@@ -765,6 +795,7 @@ function CommunicationInterview() {
             setRecognizedText("");
             setCurrentAnswer(""); // Reset current answer for new question
             setIsListening(false);
+            setIsRetaking(false); // Reset retaking state for new question
             if (recognizerRef.current) {
                 recognizerRef.current.stopContinuousRecognitionAsync();
             }
@@ -1006,6 +1037,13 @@ function CommunicationInterview() {
         // Allow only one retake per question
         if (retakeCount[currentQuestionIndex] >= 1) return;
 
+        // Track retake start event
+        addInterviewEvent('answer_retake_started', {
+            questionIndex: currentQuestionIndex,
+            timestamp: new Date()
+        });
+
+        setIsRetaking(true);
         setRetakeCount(prev => {
             const newCount = [...prev];
             newCount[currentQuestionIndex] = 1;
