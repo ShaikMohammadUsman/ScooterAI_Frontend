@@ -29,9 +29,9 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
 
         const summary = candidate?.audio_interview_details?.audio_interview_summary;
         return {
-            averageScore: summary?.average_score,
-            credibilityScore: summary?.credibility_score,
-            communicationScore: summary?.communication_score
+            averageScore: summary?.average_score || 0,  // Already on 0-100 scale
+            credibilityScore: summary?.credibility_score || 0,  // Already on 0-100 scale
+            communicationScore: summary?.communication_score || 0  // Already on 0-100 scale
         };
     };
 
@@ -67,6 +67,26 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
         return data;
     };
 
+    // Create separate data arrays for each polygon
+    const createVideoData = () => {
+        if (!videoScores) return [];
+        return [
+            { name: 'Content & Thought', score: videoScores?.contentAndThought },
+            { name: 'Verbal Delivery', score: videoScores?.verbalDelivery },
+            { name: 'Non-verbal', score: videoScores?.nonVerbal },
+            { name: 'Presence & Auth', score: videoScores?.presenceAndAuthenticity }
+        ];
+    };
+
+    const createAudioData = () => {
+        if (!audioScores) return [];
+        return [
+            { name: 'Credibility', score: audioScores?.credibilityScore },
+            { name: 'Communication', score: audioScores?.communicationScore },
+            { name: 'Average Score', score: audioScores?.averageScore }
+        ];
+    };
+
     const radarData = createRadarData();
 
     // Create SVG radar chart
@@ -80,12 +100,25 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
 
         const angleStep = (2 * Math.PI) / dataPoints;
 
-        // Create polygon points
-        const createPolygonPoints = (scores: number[], offset: number = 0) => {
+        // Create polygon points for video data
+        const createVideoPolygonPoints = (scores: number[]) => {
+            const videoAngleStep = (2 * Math.PI) / scores.length;
             return scores.map((score, index) => {
-                const angle = index * angleStep - Math.PI / 2; // Start from top
+                const angle = index * videoAngleStep - Math.PI / 2; // Start from top
                 const r = (score / 100) * radius;
-                const x = center + r * Math.cos(angle) + offset;
+                const x = center + r * Math.cos(angle);
+                const y = center + r * Math.sin(angle);
+                return `${x},${y}`;
+            }).join(' ');
+        };
+
+        // Create polygon points for audio data
+        const createAudioPolygonPoints = (scores: number[]) => {
+            const audioAngleStep = (2 * Math.PI) / scores.length;
+            return scores.map((score, index) => {
+                const angle = index * audioAngleStep - Math.PI / 2; // Start from top
+                const r = (score / 100) * radius;
+                const x = center + r * Math.cos(angle);
                 const y = center + r * Math.sin(angle);
                 return `${x},${y}`;
             }).join(' ');
@@ -135,9 +168,11 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
             });
         };
 
-        // Create score polygons
-        const videoScores = radarData.map(item => item?.video || 0);
-        const audioScores = radarData.map(item => item?.audio || 0);
+        // Create separate polygon data
+        const videoData = createVideoData();
+        const audioData = createAudioData();
+        const videoScoreValues = videoData.map(item => item?.score || 0);
+        const audioScoreValues = audioData.map(item => item?.score || 0);
 
         return (
             <svg width={size} height={size} className="mx-auto">
@@ -151,9 +186,9 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
                 {createAxisLines()}
 
                 {/* Video scores polygon */}
-                {videoScores.some(score => score > 0) && (
+                {videoScoreValues.some(score => score > 0) && (
                     <polygon
-                        points={createPolygonPoints(videoScores)}
+                        points={createVideoPolygonPoints(videoScoreValues)}
                         fill="rgba(59, 130, 246, 0.2)"
                         stroke="#3b82f6"
                         strokeWidth="2"
@@ -161,9 +196,9 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
                 )}
 
                 {/* Audio scores polygon */}
-                {audioScores.some(score => (score || 0) > 0) && (
+                {audioScoreValues.some(score => (score || 0) > 0) && (
                     <polygon
-                        points={createPolygonPoints(audioScores)}
+                        points={createAudioPolygonPoints(audioScoreValues)}
                         fill="rgba(34, 197, 94, 0.2)"
                         stroke="#22c55e"
                         strokeWidth="2"
@@ -221,7 +256,7 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
                     {audioScores && (
                         <div className="text-center">
                             <div className="text-lg font-bold text-green-600">
-                                {((audioScores?.averageScore / 100) * 5).toFixed(1)}/5
+                                {audioScores?.averageScore.toFixed(1)}/100
                             </div>
                             <div className="text-xs text-gray-600">Audio Overall</div>
                         </div>
