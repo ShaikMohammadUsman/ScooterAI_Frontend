@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import VideoPlayer from '@/components/interview/VideoPlayer';
+import VideoPlayerWithTimeline from '@/components/interview/VideoPlayerWithTimeline';
 import VerticalVideoPlayer from '@/components/interview/VerticalVideoPlayer';
 import InterviewScoreCompact from '@/components/candidates/InterviewScoreCompact';
 import {
@@ -851,10 +852,12 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                 {(() => {
                                                     const candidateData = selectedCandidate?.profile_id ? getCandidateHighlights(selectedCandidate.profile_id) : null;
                                                     const videoUrl = candidateData?.main_video_url || selectedCandidate.interview_status?.video_interview_url;
+                                                    const interviewEvents = selectedCandidate?.video_proctoring_details?.interview_events || [];
 
                                                     return videoUrl ? (
-                                                        <VideoPlayer
+                                                        <VideoPlayerWithTimeline
                                                             videoUrl={videoUrl}
+                                                            interviewEvents={interviewEvents}
                                                             className="w-full h-64 sm:h-80 rounded-none"
                                                             controls={true}
                                                         />
@@ -1298,8 +1301,9 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         </div>
                         <div className="p-4">
                             {selectedVideoUrl ? (
-                                <VideoPlayer
+                                <VideoPlayerWithTimeline
                                     videoUrl={selectedVideoUrl}
+                                    interviewEvents={selectedCandidate?.video_proctoring_details?.interview_events || []}
                                     className="w-full h-64 sm:h-80 lg:h-96 rounded-lg"
                                     controls={true}
                                 />
