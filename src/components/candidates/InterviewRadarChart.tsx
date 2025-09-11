@@ -71,9 +71,9 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
 
     // Create SVG radar chart
     const createRadarChart = () => {
-        const size = 200;
+        const size = 300;
         const center = size / 2;
-        const radius = 80;
+        const radius = 90;
         const dataPoints = radarData.length;
 
         if (dataPoints === 0) return null;
@@ -127,7 +127,7 @@ export default function InterviewRadarChart({ candidate }: InterviewRadarChartPr
                         textAnchor="middle"
                         dominantBaseline="middle"
                         className="text-xs fill-gray-600"
-                        style={{ fontSize: '10px' }}
+                        style={{ fontSize: '12px' }}
                     >
                         {item.name}
                     </text>
