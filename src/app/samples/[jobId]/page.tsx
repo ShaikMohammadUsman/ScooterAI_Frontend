@@ -978,7 +978,9 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                                 {selectedCandidate.career_overview.company_history.map((company, index) => (
                                                                     <div key={index} className="border-l-2 border-gray-200 pl-3">
                                                                         <div className="font-medium">{company.position}</div>
-                                                                        <div className="text-text-primary">{company.company_name}</div>
+                                                                        <div className={`text-text-primary ${isBlurMode ? 'blur-sm select-none' : ''}`}>
+                                                                            {isBlurMode ? 'Tech Solutions Inc.' : company.company_name}
+                                                                        </div>
                                                                         <div className="text-text-primary">
                                                                             {company.start_date} - {company.is_current ? 'Present' : company.end_date}
                                                                             {company.duration_months > 0 && (
