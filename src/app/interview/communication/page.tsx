@@ -105,6 +105,9 @@ function CommunicationInterview() {
     const [showCameraRetry, setShowCameraRetry] = useState(false);
     const [isProcessingFinalResponse, setIsProcessingFinalResponse] = useState(false);
     const [speechDuration, setSpeechDuration] = useState<number>(0);
+    // System audio availability hint (shown for macOS Chrome or when permission denied)
+    const [systemAudioHint, setSystemAudioHint] = useState<string | null>(null);
+    const [systemAudioPrompted, setSystemAudioPrompted] = useState<boolean>(false);
 
     // Interview event timestamps
     const [interviewEvents, setInterviewEvents] = useState<Array<{
@@ -130,6 +133,51 @@ function CommunicationInterview() {
     const recordedChunksRef = useRef<Blob[]>([]);
     const videoStreamRef = useRef<MediaStream | null>(null);
     const recordingFormatRef = useRef<{ fileExtension: string; mimeType: string }>({ fileExtension: 'mp4', mimeType: 'video/mp4;codecs=h264,aac' });
+    // Additional refs for progressive system-audio capture
+    const displayAudioStreamRef = useRef<MediaStream | null>(null);
+    const userMediaStreamRef = useRef<MediaStream | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const systemAudioAttemptedRef = useRef<boolean>(false);
+    // Pre-acquire system audio at camera check time to avoid re-prompt later
+    const requestSystemAudioEarly = async () => {
+        systemAudioAttemptedRef.current = true;
+        if (displayAudioStreamRef.current && displayAudioStreamRef.current.getAudioTracks().length) {
+            console.log('[Recording] System audio already acquired early');
+            return;
+        }
+        if (typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
+            console.log('[Recording] getDisplayMedia not supported in this browser');
+            return;
+        }
+        console.log('[Recording] Early request for system audio via getDisplayMedia({ video: true, audio: true })');
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            if (!stream.getAudioTracks().length) {
+                console.warn('[Recording] Early system audio stream has 0 audio tracks');
+                stream.getTracks().forEach(t => t.stop());
+                return;
+            }
+            // Keep this stream alive for later use; disable its video track to reduce overhead
+            stream.getVideoTracks().forEach(t => { try { t.enabled = false; } catch { } });
+            displayAudioStreamRef.current = stream;
+            setSystemAudioHint(null);
+            console.log('[Recording] Early system audio acquired');
+        } catch (e: any) {
+            console.warn('[Recording] Early system audio request failed:', e?.name || e, e?.message || '');
+            if (!systemAudioPrompted) {
+                try {
+                    toast({
+                        title: 'Allow system audio to be included',
+                        description: 'Please allow screen sharing and ensure "Share audio" is checked to include narration in the recording.',
+                        variant: 'warning'
+                    });
+                } catch { }
+                setSystemAudioHint('System audio permission was not granted. You can allow it when prompted to include narration in the recording.');
+                setSystemAudioPrompted(true);
+            }
+        }
+    };
+
 
     // Verification states
     const [showVerification, setShowVerification] = useState(false);
@@ -311,6 +359,9 @@ function CommunicationInterview() {
             // Wait for proctoring to be fully activated before proceeding
             await new Promise(resolve => setTimeout(resolve, 100));
 
+            // Early prompt for system audio permission to avoid later interruption
+            await requestSystemAudioEarly();
+
             // Start with a test question for camera check
             // const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in the role${jobTitle ? ` of ${jobTitle}` : ""}${jobTitle && jobDescription ? ` at ${jobDescription}` : ""}.`;
             const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in your role${jobTitle ? ` of ${jobTitle}` : ""}.`;
@@ -384,16 +435,104 @@ function CommunicationInterview() {
         }
     };
 
+    // Build a combined media stream that includes camera video, mic audio, and system audio (if supported)
+    const getCombinedMediaStream = async (): Promise<MediaStream> => {
+        // Always acquire user's camera + mic first (widest support)
+        const userMedia = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        userMediaStreamRef.current = userMedia;
+
+        // Try to use any early-acquired system audio. If not present, acquire now only if not attempted before.
+        let displayAudio: MediaStream | null = displayAudioStreamRef.current || null;
+        console.log('[Recording] Preparing system audio for combined stream');
+        try {
+            const hasLiveAudio = !!displayAudio && displayAudio.getAudioTracks().some(t => t.readyState === 'live');
+            if (!hasLiveAudio) {
+                if (systemAudioAttemptedRef.current) {
+                    console.log('[Recording] System audio already attempted earlier; will not re-prompt');
+                    displayAudio = null;
+                } else {
+                    console.log('[Recording] Trying to capture system audio with getDisplayMedia({ video: true, audio: true })');
+                    systemAudioAttemptedRef.current = true;
+                    // Request video+audio to ensure the picker shows the "Share audio" option widely
+                    displayAudio = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                }
+            }
+            // If stream has no audio tracks, treat as unsupported
+            if (!displayAudio || !displayAudio.getAudioTracks().length) {
+                console.warn('[Recording] System audio stream acquired but contains 0 audio tracks');
+                if (displayAudio) { displayAudio.getTracks().forEach(t => t.stop()); }
+                displayAudio = null;
+            } else {
+                console.log('[Recording] System audio track acquired');
+                displayAudioStreamRef.current = displayAudio;
+                // Do not stop the display video track; disabling is safer to keep audio alive
+                try { displayAudio.getVideoTracks().forEach(t => { try { t.enabled = false; } catch { } }); } catch { }
+            }
+        } catch (e: any) {
+            // System audio not available or permission denied — proceed without it
+            const supported = typeof navigator.mediaDevices.getDisplayMedia === 'function';
+            console.warn('[Recording] System audio preparation failed:', e?.name || e, e?.message || '');
+            if (supported && !systemAudioPrompted && !systemAudioAttemptedRef.current) {
+                // Likely permission denied or "Share audio" unchecked in picker
+                try {
+                    toast({
+                        title: 'Allow system audio to be included',
+                        description: 'Please allow screen sharing and ensure "Share audio" is checked to include narration in the recording.',
+                        variant: 'warning'
+                    });
+                } catch { }
+                setSystemAudioHint('System audio permission was not granted. Please allow screen sharing with "Share audio" enabled.');
+                setSystemAudioPrompted(true);
+            }
+            displayAudio = null;
+        }
+
+        // If no system audio, just return the original user media stream
+        if (!displayAudio) {
+            // Detect macOS Chrome and show guidance to enable flag and share audio
+            try {
+                const ua = navigator.userAgent || '';
+                const isMac = /Macintosh|Mac OS X/.test(ua);
+                const isChrome = /Chrome\//.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua);
+                if (isMac && isChrome) {
+                    setSystemAudioHint(
+                        'System audio is not available. On macOS Chrome, enable chrome://flags/#mac-system-audio-loopback, restart Chrome, and when sharing, check "Share audio".'
+                    );
+                }
+            } catch { }
+            console.log('[Recording] Proceeding with mic-only audio (system audio unavailable)');
+            return userMedia;
+        }
+
+        // Mix mic + system audio into a single track for maximum recorder compatibility
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = audioContext;
+
+        const destinationNode = audioContext.createMediaStreamDestination();
+        const micSource = audioContext.createMediaStreamSource(userMedia);
+        const systemSource = audioContext.createMediaStreamSource(displayAudio);
+
+        micSource.connect(destinationNode);
+        systemSource.connect(destinationNode);
+
+        // Build final combined stream: camera video + mixed audio
+        const combined = new MediaStream();
+        userMedia.getVideoTracks().forEach(track => combined.addTrack(track));
+        destinationNode.stream.getAudioTracks().forEach(track => combined.addTrack(track));
+        console.log('[Recording] Using combined stream with camera video + mixed mic+system audio');
+        return combined;
+    };
+
     // Start video recording
     const startRecording = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            videoStreamRef.current = stream;
+            const combinedStream = await getCombinedMediaStream();
+            videoStreamRef.current = combinedStream;
 
             // Get the best supported video format
             const format = getBestSupportedVideoFormat();
 
-            const mediaRecorder = new MediaRecorder(stream, {
+            const mediaRecorder = new MediaRecorder(combinedStream, {
                 mimeType: format.mimeType
             });
 
@@ -440,6 +579,18 @@ function CommunicationInterview() {
         if (videoStreamRef.current) {
             videoStreamRef.current.getTracks().forEach(track => track.stop());
             videoStreamRef.current = null;
+        }
+        if (userMediaStreamRef.current) {
+            userMediaStreamRef.current.getTracks().forEach(track => track.stop());
+            userMediaStreamRef.current = null;
+        }
+        if (displayAudioStreamRef.current) {
+            displayAudioStreamRef.current.getTracks().forEach(track => track.stop());
+            displayAudioStreamRef.current = null;
+        }
+        if (audioContextRef.current) {
+            try { audioContextRef.current.close(); } catch { }
+            audioContextRef.current = null;
         }
         mediaRecorderRef.current = null;
         recordedChunksRef.current = [];
@@ -1391,6 +1542,14 @@ function CommunicationInterview() {
                                     ? 'border-gray-700 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800/90'
                                     : 'border-gray-200 bg-gradient-to-r from-white via-gray-50 to-white/90'
                                     }`}>
+                                    {systemAudioHint && (
+                                        <div className={`mb-4 p-4 rounded-lg border ${isDarkTheme
+                                            ? 'bg-blue-900/20 border-blue-500/30 text-blue-200'
+                                            : 'bg-blue-50 border-blue-200 text-blue-800'
+                                            }`}>
+                                            {systemAudioHint}
+                                        </div>
+                                    )}
                                     {!started ? (
                                         <div className="flex justify-center">
                                             <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
