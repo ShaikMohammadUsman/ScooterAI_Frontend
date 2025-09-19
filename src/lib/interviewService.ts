@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
-// const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+const API_BASE_TEST = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -366,5 +366,37 @@ export async function updateAudioProctoringLogs(
     return res.data;
   } catch (err: any) {
     throw new Error(err.response?.data?.message || "Failed to update audio proctoring logs");
+  }
+}
+
+// -------------------------------------------------------------------------------------------------------------------
+
+// START AUDIO CALL
+export interface StartAudioCallRequest {
+  profile_id: string;
+}
+
+export interface CallDetails {
+  call_id: string;
+  status: string;
+  message: string;
+}
+
+export interface StartAudioCallResponse {
+  status: boolean;
+  message: string;
+  call_details: CallDetails;
+}
+
+export async function startAudioCall(
+  data: StartAudioCallRequest
+): Promise<StartAudioCallResponse> {
+  try {
+    const res = await axios.post(`${API_BASE_TEST}/start-audio-call/`, data, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to start audio call");
   }
 }
