@@ -6,9 +6,9 @@ import {
     Contact,
     DollarSign,
     Briefcase,
-    TrendingUp,
-    Target,
-    Settings,
+    // TrendingUp, // COMMENTED OUT - No longer needed for Sales Context
+    // Target, // COMMENTED OUT - No longer needed for Role & Process
+    // Settings, // COMMENTED OUT - No longer needed for Tools & Platforms
     FileText,
     Sparkles,
     CheckCircle2,
@@ -35,9 +35,9 @@ import {
     ContactInformationForm,
     SalaryExpectationsForm,
     WorkHistoryForm,
-    SalesContextForm,
-    RoleProcessExposureForm,
-    ToolsPlatformsForm,
+    // SalesContextForm, // COMMENTED OUT - No longer needed
+    // RoleProcessExposureForm, // COMMENTED OUT - No longer needed
+    // ToolsPlatformsForm, // COMMENTED OUT - No longer needed
     CandidateSummaryForm
 } from "@/components/resume";
 
@@ -127,36 +127,37 @@ export default function StepFormWrapper({
             />,
             completed: false
         },
-        {
-            id: "sales-context",
-            title: "Sales Context",
-            subtitle: "Your sales expertise",
-            icon: <TrendingUp className="w-5 h-5" />,
-            component: <SalesContextForm profile={profile} onArrayChange={onArrayChange} />,
-            completed: false
-        },
-        {
-            id: "role-process",
-            title: "Role & Process",
-            subtitle: "Your sales methodology",
-            icon: <Target className="w-5 h-5" />,
-            component: (
-                <RoleProcessExposureForm
-                    profile={profile}
-                    onFieldChange={onFieldChange}
-                    onArrayChange={onArrayChange}
-                />
-            ),
-            completed: false
-        },
-        {
-            id: "tools",
-            title: "Tools & Platforms",
-            subtitle: "Your tech stack",
-            icon: <Settings className="w-5 h-5" />,
-            component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
-            completed: false
-        }
+        // COMMENTED OUT - Sales Context, Role & Process, and Tools & Platforms sections
+        // {
+        //     id: "sales-context",
+        //     title: "Sales Context",
+        //     subtitle: "Your sales expertise",
+        //     icon: <TrendingUp className="w-5 h-5" />,
+        //     component: <SalesContextForm profile={profile} onArrayChange={onArrayChange} />,
+        //     completed: false
+        // },
+        // {
+        //     id: "role-process",
+        //     title: "Role & Process",
+        //     subtitle: "Your sales methodology",
+        //     icon: <Target className="w-5 h-5" />,
+        //     component: (
+        //         <RoleProcessExposureForm
+        //             profile={profile}
+        //             onFieldChange={onFieldChange}
+        //             onArrayChange={onArrayChange}
+        //         />
+        //     ),
+        //     completed: false
+        // },
+        // {
+        //     id: "tools",
+        //     title: "Tools & Platforms",
+        //     subtitle: "Your tech stack",
+        //     icon: <Settings className="w-5 h-5" />,
+        //     component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
+        //     completed: false
+        // }
     ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, parsedUserName, onSummaryGenerated, onSummarySaved, contactError, salaryError, workError, workInvalidIndex]);
 
     // Move salaryError and salaryStepIndex below steps definition

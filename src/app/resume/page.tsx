@@ -395,31 +395,47 @@ export default function ResumePage() {
                     promotion_history: profile.career_overview.promotion_history,
                     company_history: profile.career_overview.company_history,
                 },
+                // COMMENTED OUT SECTIONS - Send empty data but keep keys for API compatibility
                 sales_context: {
-                    sales_type: profile.sales_context.sales_type[0] || "",
-                    sales_motion: profile.sales_context.sales_motion[0] || "",
-                    industries_sold_into: profile.sales_context.industries_sold_into || [],
-                    regions_sold_into: profile.sales_context.regions_sold_into || [],
-                    buyer_personas: profile.sales_context.buyer_personas || [],
+                    // sales_type: profile.sales_context.sales_type[0] || "",
+                    // sales_motion: profile.sales_context.sales_motion[0] || "",
+                    // industries_sold_into: profile.sales_context.industries_sold_into || [],
+                    // regions_sold_into: profile.sales_context.regions_sold_into || [],
+                    // buyer_personas: profile.sales_context.buyer_personas || [],
+                    sales_type: "",
+                    sales_motion: "",
+                    industries_sold_into: [],
+                    regions_sold_into: [],
+                    buyer_personas: [],
                 },
                 role_process_exposure: {
-                    sales_role_type: profile.role_process_exposure.sales_role_type,
-                    position_level: profile.role_process_exposure.position_level,
-                    sales_stages_owned: profile.role_process_exposure.sales_stages_owned || [],
-                    average_deal_size: profile.role_process_exposure.average_deal_size_range,
-                    sales_cycle_length: profile.role_process_exposure.sales_cycle_length,
-                    own_quota: profile.role_process_exposure.quota_ownership?.has_quota || false,
-                    quota_ownership: profile.role_process_exposure.quota_ownership?.has_quota ? [
-                        `Has Quota: ${profile.role_process_exposure.quota_ownership.has_quota}`,
-                        `Amount: ${profile.role_process_exposure.quota_ownership.amount}`,
-                        `Cadence: ${profile.role_process_exposure.quota_ownership.cadence}`,
-                        `Attainment: ${profile.role_process_exposure.quota_ownership.attainment_history}`
-                    ].filter(str => str.split(': ')[1]) : [],
-                    quota_attainment: profile.role_process_exposure.quota_ownership?.attainment_history || ""
+                    // sales_role_type: profile.role_process_exposure.sales_role_type,
+                    // position_level: profile.role_process_exposure.position_level,
+                    // sales_stages_owned: profile.role_process_exposure.sales_stages_owned || [],
+                    // average_deal_size: profile.role_process_exposure.average_deal_size_range,
+                    // sales_cycle_length: profile.role_process_exposure.sales_cycle_length,
+                    // own_quota: profile.role_process_exposure.quota_ownership?.has_quota || false,
+                    // quota_ownership: profile.role_process_exposure.quota_ownership?.has_quota ? [
+                    //     `Has Quota: ${profile.role_process_exposure.quota_ownership.has_quota}`,
+                    //     `Amount: ${profile.role_process_exposure.quota_ownership.amount}`,
+                    //     `Cadence: ${profile.role_process_exposure.quota_ownership.cadence}`,
+                    //     `Attainment: ${profile.role_process_exposure.quota_ownership.attainment_history}`
+                    // ].filter(str => str.split(': ')[1]) : [],
+                    // quota_attainment: profile.role_process_exposure.quota_ownership?.attainment_history || ""
+                    sales_role_type: "",
+                    position_level: "",
+                    sales_stages_owned: [],
+                    average_deal_size: "",
+                    sales_cycle_length: "",
+                    own_quota: false,
+                    quota_ownership: [],
+                    quota_attainment: ""
                 },
                 tools_platforms: {
-                    crm_tools: profile.tools_platforms.crm_used || [],
-                    sales_tools: profile.tools_platforms.sales_tools || []
+                    // crm_tools: profile.tools_platforms.crm_used || [],
+                    // sales_tools: profile.tools_platforms.sales_tools || []
+                    crm_tools: [],
+                    sales_tools: []
                 }
             };
 
