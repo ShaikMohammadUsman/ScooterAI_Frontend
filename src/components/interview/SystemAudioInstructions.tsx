@@ -167,14 +167,56 @@ const SystemAudioInstructions: React.FC<SystemAudioInstructionsProps> = ({
                         <h4 className={`font-semibold ${compact ? 'text-sm' : 'text-base'} ${isDarkTheme ? 'text-blue-200' : 'text-blue-800'}`}>macOS (Chrome preferred)</h4>
                     </div>
                     <ol className={`list-decimal ml-4 md:ml-5 ${stepClasses}`}>
-                        <li>Open System Settings → Privacy & Security → Screen Recording and Microphone, and allow Chrome.</li>
-                        <li>In Chrome, when prompted, select "Entire Screen". Ensure "Share audio" is checked.</li>
-                        <li>If "Share audio" is missing, enable Chrome flag and restart Chrome:
+                        <li>Allow Chrome in System Settings → Privacy & Security → Screen Recording and Microphone.
+                            {showImages && (
+                                <div className={imageClasses}>
+                                    <img
+                                        src="/assets/images/macAllowChromeAccess.png"
+                                        alt="macOS - Allow Chrome in Screen Recording and Microphone"
+                                        className="w-full h-auto"
+                                    />
+                                </div>
+                            )}
+                        </li>
+                        <li>In the share prompt, go to the "Entire Screen" tab.
+                            {showImages && (
+                                <div className={imageClasses}>
+                                    <img
+                                        src="/assets/images/macGoToEntireScreenTab.png"
+                                        alt="macOS - Go to Entire Screen tab"
+                                        className="w-full h-auto"
+                                    />
+                                </div>
+                            )}
+                        </li>
+                        <li>Select the screen tile you want to share.
+                            {showImages && (
+                                <div className={imageClasses}>
+                                    <img
+                                        src="/assets/images/macSelectEntireScreen.png"
+                                        alt="macOS - Select screen to share"
+                                        className="w-full h-auto"
+                                    />
+                                </div>
+                            )}
+                        </li>
+                        <li>Check "Share audio".
+                            {showImages && (
+                                <div className={imageClasses}>
+                                    <img
+                                        src="/assets/images/macShareSystemAudio.png"
+                                        alt="macOS - Enable Share audio"
+                                        className="w-full h-auto"
+                                    />
+                                </div>
+                            )}
+                        </li>
+                        <li>Click "Share".</li>
+                        <li>If you don't see the audio checkbox, enable the Chrome flag and restart Chrome:
                             <div className={`mt-2 rounded-md p-2 md:p-3 ${isDarkTheme ? 'bg-gray-800 text-gray-100' : 'bg-gray-100 text-gray-800'} ${compact ? 'text-xs' : 'text-sm'}`}>
                                 chrome://flags/#mac-system-audio-loopback → Enable → Relaunch
                             </div>
                         </li>
-                        <li>Click "Share".</li>
                     </ol>
                     <div className={`mt-3 ${compact ? 'text-xs' : 'text-xs'} ${isDarkTheme ? 'text-blue-300/90' : 'text-blue-700'}`}>
                         Note: Safari/Firefox do not reliably support system audio capture.
