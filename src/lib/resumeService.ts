@@ -210,7 +210,7 @@ export interface SaveCandidateSummaryResponse {
 }
 
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
-// const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+const API_BASE_TEST = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
 /**
  * Parses a resume file with user details and saves user_id to localStorage
@@ -227,7 +227,7 @@ export async function parseResume(parseData: ParseResumeRequest): Promise<ParseR
   formData.append("candidate_source", parseData.candidate_source || "");
   
   try {
-    const res = await axios.post(`${API_BASE}/parse-resume/`, formData, {
+    const res = await axios.post(`${API_BASE_TEST}/parse-resume/`, formData, {
       headers: { 
         "accept": "application/json",
         "Content-Type": "multipart/form-data" 
@@ -252,7 +252,7 @@ export async function parseResume(parseData: ParseResumeRequest): Promise<ParseR
  */
 export async function addResumeProfile(profileData: AddResumeProfileRequest): Promise<AddResumeProfileResponse> {
   try {
-    const res = await axios.post(`${API_BASE}/add-resume-profile/`, profileData, {
+    const res = await axios.post(`${API_BASE_TEST}/add-resume-profile/`, profileData, {
       headers: { 
         "accept": "application/json",
         "Content-Type": "application/json" 
@@ -354,7 +354,7 @@ export async function askJobQuestion(chatbotData: ChatbotRequest): Promise<Chatb
  */
 export async function generateCandidateSummary(summaryData: GenerateCandidateSummaryRequest): Promise<GenerateCandidateSummaryResponse> {
   try {
-    const res = await axios.post(`${API_BASE}/generate-resume-summary`, summaryData, {
+    const res = await axios.post(`${API_BASE_TEST}/generate-resume-summary`, summaryData, {
       headers: { 
         "accept": "application/json",
         "Content-Type": "application/json" 
@@ -373,7 +373,7 @@ export async function generateCandidateSummary(summaryData: GenerateCandidateSum
  */
 export async function saveCandidateSummary(saveData: SaveCandidateSummaryRequest): Promise<SaveCandidateSummaryResponse> {
   try {
-    const res = await axios.post(`${API_BASE}/save-candidate-summary`, saveData, {
+    const res = await axios.post(`${API_BASE_TEST}/save-candidate-summary`, saveData, {
       headers: { 
         "accept": "application/json",
         "Content-Type": "application/json" 
