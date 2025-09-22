@@ -141,13 +141,13 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                         )}
                     </Button>
 
-                    <Button
+                    {/* <Button
                         onClick={() => router.push('/interview/practice')}
                         variant="outline"
                         className="h-12 px-10 sm:px-12 text-lg sm:text-xl font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border-blue-600 text-blue-700 hover:bg-blue-50"
                     >
                         Practice First
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
         </div>
