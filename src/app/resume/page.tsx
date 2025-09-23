@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { parseResume, addResumeProfile, ParseResumeResponse, ResumeProfile, saveCandidateSummary } from "@/lib/resumeService";
@@ -32,6 +32,7 @@ import {
 } from "@/components/resume";
 import { ParsingMessage } from "@/components/ui/parsing-message";
 import { UserLoginResponse } from "@/lib/userService";
+import BrowserWarningModal from "@/components/interview/BrowserWarningModal";
 
 interface CompanyHistory {
     company_name: string;
@@ -113,6 +114,31 @@ export default function ResumePage() {
     const [summaryAlreadySaved, setSummaryAlreadySaved] = useState<boolean>(false); // Track if summary was already saved
     const [candidateSource, setCandidateSource] = useState<string>("");
     const [candidateSourceOther, setCandidateSourceOther] = useState<string>("");
+    const [showBrowserWarning, setShowBrowserWarning] = useState(false);
+
+    // Detect non-Chrome browsers and show warning once on mount
+    useEffect(() => {
+        const ua = navigator.userAgent || "";
+        const uaData = (navigator as any).userAgentData;
+        let isRealChrome = false;
+        if (uaData && Array.isArray(uaData.brands)) {
+            const brands = uaData.brands as Array<{ brand: string; version: string }>;
+            const hasGoogleChrome = brands.some((b: { brand: string; version: string }) => /Google Chrome/i.test(b.brand));
+            const hasEdge = brands.some((b: { brand: string; version: string }) => /Microsoft Edge/i.test(b.brand));
+            const hasOpera = brands.some((b: { brand: string; version: string }) => /Opera|OPR/i.test(b.brand));
+            const isBrave = (navigator as any).brave ? true : false;
+            isRealChrome = hasGoogleChrome && !hasEdge && !hasOpera && !isBrave;
+        } else {
+            const hasChrome = /Chrome\//.test(ua);
+            const isEdge = /Edg\//.test(ua);
+            const isOpera = /OPR\//.test(ua);
+            const isBrave = (navigator as any).brave ? true : false;
+            isRealChrome = hasChrome && !isEdge && !isOpera && !isBrave;
+        }
+        if (!isRealChrome) {
+            setShowBrowserWarning(true);
+        }
+    }, []);
 
     // Handle file upload and parse
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -603,6 +629,12 @@ export default function ResumePage() {
                     </>
                 )}
             </div>
+
+            {/* Browser Warning Modal for non-Chrome */}
+            <BrowserWarningModal
+                open={showBrowserWarning}
+                onOpenChange={setShowBrowserWarning}
+            />
         </div>
     );
 } 
