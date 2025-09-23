@@ -26,6 +26,7 @@ import {
     Monitor,
     Smartphone
 } from "lucide-react";
+import SystemAudioInstructions from "./SystemAudioInstructions";
 
 interface WelcomeScreenProps {
     onStart: () => void;
@@ -309,6 +310,17 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                             </motion.div>
                         </div>
                     </div>
+
+                    <div className="mt-8">
+                        {/* Screen + System Audio Permission Instructions */}
+                        <SystemAudioInstructions
+                            variant="static"
+                            isDarkTheme={isDarkTheme}
+                            showImages={true}
+                            compact={false}
+                        />
+                    </div>
+
 
                     {/* Start Button */}
                     <motion.div

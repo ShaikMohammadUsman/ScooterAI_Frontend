@@ -3,7 +3,8 @@
 @theme {
     --color-primary: #0057d8;
     --color-primary-foreground: #fff;
-    --color-background: #f8fafc;
+    /* --color-background: #f8fafc; */
+    --color-background: #F9F9F5;
     --color-foreground: #171717;
     --color-accent: #f1f5f9;
     --color-accent-foreground: #171717;
@@ -21,11 +22,21 @@
     --font-sans: var(--font-geist-sans), Arial, sans-serif;
     --font-mono: var(--font-geist-mono), monospace;
 
+    /* Typography scale overrides */
+    /* --text-sm: 16px; */
+    /* text-sm => 16px */
+    /* --text-lg: 24px; */
+    /* text-lg => 24px */
+    /* Tailwind doesn't include text-md by default; define a token for our utility below */
+    /* --text-md: 20px; */
+    /* custom: text-md => 20px */
+
     /* New Color Palette - Background Colors */
     --color-bg-main: #F9F9F5;
     --color-bg-secondary-1: #FFEF8A;
     --color-bg-secondary-2: #FC8861;
     --color-bg-secondary-3: #BADD26;
+    --color-bg-secondary-4: #E8E8E8;
 
     /* New Color Palette - CTA Colors */
     --color-cta-primary: #1C4C15;
@@ -142,6 +153,29 @@ body {
 }
 
 @layer utilities {
+
+    /* Custom medium text size utility (20px) */
+    .text-md {
+        font-size: var(--text-md);
+        line-height: 1.5;
+    }
+
+    /* Custom text-size shortcuts that DO NOT override Tailwind defaults */
+    .t-lg {
+        font-size: 24px;
+        line-height: 1.5;
+    }
+
+    .t-md {
+        font-size: 20px;
+        line-height: 1.5;
+    }
+
+    .t-sm {
+        font-size: 16px;
+        line-height: 1.5;
+    }
+
     @keyframes road-move {
         0% {
             transform: translateX(0);

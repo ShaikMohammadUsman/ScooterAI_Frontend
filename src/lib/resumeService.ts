@@ -210,7 +210,7 @@ export interface SaveCandidateSummaryResponse {
 }
 
 const API_BASE = "https://scooter-backend.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
-// const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+const API_BASE_TEST = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
 /**
  * Parses a resume file with user details and saves user_id to localStorage
