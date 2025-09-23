@@ -40,17 +40,17 @@ export default function FormProgressBar({ currentStep, steps, onStepClick }: For
             </div>
 
             {/* Enhanced Step Indicators */}
-            <div className="grid grid-cols-6 gap-4">
+            <div className="flex gap-4 justify-around items-center">
                 {steps.map((step, index) => (
                     <div
                         key={step.id}
-                        className={`relative flex flex-col items-center cursor-pointer transition-all duration-300 lg:w-[160px] lg:min-h-[128px] lg:h-32 mx-0 group
+                        className={`relative flex flex-col items-center cursor-pointer transition-all duration-300 lg:w-[160px] lg:min-h-[128px] lg:h-32 mx-0 group p-2
             `}
                         onClick={() => onStepClick(index)}
                     // style={{ width: 160 }}
                     >
                         <div className={`w-fit md:w-full md:h-32  flex flex-col items-center justify-center shadow-md border-2 transition-all duration-300 bg-white
-            lg:h-24 lg:min-h-[96px] rounded-full lg:rounded-xl sm:p-0` +
+            lg:h-24 lg:min-h-[96px] rounded-full lg:rounded-xl sm:p-2` +
                             (index < currentStep
                                 ? ' border-green-300 shadow-lg'
                                 : index === currentStep

@@ -6,9 +6,9 @@ import {
     Contact,
     DollarSign,
     Briefcase,
-    TrendingUp,
-    Target,
-    Settings,
+    // TrendingUp,
+    // Target,
+    // Settings,
     FileText,
     Sparkles,
     CheckCircle2,
@@ -35,9 +35,9 @@ import {
     ContactInformationForm,
     SalaryExpectationsForm,
     WorkHistoryForm,
-    SalesContextForm,
-    RoleProcessExposureForm,
-    ToolsPlatformsForm,
+    // SalesContextForm,
+    // RoleProcessExposureForm,
+    // ToolsPlatformsForm,
     CandidateSummaryForm
 } from "@/components/resume";
 
@@ -127,36 +127,36 @@ export default function StepFormWrapper({
             />,
             completed: false
         },
-        {
-            id: "sales-context",
-            title: "Sales Context",
-            subtitle: "Your sales expertise",
-            icon: <TrendingUp className="w-5 h-5" />,
-            component: <SalesContextForm profile={profile} onArrayChange={onArrayChange} />,
-            completed: false
-        },
-        {
-            id: "role-process",
-            title: "Role & Process",
-            subtitle: "Your sales methodology",
-            icon: <Target className="w-5 h-5" />,
-            component: (
-                <RoleProcessExposureForm
-                    profile={profile}
-                    onFieldChange={onFieldChange}
-                    onArrayChange={onArrayChange}
-                />
-            ),
-            completed: false
-        },
-        {
-            id: "tools",
-            title: "Tools & Platforms",
-            subtitle: "Your tech stack",
-            icon: <Settings className="w-5 h-5" />,
-            component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
-            completed: false
-        }
+        // {
+        //     id: "sales-context",
+        //     title: "Sales Context",
+        //     subtitle: "Your sales expertise",
+        //     icon: <TrendingUp className="w-5 h-5" />,
+        //     component: <SalesContextForm profile={profile} onArrayChange={onArrayChange} />,
+        //     completed: false
+        // },
+        // {
+        //     id: "role-process",
+        //     title: "Role & Process",
+        //     subtitle: "Your sales methodology",
+        //     icon: <Target className="w-5 h-5" />,
+        //     component: (
+        //         <RoleProcessExposureForm
+        //             profile={profile}
+        //             onFieldChange={onFieldChange}
+        //             onArrayChange={onArrayChange}
+        //         />
+        //     ),
+        //     completed: false
+        // },
+        // {
+        //     id: "tools",
+        //     title: "Tools & Platforms",
+        //     subtitle: "Your tech stack",
+        //     icon: <Settings className="w-5 h-5" />,
+        //     component: <ToolsPlatformsForm profile={profile} onArrayChange={onArrayChange} />,
+        //     completed: false
+        // }
     ], [profile, onFieldChange, onArrayChange, onCompanyHistoryChange, onAddCompanyHistory, onRemoveCompanyHistory, parsedUserName, onSummaryGenerated, onSummarySaved, contactError, salaryError, workError, workInvalidIndex]);
 
     // Move salaryError and salaryStepIndex below steps definition
