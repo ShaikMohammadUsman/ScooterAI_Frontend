@@ -28,6 +28,10 @@ import InterviewScoreCompact from '@/components/candidates/InterviewScoreCompact
 import InterviewScoreCard from '@/components/candidates/InterviewScoreCard';
 import VideoPlayer from '@/components/interview/VideoPlayer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import NewApplicantCard from "@/components/company/cards/NewApplicantCard";
+import SeenApplicantCard from "@/components/company/cards/SeenApplicantCard";
+import ShortlistedApplicantCard from "@/components/company/cards/ShortlistedApplicantCard";
+import RejectedApplicantCard from "@/components/company/cards/RejectedApplicantCard";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -126,6 +130,18 @@ export default function JobCandidatesPage({ params }: PageProps) {
     useEffect(() => {
         fetchCandidates();
     }, [jobId, activeTab, currentPage, pageSize]);
+
+    // Listen to card-level view actions
+    useEffect(() => {
+        const handler = (e: any) => {
+            const pid = e?.detail?.profileId as string | undefined;
+            if (!pid) return;
+            const cand = candidates.find(c => c.profile_id === pid);
+            if (cand) setSelectedCandidate(cand);
+        };
+        window.addEventListener('openCandidateDetails', handler as any);
+        return () => window.removeEventListener('openCandidateDetails', handler as any);
+    }, [candidates]);
 
     // Reset page when switching tabs
     useEffect(() => {
@@ -766,8 +782,28 @@ export default function JobCandidatesPage({ params }: PageProps) {
                             </TabsTrigger>
                         ))}
                     </TabsList>
-                    {/* We keep single content; data is driven by activeTab above */}
-                    <TabsContent value={activeTab} />
+                    {/* Tab content lists */}
+                    <TabsContent value={activeTab}>
+                        {activeTab === 'new' ? (
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {candidates.map((c) => (
+                                    <NewApplicantCard key={c.profile_id} candidate={c} jobId={jobId} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="space-y-3 mt-4">
+                                {candidates.map((c) => (
+                                    activeTab === 'seen' ? (
+                                        <SeenApplicantCard key={c.profile_id} candidate={c} jobId={jobId} roleTitle={jobDetails?.title || ''} />
+                                    ) : activeTab === 'shortlisted' ? (
+                                        <ShortlistedApplicantCard key={c.profile_id} candidate={c} jobId={jobId} roleTitle={jobDetails?.title || ''} />
+                                    ) : (
+                                        <RejectedApplicantCard key={c.profile_id} candidate={c} jobId={jobId} />
+                                    )
+                                ))}
+                            </div>
+                        )}
+                    </TabsContent>
                 </Tabs>
             </div>
 
@@ -951,9 +987,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                 {/* Candidates List - Main Content Area */}
                 <div className="">
-                    <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-6">
+                    {/* <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-6">
                         {pageLoading ? (
-                            // Loading skeleton for candidates
+                            
                             Array.from({ length: pageSize }).map((_, index) => (
                                 <Card key={`loading-${index}`} className="p-4 sm:p-6">
                                     <div className="flex flex-col lg:flex-row items-start justify-between gap-4">
@@ -1001,28 +1037,19 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 </span>
                                             </div>
                                             <div className='flex flex-row items-center justify-between gap-2 mt-4'>
-                                                {/* Interview Process Status */}
+                                               
                                                 <div className="">
                                                     <InterviewStatusTimeline candidate={candidate} />
                                                 </div>
 
-                                                {/* Interview Scores */}
+                                                
                                                 <div className="">
                                                     <InterviewScoreCompact candidate={candidate} />
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="w-full sm:w-auto flex flex-row items-center gap-2 flex-shrink-0">
-                                            {/* {candidate?.interview_status?.audio_interview_passed && (
-                                                <span className="flex items-center gap-2 p-2 text-green-600 bg-green-50 rounded-full">
-                                                    <FaMicrophone /> <FaCheck />
-                                                </span>
-                                            )}
-                                            {candidate?.interview_status?.video_interview_attended && (
-                                                <span className="flex items-center gap-2 p-2 text-blue-600 bg-blue-50 rounded-full">
-                                                    <FaVideo /> <FaCheck />
-                                                </span>
-                                            )} */}
+                                           
 
                                             {candidate?.interview_status?.resume_url && (
                                                 <Button
@@ -1087,7 +1114,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 </Card>
                             ))
                         )}
-                    </div>
+                    </div> */}
 
                     {/* Pagination */}
                     {pagination && pagination.total_pages > 1 && (
