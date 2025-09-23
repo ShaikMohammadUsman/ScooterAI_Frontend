@@ -140,7 +140,7 @@ export default function UserLoginSection({ onLoginSuccess, onContinueWithoutLogi
                                     </>
                                 ) : (
                                     <>
-                                        Check Your Profile
+                                        Already Registered ?  Resume Login
                                         <ArrowRight className="w-5 h-5 ml-2" />
                                     </>
                                 )}
