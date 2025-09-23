@@ -852,7 +852,7 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
                                         onClick={() => setShowWarning(false)}
                                         className="bg-red-600 hover:bg-red-700"
                                     >
-                                        Acknowledge
+                                        Go Fullscreen
                                     </Button>
                                 </div>
                             </CardContent>
