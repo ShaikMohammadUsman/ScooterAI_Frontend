@@ -2,7 +2,10 @@
 import React, { useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import ScooterHeader from "@/components/ScooterHeader";
+import DateCalendar from "@/components/schedule/DateCalendar";
+import SlotsPicker from "@/components/schedule/SlotsPicker";
 
 const buildSlots = (startHour: number, endHour: number) => {
     const slots: string[] = [];
@@ -25,11 +28,10 @@ export default function ScheduleInterviewPage() {
     const expected = params.get("expected") || "";
     const relocation = params.get("relocation") === "1";
 
-    const [selectedDate, setSelectedDate] = useState<string>(() => {
-        const d = new Date();
-        return d.toISOString().substring(0, 10);
-    });
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     const slots = useMemo(() => buildSlots(9, 18), []); // 9:00 to 17:30
 
@@ -39,11 +41,56 @@ export default function ScheduleInterviewPage() {
         );
     };
 
+    const formatLocalDate = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
     const handleSubmit = () => {
         // TODO: integrate with backend
-        console.log({ jobId, profileId, selectedDate, selectedSlots });
-        alert("Availability submitted. Thank you!");
-        router.back();
+        //need to be converted in the iso formatting string for backend
+        const dateStr = formatLocalDate(selectedDate);
+        console.log({ jobId, profileId, selectedDate: dateStr, selectedSlots });
+        setShowConfirm(true);
+    };
+
+    // Calendar helpers
+    const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
+    const endOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const addMonths = (date: Date, n: number) => new Date(date.getFullYear(), date.getMonth() + n, 1);
+    const isSameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const isBeforeToday = (d: Date) => {
+        const t = new Date();
+        t.setHours(0, 0, 0, 0);
+        const dd = new Date(d);
+        dd.setHours(0, 0, 0, 0);
+        return dd < t;
+    };
+    const getCalendarDays = (month: Date) => {
+        const start = startOfMonth(month);
+        const end = endOfMonth(month);
+        const startWeekday = (start.getDay() + 6) % 7; // make Monday=0
+        const days: Date[] = [];
+        // leading blanks (prev month days)
+        for (let i = 0; i < startWeekday; i++) {
+            const d = new Date(start);
+            d.setDate(d.getDate() - (startWeekday - i));
+            days.push(d);
+        }
+        // current month days
+        for (let d = 1; d <= end.getDate(); d++) {
+            days.push(new Date(month.getFullYear(), month.getMonth(), d));
+        }
+        // trailing to fill 6 rows * 7 columns = 42
+        while (days.length % 7 !== 0 || days.length < 42) {
+            const last = days[days.length - 1];
+            const next = new Date(last);
+            next.setDate(last.getDate() + 1);
+            days.push(next);
+        }
+        return days;
     };
 
     return (
@@ -94,31 +141,27 @@ export default function ScheduleInterviewPage() {
                 </div>
 
                 <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Calendar (simple date input placeholder for now) */}
+                    {/* Custom Calendar */}
                     <div className="md:col-span-2">
                         <div className="text-sm font-medium text-text-primary mb-2">Pick Date</div>
-                        <input
-                            type="date"
-                            className="border rounded-md px-3 py-2"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
+                        <DateCalendar
+                            currentMonth={currentMonth}
+                            onMonthChange={setCurrentMonth}
+                            selectedDate={selectedDate}
+                            onSelectDate={setSelectedDate}
+                            heightPx={420}
                         />
                     </div>
 
                     {/* Slots */}
                     <div>
                         <div className="text-sm font-medium text-text-primary mb-2">Available Slots (30 min)</div>
-                        <div className="grid grid-cols-2 gap-2 max-h-80 overflow-auto border rounded-md p-2">
-                            {slots.map((slot) => (
-                                <button
-                                    key={slot}
-                                    onClick={() => toggleSlot(slot)}
-                                    className={`px-3 py-2 rounded-full border text-sm ${selectedSlots.includes(slot) ? "bg-cta-primary text-white border-cta-outline" : "bg-white text-text-primary"}`}
-                                >
-                                    {slot}
-                                </button>
-                            ))}
-                        </div>
+                        <SlotsPicker
+                            slots={slots}
+                            selected={selectedSlots}
+                            onToggle={toggleSlot}
+                            heightPx={420}
+                        />
                     </div>
                 </div>
 
@@ -128,6 +171,28 @@ export default function ScheduleInterviewPage() {
                     </Button>
                 </div>
             </div>
+            <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+                <DialogContent className="sm:max-w-md bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className="text-center">The Interview Has Been Scheduled</DialogTitle>
+                        <DialogDescription className="text-center">Your availability has been recorded.</DialogDescription>
+                    </DialogHeader>
+                    {/* <div className="text-center space-y-2 py-2">
+                        <div className="text-sm"><span className="font-semibold">Date:</span> {formatLocalDate(selectedDate)}</div>
+                        <div className="text-sm">
+                            <span className="font-semibold">Selected Slots:</span> {selectedSlots.length > 0 ? selectedSlots.sort().join(', ') : 'None'}
+                        </div>
+                    </div> */}
+                    <DialogFooter className="flex flex-wrap gap-4 justify-around items-center">
+                        <Button variant="primary" className="text-sm" onClick={() => router.push(`/candidate-portfolio/${jobId}`)}>
+                            View Shortlisted Candidates
+                        </Button>
+                        <Button variant="secondary" className="text-sm" onClick={() => router.push(`/company/jobs/${jobId}`)}>
+                            Continue To Browse Candidates
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
