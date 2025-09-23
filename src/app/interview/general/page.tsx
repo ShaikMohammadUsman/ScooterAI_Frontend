@@ -805,7 +805,11 @@ export default function VoiceInterviewPage() {
             </AnimatePresence>
 
             {/* Browser Warning Modal for non-Chrome */}
-            <BrowserWarningModal open={showBrowserWarning} onOpenChange={setShowBrowserWarning} />
+            <BrowserWarningModal
+                open={showBrowserWarning}
+                onOpenChange={setShowBrowserWarning}
+                targetUrl={`/resume?role=${encodeURIComponent(searchParams.get('role') || '')}&job_id=${searchParams.get('job_id') || ''}`}
+            />
 
             {/* Loading Modal for Initial Interview Start */}
             <AnimatePresence>

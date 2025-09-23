@@ -17,6 +17,7 @@ import { FaExclamationTriangle, FaRegEye, FaCheck } from "react-icons/fa";
 type BrowserWarningModalProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    targetUrl?: string; // optional URL to open/copy instead of current page
 };
 
 function getChromeDeepLink(currentUrl: string): string | null {
@@ -35,23 +36,31 @@ function getChromeDeepLink(currentUrl: string): string | null {
     }
 }
 
-export default function BrowserWarningModal({ open, onOpenChange }: BrowserWarningModalProps) {
+export default function BrowserWarningModal({ open, onOpenChange, targetUrl }: BrowserWarningModalProps) {
     const [showHelp, setShowHelp] = React.useState(false);
     const [currentUrl, setCurrentUrl] = React.useState("");
     const [copied, setCopied] = React.useState(false);
 
     React.useEffect(() => {
         if (open) {
-            setCurrentUrl(window.location.href);
+            const fullUrl = targetUrl
+                ? `${window.location.origin}${targetUrl}`
+                : window.location.href;
+            setCurrentUrl(fullUrl);
             setShowHelp(false);
         }
-    }, [open]);
+    }, [open, targetUrl]);
 
     const handleOpenInChrome = React.useCallback(() => {
         const ua = navigator.userAgent || "";
         const isAndroid = /Android/i.test(ua);
-        const current = window.location.href;
-        const link = getChromeDeepLink(current);
+
+        // Construct full URL for targetUrl
+        const fullUrl = targetUrl
+            ? `${window.location.origin}${targetUrl}`
+            : window.location.href;
+
+        const link = getChromeDeepLink(fullUrl);
         if (!link) return;
         const [desktop, android] = link.split("|||");
 
@@ -67,17 +76,16 @@ export default function BrowserWarningModal({ open, onOpenChange }: BrowserWarni
             // Attempt deep link
             window.location.href = desktop;
         } catch { }
-        // Fallback shortly after: show instructions, open Chrome download, and copy URL for easy paste
+        // Fallback shortly after: show instructions and copy URL for easy paste
         setTimeout(() => {
             if (document.visibilityState === before) {
                 try {
-                    navigator.clipboard?.writeText(current).catch(() => { });
+                    navigator.clipboard?.writeText(fullUrl).catch(() => { });
                 } catch { }
                 setShowHelp(true);
-                window.open("https://www.google.com/chrome/", "_blank");
             }
         }, 600);
-    }, []);
+    }, [targetUrl]);
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -179,7 +187,7 @@ export default function BrowserWarningModal({ open, onOpenChange }: BrowserWarni
                             </div>
                         </div>
                         <div className="text-xs text-gray-600">
-                            Alternatively, install/update Chrome here: <a href="https://www.google.com/chrome/" target="_blank" rel="noreferrer" className="text-blue-600 underline">Download Chrome</a>
+                            Then paste into Chrome’s address bar and press Enter.
                         </div>
                     </div>
                 )}
