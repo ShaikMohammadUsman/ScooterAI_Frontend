@@ -11,12 +11,14 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 text-white shadow-lg hover:from-blue-600 hover:via-blue-700 hover:to-purple-700 hover:shadow-2xl hover:brightness-105 focus-visible:ring-blue-400/40 focus-visible:border-blue-500 active:scale-98",
+        primary:
+          "bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-6 sm:px-8 py-3 rounded-full",
         destructive:
           "bg-gradient-to-r from-red-500 via-red-600 to-pink-600 text-white shadow-lg hover:from-red-600 hover:via-pink-700 hover:to-pink-700 hover:shadow-2xl hover:brightness-105 focus-visible:ring-red-400/40 focus-visible:border-red-500 active:scale-98",
         outline:
           "border-2 border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 hover:border-blue-400 hover:shadow-md hover:shadow-blue-100 hover:-translate-y-0.5 focus-visible:ring-blue-200/40",
         secondary:
-          "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-300 text-gray-800 shadow-sm hover:from-gray-200 hover:via-gray-300 hover:to-gray-400 hover:shadow-md hover:brightness-105 hover:-translate-y-0.5",
+          "bg-cta-primary-text text-cta-primary border-2 border-cta-outline px-6 sm:px-8 py-3 rounded-full hover:bg-cta-primary hover:text-white hover:border-cta-outline",
         ghost:
           "text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm hover:shadow-blue-50",
         link:
