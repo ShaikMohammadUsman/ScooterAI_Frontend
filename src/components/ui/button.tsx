@@ -20,7 +20,7 @@ const buttonVariants = cva(
         ghost:
           "text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm hover:shadow-blue-50",
         link:
-          "text-blue-600 underline underline-offset-4 hover:text-blue-800 hover:decoration-2 transition-colors duration-200",
+          "text-text-primary font-bold hover:bg-muted hover:decoration-2 transition-colors duration-200",
         success:
           "bg-gradient-to-r from-green-500 via-green-600 to-emerald-500 text-white shadow-lg hover:from-green-600 hover:via-emerald-600 hover:to-emerald-700 hover:shadow-2xl hover:brightness-105 focus-visible:ring-green-400/40 focus-visible:border-green-500 active:scale-98",
         warning:
