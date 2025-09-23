@@ -293,11 +293,12 @@ function CommunicationInterview() {
     // Handle proctoring violations
     const handleProctoringViolation = (violation: string) => {
         setProctoringViolations(prev => [...prev, violation]);
-        toast({
-            title: "Proctoring Alert",
-            description: violation,
-            variant: "destructive",
-        });
+        // toast({
+        //     title: "Proctoring Alert",
+        //     description: violation,
+        //     variant: "destructive",
+        // });
+        // Track silently without showing a toast to avoid UI interruptions
     };
 
     // Handle verification

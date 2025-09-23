@@ -109,7 +109,7 @@ export default function BrowserWarningModal({ open, onOpenChange, targetUrl }: B
                         onClick={() => onOpenChange(false)}
                         className={cn(
                             "relative group overflow-visible h-11 px-5 rounded-full",
-                            "bg-cta-secondary hover:bg-gray-100 text-cta-secondary-text border border-cta-secondary"
+                            "bg-cta-secondary hover:bg-gray-100 text-cta-secondary-text hover:text-cta-primary border border-cta-secondary"
                         )}
                     >
                         <span
