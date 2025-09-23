@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getJobCandidates, Candidate, CandidatesResponse, callForInterview, markFinalShortlist } from '@/lib/adminService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,7 @@ interface PageProps {
 
 export default function CandidatePortfolioPage({ params }: PageProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const resolvedParams = use(params);
     const jobId = resolvedParams.jobId;
 
@@ -264,6 +265,18 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         }
     };
 
+    // Preselect candidate if profileId exists in query params
+    useEffect(() => {
+        const profileId = searchParams ? searchParams.get('profileId') : null;
+        if (!profileId) return;
+        if (!candidates || candidates.length === 0) return;
+        const candidate = candidates.find(c => c.profile_id === profileId);
+        if (candidate) {
+            setSelectedCandidate(candidate);
+            setShowCandidateList(false);
+        }
+    }, [candidates, searchParams]);
+
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
     };
@@ -277,6 +290,26 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         setTimeout(() => {
             setIsAnimating(false);
         }, 500);
+    };
+
+    // Share report handler
+    const handleShareReport = async () => {
+        if (!selectedCandidate) return;
+        const shareUrl = `${window.location.origin}/candidate-portfolio/${jobId}?profileId=${selectedCandidate.profile_id}`;
+        try {
+            const nav: any = navigator as any;
+            if (nav && typeof nav.share === 'function') {
+                await nav.share({ title: 'Candidate Report', url: shareUrl });
+                return;
+            }
+        } catch (_) { }
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Share link copied to clipboard');
+        } catch (_) {
+            // Fallback: open in new tab where user can copy
+            window.open(shareUrl, '_blank');
+        }
     };
 
     const handleShowListContainer = () => {
@@ -421,6 +454,32 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         const years = Math.floor(totalExp);
         const months = Math.round((totalExp - years) * 12);
         return `${years} years ${months} months`;
+    };
+
+    // Average tenure helper in years and months
+    const getAverageTenure = (candidate: Candidate): string => {
+        const avg = candidate?.career_overview?.average_tenure_per_role || 0;
+        const years = Math.floor(avg);
+        const months = Math.round((avg - years) * 12);
+        return `${years} years ${months} months`;
+    };
+
+    // Extract numeric CTC value from number | { value: number }
+    const getCtcValue = (ctc: number | { value: number } | undefined | null): number | null => {
+        if (ctc == null) return null;
+        if (typeof ctc === 'number') return ctc;
+        if (typeof (ctc as any).value === 'number') return (ctc as any).value;
+        return null;
+    };
+
+    // Budget status relative to defined budget (7 LPA)
+    const getBudgetStatus = (candidate: Candidate): string => {
+        const BASE = 9.5; // LPA
+        const expected = getCtcValue(candidate?.basic_information?.expected_ctc);
+        if (expected == null) return 'N/A';
+        if (expected <= BASE) return 'Under Budget';
+        if (expected > BASE * 1.5) return 'Over Budget';
+        return 'Negotiable Budget';
     };
 
     const parseJobFitAssessment = (text: string) => {
@@ -907,8 +966,11 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     <Accordion type="multiple" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                                         {/* Experience Summary */}
                                         <AccordionItem value="experience" className="bg-bg-main border-purple-200 rounded-none">
+                                            <div className="px-4 pt-3">
+                                                <h4 className="font-bold text-text-primary mb-1">Experience</h4>
+                                            </div>
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 hover:bg-element-2 data-[state=open]:bg-element-2 rounded-none transition-colors">
-                                                <h4 className="font-bold text-text-primary">Experience</h4>
+                                                <span className="font-semibold text-text-primary">{getExperienceYears(selectedCandidate)}</span>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-4 pb-4">
                                                 <div className="space-y-3">
@@ -917,7 +979,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                         <div className="space-y-2 text-sm text-text-primary">
                                                             <div>Total Experience: {getExperienceYears(selectedCandidate)}</div>
                                                             <div>Sales Experience: {selectedCandidate.career_overview?.years_sales_experience || 0} years</div>
-                                                            <div>Average Tenure: {selectedCandidate.career_overview?.average_tenure_per_role || 0} years per role</div>
+                                                            <div>Average Tenure: {getAverageTenure(selectedCandidate)} per role</div>
                                                             {selectedCandidate.career_overview?.employment_gaps?.has_gaps && (
                                                                 <div className="text-orange-600">Employment Gaps: {selectedCandidate.career_overview.employment_gaps.duration}</div>
                                                             )}
@@ -948,8 +1010,11 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
                                         {/* Budget Information */}
                                         <AccordionItem value="budget" className="bg-bg-main border-purple-200 rounded-none">
+                                            <div className="px-4 pt-3">
+                                                <h4 className="font-bold text-text-primary mb-1">Budget Analysis</h4>
+                                            </div>
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 hover:bg-element-2 data-[state=open]:bg-element-2 rounded-none transition-colors">
-                                                <h4 className="font-bold text-text-primary">Budget Analysis</h4>
+                                                <span className="font-semibold text-text-primary">{getBudgetStatus(selectedCandidate)}</span>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-4 pb-4">
                                                 <div className="space-y-3">
@@ -988,8 +1053,11 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
                                         {/* Notice Period */}
                                         <AccordionItem value="notice-period" className="bg-bg-main border-purple-200 rounded-none">
+                                            <div className="px-4 pt-3">
+                                                <h4 className="font-bold text-text-primary mb-1">Availability</h4>
+                                            </div>
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 hover:bg-element-2 data-[state=open]:bg-element-2 rounded-none transition-colors">
-                                                <h4 className="font-bold text-text-primary">Notice Period</h4>
+                                                <span className="font-semibold text-text-primary">{selectedCandidate.basic_information?.notice_period || 'Not specified'}</span>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-4 pb-4">
                                                 <div className="space-y-3">
@@ -1018,38 +1086,31 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             </AccordionContent>
                                         </AccordionItem>
 
-                                        {/* Additional Info */}
-                                        <AccordionItem value="additional-info" className="bg-bg-main border-purple-200 rounded-none">
+                                        {/* Average Tenure (replaces Additional Info) */}
+                                        <AccordionItem value="average-tenure" className="bg-bg-main border-purple-200 rounded-none">
+                                            <div className="px-4 pt-3">
+                                                <h4 className="font-bold text-text-primary mb-1">Average Tenure</h4>
+                                            </div>
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 hover:bg-element-2 data-[state=open]:bg-element-2 rounded-none transition-colors">
-                                                <h4 className="font-bold text-text-primary">Additional Info</h4>
+                                                <span className="font-semibold text-text-primary">{getAverageTenure(selectedCandidate)}</span>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-4 pb-4">
                                                 <div className="space-y-3">
                                                     <div className="bg-bg-main p-3 rounded-none">
-                                                        <h5 className="font-medium text-text-primary mb-2">Resume</h5>
+                                                        <h5 className="font-medium text-text-primary mb-2">Details</h5>
                                                         <div className="space-y-2 text-sm text-text-primary">
-                                                            <div className="flex items-center justify-center">
-                                                                <Button
-                                                                    variant="outline"
-                                                                    className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-6 py-2 rounded-full flex items-center gap-2"
-                                                                    onClick={() => {
-                                                                        if (selectedCandidate.interview_status?.resume_url) {
-                                                                            window.open(selectedCandidate.interview_status.resume_url, '_blank');
-                                                                        }
-                                                                    }}
-                                                                    disabled={!selectedCandidate.interview_status?.resume_url}
-                                                                >
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                    </svg>
-                                                                    Download Resume
-                                                                </Button>
-                                                            </div>
-                                                            {!selectedCandidate.interview_status?.resume_url && (
-                                                                <p className="text-xs text-text-secondary text-center mt-2">
-                                                                    Resume not available
-                                                                </p>
+                                                            {/* <div>Average tenure per role: {getAverageTenure(selectedCandidate)}</div> */}
+                                                            {selectedCandidate.career_overview?.employment_gaps?.has_gaps && (
+                                                                <div className="text-orange-600">Employment Gaps: {selectedCandidate.career_overview.employment_gaps.duration}</div>
                                                             )}
+                                                            <div className="space-y-2 text-sm text-text-primary">
+                                                                <div>Total Experience: {getExperienceYears(selectedCandidate)}</div>
+                                                                <div>Sales Experience: {selectedCandidate.career_overview?.years_sales_experience || 0} years</div>
+                                                                <div>Average Tenure: {getAverageTenure(selectedCandidate)} per role</div>
+                                                                {selectedCandidate.career_overview?.employment_gaps?.has_gaps && (
+                                                                    <div className="text-orange-600">Employment Gaps: {selectedCandidate.career_overview.employment_gaps.duration}</div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1073,10 +1134,32 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
                                         <Button
                                             onClick={handleRemoveClick}
-                                            variant="outline"
-                                            className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-6 sm:px-8 py-3 rounded-full"
+                                            variant="primary"
+                                            className=""
                                         >
                                             Remove
+                                        </Button>
+                                    </div>
+
+                                    {/* Download & Share Buttons */}
+                                    <div className="mt-4 flex items-center justify-center gap-3">
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => {
+                                                if (selectedCandidate?.interview_status?.resume_url) {
+                                                    window.open(selectedCandidate.interview_status.resume_url, '_blank');
+                                                }
+                                            }}
+                                            disabled={!selectedCandidate?.interview_status?.resume_url}
+                                        >
+                                            Download Resume
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            onClick={handleShareReport}
+                                            disabled={!selectedCandidate}
+                                        >
+                                            Share Report
                                         </Button>
                                     </div>
                                 </div>
@@ -1290,14 +1373,14 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
             {/* Shortlist Dialog */}
             <Dialog open={showShortlistDialog} onOpenChange={setShowShortlistDialog}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Shortlist Candidate</DialogTitle>
-                        <DialogDescription>
+                <DialogContent className="sm:max-w-md bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className='text-center'>Shortlist Candidate</DialogTitle>
+                        <DialogDescription className='text-center'>
                             Add a reason for shortlisting this candidate (optional)
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-4 text-center">
                         <div>
                             <label htmlFor="shortlist-reason" className="block text-sm font-medium text-gray-700 mb-2">
                                 Reason for Shortlisting
@@ -1311,18 +1394,18 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             />
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex justify-around items-center">
                         <Button
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => setShowShortlistDialog(false)}
                             disabled={isSubmitting}
                         >
                             Cancel
                         </Button>
                         <Button
+                            variant="primary"
                             onClick={handleShortlistSubmit}
                             disabled={isSubmitting}
-                            className="bg-cta-primary hover:bg-cta-primary-text text-white"
                         >
                             {isSubmitting ? 'Shortlisting...' : 'Shortlist'}
                         </Button>
@@ -1332,14 +1415,14 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
             {/* Remove Dialog */}
             <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Remove Candidate</DialogTitle>
-                        <DialogDescription>
+                <DialogContent className="sm:max-w-md bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className='text-center'>Remove Candidate</DialogTitle>
+                        <DialogDescription className='text-center'>
                             Please provide a reason for removing this candidate from consideration
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-4 text-center">
                         <div>
                             <label htmlFor="remove-reason" className="block text-sm font-medium text-gray-700 mb-2">
                                 Reason for Removal <span className="text-red-500">*</span>
@@ -1357,18 +1440,18 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             )}
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex justify-around">
                         <Button
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => setShowRemoveDialog(false)}
                             disabled={isSubmitting}
                         >
                             Cancel
                         </Button>
                         <Button
+                            variant="primary"
                             onClick={handleRemoveSubmit}
                             disabled={isSubmitting || !removeReason.trim()}
-                            className="bg-red-600 hover:bg-red-700 text-white"
                         >
                             {isSubmitting ? 'Removing...' : 'Remove'}
                         </Button>
