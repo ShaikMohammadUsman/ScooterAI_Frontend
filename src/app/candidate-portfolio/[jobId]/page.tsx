@@ -30,10 +30,16 @@ import {
     FaArrowLeft,
     FaList,
     FaExclamationCircle,
-    FaCross
+    FaCross,
+    FaPlus,
+    FaEdit,
+    FaRegEdit,
+    FaUserEdit
 } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
 import Image from 'next/image';
+import { Edit, Edit2, Edit3 } from 'lucide-react';
+import ScooterHeader from '@/components/ScooterHeader';
 
 interface PageProps {
     params: Promise<{ jobId: string }>;
@@ -64,6 +70,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     const [shortlistReason, setShortlistReason] = useState('');
     const [removeReason, setRemoveReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showNotesDialog, setShowNotesDialog] = useState(false);
+    const [notes, setNotes] = useState<Array<{ id: string; category: string; text: string; author: string }>>([]);
+    const [showPostShortlistDialog, setShowPostShortlistDialog] = useState(false);
+
+    const addEmptyNote = () => {
+        setNotes(prev => [...prev, { id: crypto.randomUUID(), category: '', text: '', author: '' }]);
+    };
 
     // Candidate highlights data
     const candidateHighlights = {
@@ -374,6 +387,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             await fetchCandidates();
             setShowShortlistDialog(false);
             setShortlistReason('');
+            setShowPostShortlistDialog(true);
         } catch (error) {
             console.error('Error shortlisting candidate:', error);
             // You might want to show a toast notification here
@@ -561,15 +575,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         <div className="min-h-screen bg-bg-main relative overflow-hidden">
             {/* Logo */}
             <div className="flex justify-between bg-bg-main px-8 py-4 border-b-2 border-gray-200 sm:mx-4">
-                <div className="flex items-center gap-3">
-                    <Image
-                        src="/assets/images/scooterLogo.png"
+                {/* <Image
+                        src="/assets/images/newScooterLogo.png"
                         alt="Scooter Logo"
                         width={32}
                         height={32}
-                    />
-                    <h1 className="text-3xl font-thin text-text-primary">scooter</h1>
-                </div>
+                    /> */}
+                <ScooterHeader containerClassName="border-none px-0 py-0" logoClassName='h-6' />
                 {jobDetails?.title && (
                     <div className="hidden md:block text-center">
                         <h1 className="text-lg sm:text-xl font-bold text-text-primary">
@@ -620,7 +632,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                     {selectedCandidate && (
                         <div className="h-full flex flex-col w-full">
                             {/* Header */}
-                            <div className="bg-bg-main border-b-2 border-gray-200 px-4 sm:px-8 py-4 sm:py-6">
+                            <div className="bg-bg-main border-b-2 border-gray-200 px-4 sm:px-8 py-4 sm:py-6 pb-32 mb-16 relative">
                                 {jobDetails?.title && (
                                     <div className="md:hidden text-center border-b-2 pb-4 mb-4 border-gray-400">
                                         <h1 className="text-xl sm:text-xl font-bold text-text-primary">
@@ -628,7 +640,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                         </h1>
                                     </div>
                                 )}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start lg:items-center">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start lg:items-center sm:mb-8">
                                     {/* Left: Identity */}
                                     <div className="text-left">
                                         <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-1">
@@ -695,10 +707,18 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Center Quick Notes button */}
+                                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-[65%] flex flex-col items-center">
+                                    <Button variant="primary" onClick={() => setShowNotesDialog(true)} className="rounded-full w-12 h-12 p-2 sm:p-0 flex flex-col items-center justify-center gap-16">
+                                        <Edit3 className='w-5 h-5 text-text-secondary' color='white' fill='white' />
+                                    </Button>
+                                    <p className="mt-2 text-xs sm:text-sm text-text-primary">Quick Notes</p>
+                                </div>
                             </div>
 
                             {/* Main Content */}
-                            <div className="flex-1  p-4 sm:p-6">
+                            <div className="flex-1  p-4 sm:p-6 pt-16 sm:pt-auto sm:mt-auto">
                                 <div className="max-w-8xl mx-auto">
                                     {/* Top Section */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
@@ -1413,6 +1433,47 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                 </DialogContent>
             </Dialog>
 
+            {/* Post-Shortlist Dialog */}
+            <Dialog open={showPostShortlistDialog} onOpenChange={setShowPostShortlistDialog}>
+                <DialogContent className="sm:max-w-md bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className='text-center'>What would you like to do next?</DialogTitle>
+                        <DialogDescription className='text-center'>Choose an action for this candidate</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                        <Button
+                            variant="secondary"
+                            onClick={() => {
+                                if (selectedCandidate?.basic_information?.phone_number) {
+                                    window.location.href = `tel:${selectedCandidate.basic_information.phone_number}`;
+                                }
+                            }}
+                        >
+                            Talk Now
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={() => {
+                                if (!selectedCandidate) return;
+                                const role = encodeURIComponent(jobDetails?.title || "");
+                                const name = encodeURIComponent(selectedCandidate.basic_information?.full_name || "");
+                                const location = encodeURIComponent(selectedCandidate.basic_information?.current_location || "");
+                                const exp = encodeURIComponent(getExperienceYears(selectedCandidate));
+                                const expectedVal = getCtcValue(selectedCandidate.basic_information?.expected_ctc);
+                                const expected = expectedVal != null ? encodeURIComponent(String(expectedVal)) : "";
+                                const relocation = selectedCandidate.basic_information?.open_to_relocation ? 1 : 0;
+                                const url = `/schedule-interview?jobId=${jobId}&profileId=${selectedCandidate.profile_id}&role=${role}&name=${name}&location=${location}&exp=${exp}&expected=${expected}&relocation=${relocation}`;
+                                setShowPostShortlistDialog(false);
+                                router.push(url);
+                            }}
+                        >
+                            Schedule Interview
+                        </Button>
+                        <Button variant="secondary" onClick={() => setShowPostShortlistDialog(false)}>Continue Browsing</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             {/* Remove Dialog */}
             <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
                 <DialogContent className="sm:max-w-md bg-bg-secondary-4">
@@ -1455,6 +1516,50 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         >
                             {isSubmitting ? 'Removing...' : 'Remove'}
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Quick Notes Dialog */}
+            <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
+                <DialogContent className="sm:max-w-2xl bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className='text-center'>Quick Notes</DialogTitle>
+                        <DialogDescription className='text-center'>Add brief notes for this candidate</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-8 px-2">
+                        {notes.map((note) => (
+                            <div key={note.id} className="space-y-2">
+                                <div className="text-sm text-text-primary">Author : {note.author || (selectedCandidate?.basic_information?.full_name ? selectedCandidate.basic_information.full_name : 'You')}</div>
+                                <div className="bg-white/80 border rounded-md p-3">
+                                    <div className="text-sm text-text-primary italic mb-2">
+                                        <span className="font-semibold">Category</span> :
+                                    </div>
+                                    <Textarea
+                                        placeholder="Category : Write your quick note here..."
+                                        value={note.text}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setNotes(prev => prev.map(n => n.id === note.id ? { ...n, text: val } : n));
+                                        }}
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        {notes.length === 0 && (
+                            <div className="text-center text-sm text-text-primary">No notes yet</div>
+                        )}
+                        <div className="flex flex-col items-center gap-2">
+                            <Button variant="primary" className="rounded-full w-12 h-12 border-2 border-white px-2 sm:px-2" onClick={addEmptyNote}>
+                                <FaPlus className='w-4 h-4 text-text-secondary' />
+                            </Button>
+                            <div className="text-sm text-text-primary">Add More</div>
+                        </div>
+                    </div>
+                    <DialogFooter className="flex justify-around items-center">
+                        <Button variant="secondary" onClick={() => setShowNotesDialog(false)}>Close</Button>
+                        <Button variant="primary" onClick={() => setShowNotesDialog(false)}>Save</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
