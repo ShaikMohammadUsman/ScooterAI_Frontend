@@ -3,6 +3,7 @@ import { FaMicrophone, FaGlobe, FaChevronDown } from "react-icons/fa";
 import { Monitor } from "lucide-react";
 import { useState } from "react";
 import { SUPPORTED_LANGUAGES, SupportedLanguageCode } from "@/lib/interviewService";
+import { Button } from "@/components/ui/button";
 
 interface AnimatedPlaceholderProps {
     onStart: (language: SupportedLanguageCode) => void;
@@ -40,7 +41,7 @@ export function AnimatedPlaceholder({ onStart, title, description, buttonText }:
                         repeat: Infinity,
                         ease: "easeInOut",
                     }}
-                    className="text-indigo-600 bg-white/80 p-6 rounded-2xl shadow-lg border border-indigo-100 backdrop-blur-md"
+                    className="text-indigo-600 bg-white/80 p-6 rounded-2xl shadow-lg border border-indigo-100 backdrop-blur-md flex flex-col justify-center items-center"
                 >
                     <div className="text-2xl font-semibold mb-2">{title}</div>
                     <div className="text-sm text-muted-foreground mb-6">
@@ -108,13 +109,13 @@ export function AnimatedPlaceholder({ onStart, title, description, buttonText }:
                         </div>
                     </div> */}
 
-                    <button
+                    <Button
                         onClick={handleStart}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-full shadow transition-all duration-200 flex items-center gap-2 cursor-pointer"
                     >
                         <FaMicrophone />
                         {buttonText}
-                    </button>
+                    </Button>
                 </motion.div>
             </motion.div>
         </div>

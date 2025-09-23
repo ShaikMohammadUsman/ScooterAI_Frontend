@@ -35,6 +35,7 @@ import InterviewControls from "@/components/interview/InterviewControls";
 import ChatPanel from "@/components/interview/ChatPanel";
 import QuestionPalette from "@/components/interview/QuestionPalette";
 import AISpeakingAnimation from "@/components/interview/AISpeakingAnimation";
+import BrowserWarningModal from "@/components/interview/BrowserWarningModal";
 // import { useMediaStream } from '@/hooks/useMediaStream';
 
 // Azure Speech Services configuration
@@ -155,6 +156,7 @@ function CommunicationInterview() {
 
     // Theme transition state
     const [isDarkTheme, setIsDarkTheme] = useState(false);
+    const [showBrowserWarning, setShowBrowserWarning] = useState(false);
 
     // Control states
     const [showChat, setShowChat] = useState(false);
@@ -214,6 +216,30 @@ function CommunicationInterview() {
             // Deactivate proctoring on unmount
             setProctoringActive(false);
         };
+    }, []);
+
+    // Detect non-Chrome browsers and show warning once on mount
+    useEffect(() => {
+        const ua = navigator.userAgent || "";
+        const uaData = (navigator as any).userAgentData;
+        let isRealChrome = false;
+        if (uaData && Array.isArray(uaData.brands)) {
+            const brands = uaData.brands as Array<{ brand: string; version: string }>;
+            const hasGoogleChrome = brands.some(b => /Google Chrome/i.test(b.brand));
+            const hasEdge = brands.some(b => /Microsoft Edge/i.test(b.brand));
+            const hasOpera = brands.some(b => /Opera|OPR/i.test(b.brand));
+            const isBrave = (navigator as any).brave ? true : false;
+            isRealChrome = hasGoogleChrome && !hasEdge && !hasOpera && !isBrave;
+        } else {
+            const hasChrome = /Chrome\//.test(ua);
+            const isEdge = /Edg\//.test(ua);
+            const isOpera = /OPR\//.test(ua);
+            const isBrave = (navigator as any).brave ? true : false;
+            isRealChrome = hasChrome && !isEdge && !isOpera && !isBrave;
+        }
+        if (!isRealChrome) {
+            setShowBrowserWarning(true);
+        }
     }, []);
 
     // Handle proctoring violations
@@ -1671,6 +1697,9 @@ function CommunicationInterview() {
                 userId={verifiedUser?.user_id || ""}
                 onResumeUploaded={handleResumeUploaded}
             />
+
+            {/* Browser Warning Modal for non-Chrome */}
+            <BrowserWarningModal open={showBrowserWarning} onOpenChange={setShowBrowserWarning} />
 
             {proctoringActive && !showCompletionScreen && (
                 // Proctoring System

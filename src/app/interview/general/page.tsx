@@ -23,6 +23,7 @@ import { GeneralQuestionPalette } from "./components/GeneralQuestionPalette";
 import { GeneralSubmissionModal } from "./components/GeneralSubmissionModal";
 import AISpeakingAnimation from "@/components/interview/AISpeakingAnimation";
 import ChatPanel from "@/components/interview/ChatPanel";
+import BrowserWarningModal from "@/components/interview/BrowserWarningModal";
 
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
@@ -70,6 +71,7 @@ export default function VoiceInterviewPage() {
 
     // Theme transition state
     const [isDarkTheme, setIsDarkTheme] = useState(false);
+    const [showBrowserWarning, setShowBrowserWarning] = useState(false);
 
     // Language state
     const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguageCode>("en-IN");
@@ -116,6 +118,30 @@ export default function VoiceInterviewPage() {
                 audioRecorderRef.current.cleanup();
             }
         };
+    }, []);
+
+    // Detect non-Chrome browsers and show warning once on mount
+    useEffect(() => {
+        const ua = navigator.userAgent || "";
+        const uaData = (navigator as any).userAgentData;
+        let isRealChrome = false;
+        if (uaData && Array.isArray(uaData.brands)) {
+            const brands = uaData.brands as Array<{ brand: string; version: string }>;
+            const hasGoogleChrome = brands.some(b => /Google Chrome/i.test(b.brand));
+            const hasEdge = brands.some(b => /Microsoft Edge/i.test(b.brand));
+            const hasOpera = brands.some(b => /Opera|OPR/i.test(b.brand));
+            const isBrave = (navigator as any).brave ? true : false;
+            isRealChrome = hasGoogleChrome && !hasEdge && !hasOpera && !isBrave;
+        } else {
+            const hasChrome = /Chrome\//.test(ua);
+            const isEdge = /Edg\//.test(ua);
+            const isOpera = /OPR\//.test(ua);
+            const isBrave = (navigator as any).brave ? true : false;
+            isRealChrome = hasChrome && !isEdge && !isOpera && !isBrave;
+        }
+        if (!isRealChrome) {
+            setShowBrowserWarning(true);
+        }
     }, []);
 
     // Handle proctoring violations
@@ -777,6 +803,9 @@ export default function VoiceInterviewPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Browser Warning Modal for non-Chrome */}
+            <BrowserWarningModal open={showBrowserWarning} onOpenChange={setShowBrowserWarning} />
 
             {/* Loading Modal for Initial Interview Start */}
             <AnimatePresence>
