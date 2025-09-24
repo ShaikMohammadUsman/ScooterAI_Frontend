@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import Hls from "hls.js";
 
 interface VideoPlayerProps {
@@ -20,9 +20,38 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
 
+    const isDriveUrl = (u: string) => {
+        try { return new URL(u).hostname.includes('drive.google.com'); } catch { return false; }
+    };
+
+    const normalizeVideoUrl = useMemo(() => {
+        try {
+            const url = new URL(videoUrl);
+            if (url.hostname.includes('drive.google.com')) {
+                // Convert common share links to preview
+                const fileIdMatch = url.pathname.match(/\/file\/d\/([^/]+)\//);
+                if (fileIdMatch && fileIdMatch[1]) {
+                    return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+                }
+                const idParam = url.searchParams.get('id');
+                if (idParam) {
+                    return `https://drive.google.com/file/d/${idParam}/preview`;
+                }
+                if (url.pathname.includes('/file/d/') && url.pathname.endsWith('/preview')) {
+                    return url.toString();
+                }
+            }
+        } catch { /* ignore */ }
+        return videoUrl;
+    }, [videoUrl]);
+
     useEffect(() => {
         const video = videoRef.current;
         if (!video || !videoUrl) return;
+
+        if (isDriveUrl(normalizeVideoUrl)) {
+            return; // handled via iframe render
+        }
 
         // Handle HLS (.m3u8)
         if (videoUrl.endsWith(".m3u8")) {
@@ -42,32 +71,43 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             // Other formats (mp4, webm, ogg)
             video.src = videoUrl;
         }
-    }, [videoUrl]);
+    }, [videoUrl, normalizeVideoUrl]);
 
     return (
-        <video
-            ref={videoRef}
-            className={className}
-            controls={controls}
-            autoPlay={autoPlay}
-            preload={preload}
-            poster={poster}
-        >
-            {/* Provide fallback sources for broader compatibility */}
-            {videoUrl.endsWith(".mp4") && (
-                <source src={videoUrl} type="video/mp4" />
-            )}
-            {videoUrl.endsWith(".webm") && (
-                <source src={videoUrl} type="video/webm" />
-            )}
-            {videoUrl.endsWith(".ogg") && (
-                <source src={videoUrl} type="video/ogg" />
-            )}
-            {videoUrl.endsWith(".m3u8") && (
-                <source src={videoUrl} type="application/vnd.apple.mpegurl" />
-            )}
-            Your browser does not support the video tag.
-        </video>
+        isDriveUrl(normalizeVideoUrl) ? (
+            <iframe
+                title="Video"
+                style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+                src={normalizeVideoUrl}
+                className={className}
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                allowFullScreen
+            />
+        ) : (
+            <video
+                ref={videoRef}
+                className={className}
+                controls={controls}
+                autoPlay={autoPlay}
+                preload={preload}
+                poster={poster}
+            >
+                {/* Provide fallback sources for broader compatibility */}
+                {videoUrl.endsWith(".mp4") && (
+                    <source src={videoUrl} type="video/mp4" />
+                )}
+                {videoUrl.endsWith(".webm") && (
+                    <source src={videoUrl} type="video/webm" />
+                )}
+                {videoUrl.endsWith(".ogg") && (
+                    <source src={videoUrl} type="video/ogg" />
+                )}
+                {videoUrl.endsWith(".m3u8") && (
+                    <source src={videoUrl} type="application/vnd.apple.mpegurl" />
+                )}
+                Your browser does not support the video tag.
+            </video>
+        )
     );
 };
 

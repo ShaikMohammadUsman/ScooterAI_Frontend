@@ -225,6 +225,121 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             ],
             overall_assessment: "Right mindset and attitude, but lacks communication clarity and sales structure."
         }
+        ,
+        // Newly added candidates
+        "68c12e1d55934dd430b52cec": {
+            name: "Sai Sowmya",
+            role: "Healthcare Education Advisor",
+            experience: "~2 years overall; Academic Advisor at Aakash; internship at Entri (cold calling, pre-sales)",
+            strengths: [
+                "Exceeded 100+ enrollments in 3 months at Aakash",
+                "Strong lead conversion with student/parent counseling",
+                "Cold calling experience and follow-up discipline",
+                "Effective rapport-building and objection handling"
+            ],
+            potential_red_flags: [
+                "Multiple short tenures/internships (< 1 year)",
+                "Mixed evaluation on structured communication"
+            ],
+            short_summary: "Sai Sowmya has relevant experience in student counseling and lead conversion, exceeding enrollment targets at Aakash Educational Services. Prior internship experience includes cold calling and pre-sales at Entri. While she shows strong sales performance, the short tenure pattern suggests assessing long-term stability.",
+            // main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/sai_sowmya_aster_20250923T084439_master.m3u8",
+            main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Sai Sowmya Edited Video_master.m3u8",
+            // main_video_url: "https://drive.google.com/file/d/1uLiLbcyukTGPFeICvlwNsobS_RC5hSgz/view?usp=sharing",
+            magic_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Sai Sowmya Magic Clips_master.m3u8",
+            why_they_match: [
+                "Direct alignment to education sales and enrollment workflows",
+                "Demonstrated persistence and parent engagement",
+                "Comfort with outbound calling and funnel follow-through"
+            ],
+            development_required: [
+                "Tighter verbal structure and clarity",
+                "Deeper discovery and tailored recommendations"
+            ],
+            overall_assessment: "Job Fit: HIGH — proven enrollment execution; communication structure can improve"
+        },
+        "68bd69349031ec916f9d3196": {
+            name: "GAURISHANKAR MALI",
+            role: "",
+            experience: "< 2 years relevant; technical training/projects (Python, SQL, Django)",
+            strengths: [
+                "Hands-on technical projects (ML, web apps)",
+                "Organized routines and team collaboration"
+            ],
+            potential_red_flags: [
+                "No direct sales experience",
+                "Short-term roles/trainings; unclear sales exposure"
+            ],
+            short_summary: "Recent Computer Engineering graduate with technical project work (Python, SQL, Django). Strong learning trajectory but lacks direct sales exposure; shortlisted for further review.",
+            // main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/GAURISHANKAR MALI_aster_20250924T061829_master.m3u8",
+            main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/GAURISHANKAR MALI Edited Video_master.m3u8",
+            // main_video_url: "https://drive.google.com/file/d/1klU6Kp4R6F4ZNrSmEMZAw63ZpWjNx5Gw/view?usp=sharing",
+            magic_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/GAURISHANKAR MALI Magic Clips_master.m3u8",
+            why_they_match: [
+                "Analytical mindset and project discipline",
+                "Growth orientation and teamwork"
+            ],
+            development_required: [
+                "Foundational sales exposure (discovery, objection handling)",
+                "Communication structure and clarity"
+            ],
+            overall_assessment: "Job Fit: LOW — strong technical profile; sales fundamentals to build"
+        },
+        "68bd6cf69031ec916f9d3197": {
+            name: "SINAGAVARAPU SATISH REDDY",
+            role: "Healthcare Education Advisor",
+            experience: "~4 years sales across Byju's, Edustoke, Infinity Learn, Aakash",
+            strengths: [
+                "Highest revenue maker (AP & Telangana) at Byju's; 1.5Cr+ from 200+ sales units",
+                "Awards: Extra Miler (Edustoke), monthly target achievements (Infinity Learn)",
+                "Objection handling and closing under deadlines"
+            ],
+            potential_red_flags: [
+                "Frequent role changes; short tenures"
+            ],
+            short_summary: "Progressive edtech sales career with notable revenue achievements and awards. Strong closing mindset; tenure stability should be assessed.",
+            // main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/SINAGAVARAPU SATISH REDDY_aster_20250924T061140_master.m3u8",
+            main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Sinagavarapu Satish Reddy Edited Video_master.m3u8",
+            // main_video_url: "https://drive.google.com/file/d/15VIi9LQyEt2bnkhQWooEbL0VmnWgBFOd/view?usp=sharing",
+            magic_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/SINAGAVARAPU SATISH REDDY Magic Clips_master.m3u8",
+            why_they_match: [
+                "Demonstrated revenue ownership and persistence",
+                "Relevant edtech enrollment and parent-facing experience"
+            ],
+            development_required: [
+                "Structured discovery and clearer communication",
+                "Consistency and role stability"
+            ],
+            overall_assessment: "Job Fit: HIGH — strong sales outcomes; benefits from structured communication"
+        },
+
+        "68c7b00f02f4518b905d7475": {
+            name: "Madhan Sanjay P",
+            role: "Healthcare Education Advisor",
+            experience: "6 years sales; Upgrad (BDE), Simplilearn (Sr. Inside Sales), SysGlobal IT (Product Associate/Analyst Intern), DT Foods (BDM)",
+            strengths: [
+                "Generated $200K+ revenue; achieved 130% targets (Simplilearn)",
+                "Managed 10+ course portfolio; ~25 lakhs revenue (Upgrad)",
+                "B2B and B2C exposure; consistent target attainment"
+            ],
+            potential_red_flags: [
+                "Brief employment gaps (2019–2021)",
+                "Communication clarity varies (per eval)"
+            ],
+            short_summary: "6 years of sales with quantifiable achievements across edtech and IT. Consistently meets/exceeds targets; versatile across B2B/B2C contexts.",
+            // main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Madhan sanjay P_asterr_20250924T063334_master.m3u8",
+            main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Madhan Sanjay P Edited Video_master.m3u8",
+            // main_video_url: "https://drive.google.com/file/d/1Vp4E8YeIVJFxlclEapOvXsfG6xxHM2mp/view?usp=sharing",
+            magic_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Sanjay Madhan Magic Clips_master.m3u8",
+            why_they_match: [
+                "Quantified revenue delivery and target overachievement",
+                "Relevant edtech inside sales and counseling experience"
+            ],
+            development_required: [
+                "Sharper verbal structure and concise delivery",
+                "Systematic strategy under repeated objections"
+            ],
+            overall_assessment: "Job Fit: HIGH — strong quota performance; polish communication structure"
+        }
     };
 
     // Helper function to get candidate highlights
@@ -232,17 +347,28 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         return candidateHighlights[profileId as keyof typeof candidateHighlights];
     };
 
-    // Helper function to get candidate order for sorting
-    const getCandidateOrder = (profileId: string): number => {
+    // Mark new vs reviewed and custom order for new candidates
+    const NEW_IDS_ORDERED = [
+        "68c7b00f02f4518b905d7475", // Madhan Sanjay P
+        "68bd6cf69031ec916f9d3197", // SINAGAVARAPU SATISH REDDY
+        "68bd69349031ec916f9d3196", // GAURISHANKAR MALI
+        "68c12e1d55934dd430b52cec", // SAI SOWMYA
+    ];
+
+    const isNewCandidate = (profileId?: string) => profileId ? NEW_IDS_ORDERED.includes(profileId) : false;
+
+    // Custom comparator: new candidates first in specified order, then others (reviewed) by original map order
+    const getBaseOrder = (profileId: string): number => {
         const order = Object.keys(candidateHighlights).indexOf(profileId);
-        return order === -1 ? 999 : order; // Put unknown candidates at the end
+        return order === -1 ? 999 : order;
     };
 
-    // Sort candidates according to predefined order
     const sortedCandidates = candidates ? [...candidates].sort((a, b) => {
-        const orderA = getCandidateOrder(a.profile_id);
-        const orderB = getCandidateOrder(b.profile_id);
-        return orderA - orderB;
+        const aNewIdx = isNewCandidate(a.profile_id) ? NEW_IDS_ORDERED.indexOf(a.profile_id) : Infinity;
+        const bNewIdx = isNewCandidate(b.profile_id) ? NEW_IDS_ORDERED.indexOf(b.profile_id) : Infinity;
+        if (aNewIdx !== bNewIdx) return aNewIdx - bNewIdx;
+        // both new or both reviewed → fallback to base order
+        return getBaseOrder(a.profile_id) - getBaseOrder(b.profile_id);
     }) : [];
 
     useEffect(() => {
@@ -924,6 +1050,10 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                         <VideoPlayerWithTimeline
                                                             videoUrl={videoUrl}
                                                             interviewEvents={interviewEvents}
+                                                            questionEvaluations={selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations?.map((q: any) => ({
+                                                                question_number: q?.question_number,
+                                                                question: q?.question,
+                                                            })) || []}
                                                             className="w-full h-64 sm:h-80 rounded-none"
                                                             controls={true}
                                                         />
@@ -1162,9 +1292,10 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     </div>
 
                                     {/* Download & Share Buttons */}
-                                    <div className="mt-4 flex items-center justify-center gap-3">
+                                    <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
                                         <Button
                                             variant="secondary"
+                                            className='w-48'
                                             onClick={() => {
                                                 if (selectedCandidate?.interview_status?.resume_url) {
                                                     window.open(selectedCandidate.interview_status.resume_url, '_blank');
@@ -1176,6 +1307,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                         </Button>
                                         <Button
                                             variant="primary"
+                                            className='w-48'
                                             onClick={handleShareReport}
                                             disabled={!selectedCandidate}
                                         >
@@ -1287,6 +1419,17 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                         <p className={`${showCandidateList ? 'text-xs sm:text-sm' : 'text-xs'} text-text-primary ${showCandidateList ? 'mb-3' : 'mb-2'}`}>
                                                             {candidate.basic_information?.current_location}
                                                         </p>
+                                                        <div className="flex items-center gap-2 justify-center">
+                                                            {isNewCandidate(candidate.profile_id) ? (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                                                    New
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                                                    Reviewed
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 {/* 
@@ -1351,6 +1494,10 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                 <VideoPlayerWithTimeline
                                     videoUrl={selectedVideoUrl}
                                     interviewEvents={selectedCandidate?.video_proctoring_details?.interview_events || []}
+                                    questionEvaluations={selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations?.map((q: any) => ({
+                                        question_number: q?.question_number,
+                                        question: q?.question,
+                                    })) || []}
                                     className="w-full h-64 sm:h-80 lg:h-96 rounded-lg"
                                     controls={true}
                                 />
@@ -1440,36 +1587,44 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                         <DialogTitle className='text-center'>What would you like to do next?</DialogTitle>
                         <DialogDescription className='text-center'>Choose an action for this candidate</DialogDescription>
                     </DialogHeader>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-                        <Button
-                            variant="secondary"
-                            onClick={() => {
-                                if (selectedCandidate?.basic_information?.phone_number) {
-                                    window.location.href = `tel:${selectedCandidate.basic_information.phone_number}`;
-                                }
-                            }}
-                        >
-                            Talk Now
-                        </Button>
-                        <Button
-                            variant="primary"
-                            onClick={() => {
-                                if (!selectedCandidate) return;
-                                const role = encodeURIComponent(jobDetails?.title || "");
-                                const name = encodeURIComponent(selectedCandidate.basic_information?.full_name || "");
-                                const location = encodeURIComponent(selectedCandidate.basic_information?.current_location || "");
-                                const exp = encodeURIComponent(getExperienceYears(selectedCandidate));
-                                const expectedVal = getCtcValue(selectedCandidate.basic_information?.expected_ctc);
-                                const expected = expectedVal != null ? encodeURIComponent(String(expectedVal)) : "";
-                                const relocation = selectedCandidate.basic_information?.open_to_relocation ? 1 : 0;
-                                const url = `/schedule-interview?jobId=${jobId}&profileId=${selectedCandidate.profile_id}&role=${role}&name=${name}&location=${location}&exp=${exp}&expected=${expected}&relocation=${relocation}`;
-                                setShowPostShortlistDialog(false);
-                                router.push(url);
-                            }}
-                        >
-                            Schedule Interview
-                        </Button>
-                        <Button variant="secondary" onClick={() => setShowPostShortlistDialog(false)}>Continue Browsing</Button>
+                    <div className="space-y-3 text-center">
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <Button
+                                variant="secondary"
+                                onClick={() => {
+                                    if (selectedCandidate?.basic_information?.phone_number) {
+                                        window.location.href = `tel:${selectedCandidate.basic_information.phone_number}`;
+                                    }
+                                }}
+                                className="flex-1"
+                            >
+                                Talk Now
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={() => {
+                                    if (!selectedCandidate) return;
+                                    const role = encodeURIComponent(jobDetails?.title || "");
+                                    const name = encodeURIComponent(selectedCandidate.basic_information?.full_name || "");
+                                    const location = encodeURIComponent(selectedCandidate.basic_information?.current_location || "");
+                                    const exp = encodeURIComponent(getExperienceYears(selectedCandidate));
+                                    const expectedVal = getCtcValue(selectedCandidate.basic_information?.expected_ctc);
+                                    const expected = expectedVal != null ? encodeURIComponent(String(expectedVal)) : "";
+                                    const relocation = selectedCandidate.basic_information?.open_to_relocation ? 1 : 0;
+                                    const url = `/schedule-interview?jobId=${jobId}&profileId=${selectedCandidate.profile_id}&role=${role}&name=${name}&location=${location}&exp=${exp}&expected=${expected}&relocation=${relocation}`;
+                                    setShowPostShortlistDialog(false);
+                                    router.push(url);
+                                }}
+                                className="flex-1"
+                            >
+                                Schedule Interview
+                            </Button>
+                        </div>
+                        <div>
+                            <Button variant="secondary" onClick={() => setShowPostShortlistDialog(false)}>
+                                Continue Browsing
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

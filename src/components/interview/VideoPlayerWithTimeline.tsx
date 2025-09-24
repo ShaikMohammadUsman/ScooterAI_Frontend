@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Hls from "hls.js";
 
 interface InterviewEvent {
@@ -15,6 +15,7 @@ interface InterviewEvent {
 interface VideoPlayerWithTimelineProps {
     videoUrl: string;
     interviewEvents?: InterviewEvent[];
+    questionEvaluations?: Array<{ question_number?: number; question?: string }>;
     poster?: string;
     autoPlay?: boolean;
     controls?: boolean;
@@ -25,6 +26,7 @@ interface VideoPlayerWithTimelineProps {
 const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
     videoUrl,
     interviewEvents = [],
+    questionEvaluations = [],
     poster = "",
     autoPlay = false,
     controls = true,
@@ -32,14 +34,62 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
     className = "w-full h-full rounded-lg shadow-lg",
 }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
+    const isDriveUrl = (u: string) => {
+        try { return new URL(u).hostname.includes('drive.google.com'); } catch { return false; }
+    };
+
+    const normalizeVideoUrl = useMemo(() => {
+        try {
+            const url = new URL(videoUrl);
+            if (url.hostname.includes('drive.google.com')) {
+                const m = url.pathname.match(/\/file\/d\/([^/]+)\//);
+                if (m && m[1]) return `https://drive.google.com/file/d/${m[1]}/preview`;
+                const idParam = url.searchParams.get('id');
+                if (idParam) return `https://drive.google.com/file/d/${idParam}/preview`;
+                if (url.pathname.includes('/file/d/') && url.pathname.endsWith('/preview')) return url.toString();
+            }
+        } catch { /* ignore */ }
+        return videoUrl;
+    }, [videoUrl]);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [showTimeline, setShowTimeline] = useState(false);
     const [hoveredMarker, setHoveredMarker] = useState<number | null>(null);
 
+    const isDrive = isDriveUrl(normalizeVideoUrl);
+
+    // Derive a duration for Drive previews (no media API): estimate from events
+    const computedDuration = React.useMemo(() => {
+        if (!interviewEvents.length) return duration;
+        if (!isDrive) return duration;
+        const start = new Date(interviewEvents[0]?.timestamp || 0).getTime();
+        const end = new Date(interviewEvents[interviewEvents.length - 1]?.timestamp || 0).getTime();
+        if (!start || !end || end <= start) return duration || 0;
+        const seconds = (end - start) / 1000;
+        return Math.max(seconds, duration || 0);
+    }, [isDrive, interviewEvents, duration]);
+
+    // Detect retake starts: consecutive response starts without an intervening response end
+    const retakeStartMs = React.useMemo(() => {
+        const set = new Set<number>();
+        if (!interviewEvents.length) return set;
+        let seenOpenResponse = false;
+        for (const ev of interviewEvents) {
+            if (ev.event === 'user_response_started') {
+                if (seenOpenResponse) {
+                    set.add(new Date(ev.timestamp).getTime());
+                }
+                seenOpenResponse = true;
+            } else if (ev.event === 'user_response_ended') {
+                seenOpenResponse = false;
+            }
+        }
+        return set;
+    }, [interviewEvents]);
+
     // Calculate timeline markers from interview events
     const timelineMarkers = React.useMemo(() => {
-        if (!interviewEvents.length || !duration) return [];
+        if (!interviewEvents.length || !computedDuration) return [];
 
         const startTime = new Date(interviewEvents[0]?.timestamp).getTime();
 
@@ -52,24 +102,33 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             .map((event, index) => {
                 const eventTime = new Date(event.timestamp).getTime();
                 const relativeTime = (eventTime - startTime) / 1000; // Convert to seconds
-                const percentage = (relativeTime / duration) * 100;
+                const percentage = (relativeTime / computedDuration) * 100;
+                const isRetake = event.event === 'user_response_started' && retakeStartMs.has(eventTime);
 
                 return {
                     id: index,
                     time: relativeTime,
                     percentage: Math.max(0, Math.min(100, percentage)),
-                    event: event.event,
+                    event: isRetake ? 'user_response_retake_started' : event.event,
                     questionIndex: event.details?.questionIndex,
                     question: event.details?.question,
                     responseLength: event.details?.responseLength,
                 };
             })
             .filter(marker => marker.percentage >= 0 && marker.percentage <= 100);
-    }, [interviewEvents, duration]);
+    }, [interviewEvents, computedDuration, retakeStartMs]);
 
     useEffect(() => {
         const video = videoRef.current;
         if (!video || !videoUrl) return;
+
+        if (isDriveUrl(normalizeVideoUrl)) {
+            // Timeline features won't control iframe; skip media wiring
+            return () => {
+                video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+                video.removeEventListener('timeupdate', handleTimeUpdate);
+            };
+        }
 
         const handleLoadedMetadata = () => {
             setDuration(video.duration);
@@ -107,9 +166,13 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             video.removeEventListener('loadedmetadata', handleLoadedMetadata);
             video.removeEventListener('timeupdate', handleTimeUpdate);
         };
-    }, [videoUrl]);
+    }, [videoUrl, normalizeVideoUrl]);
 
     const handleTimelineClick = (time: number) => {
+        if (isDrive) {
+            // Seeking not supported for Drive preview; ignore clicks
+            return;
+        }
         if (videoRef.current) {
             videoRef.current.currentTime = time;
         }
@@ -127,6 +190,8 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                 return 'bg-blue-500';
             case 'user_response_started':
                 return 'bg-green-500';
+            case 'user_response_retake_started':
+                return 'bg-orange-500';
             case 'user_response_ended':
                 return 'bg-red-500';
             default:
@@ -140,6 +205,8 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                 return `Question ${marker.questionIndex + 1} Started\n${marker.question?.substring(0, 50)}...`;
             case 'user_response_started':
                 return `Answer Started\nTime: ${formatTime(marker.time)}`;
+            case 'user_response_retake_started':
+                return `Answer Retake Started\nTime: ${formatTime(marker.time)}`;
             case 'user_response_ended':
                 return `Answer Ended\nLength: ${marker.responseLength} chars\nTime: ${formatTime(marker.time)}`;
             default:
@@ -147,31 +214,123 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         }
     };
 
+    // Inline component to render question overlay
+    const QuestionOverlay: React.FC<{ segment: { start: number; end: number; question?: string; questionIndex?: number; hasRetake?: boolean }; isDrive?: boolean }> = ({ segment }) => {
+        const visible = !isNaN(currentTime) && currentTime >= segment.start && currentTime <= segment.end;
+        if (!visible) return null;
+        const base = segment.question || (typeof segment.questionIndex === 'number' ? `Question ${segment.questionIndex + 1}` : 'Question');
+        const text = segment.hasRetake ? `[Retake] ${base}` : base;
+        return (
+            <div className="absolute inset-x-0 top-2 mx-auto max-w-3xl z-20">
+                <div className="px-3 py-2 bg-black/60 text-white text-xs sm:text-sm md:text-base rounded shadow">
+                    {text}
+                </div>
+            </div>
+        );
+    };
+
+    // Build question segments primarily from answer clusters (requested):
+    const questionSegments = React.useMemo(() => {
+        if (!interviewEvents.length) return [] as Array<{ id: number; start: number; end: number; percentageStart: number; percentageWidth: number; questionIndex?: number; question?: string; hasRetake?: boolean }>;
+        const videoStartTs = new Date(interviewEvents[0]?.timestamp).getTime();
+        // Build clusters of answers per question: a cluster starts at first user_response_started after previous end, ends at user_response_ended
+        type Cluster = { firstStartTs: number; endTs?: number; hasRetake: boolean };
+        const clusters: Cluster[] = [];
+        let inAnswer = false;
+        for (const ev of interviewEvents) {
+            if (ev.event === 'user_response_started') {
+                const ts = new Date(ev.timestamp).getTime();
+                if (!inAnswer) {
+                    clusters.push({ firstStartTs: ts, hasRetake: false });
+                    inAnswer = true;
+                } else {
+                    // retake within same cluster
+                    if (clusters.length) clusters[clusters.length - 1].hasRetake = true;
+                }
+            } else if (ev.event === 'user_response_ended') {
+                const ts = new Date(ev.timestamp).getTime();
+                if (inAnswer && clusters.length) {
+                    clusters[clusters.length - 1].endTs = ts;
+                }
+                inAnswer = false;
+            }
+        }
+        // Derive question windows from clusters: Qi window is from prev cluster end (or video start) to current cluster firstStart
+        const total = computedDuration || duration || 1;
+        const MIN_OVERLAY_SECONDS = 12;
+        const segs: Array<{ id: number; start: number; end: number; percentageStart: number; percentageWidth: number; questionIndex?: number; question?: string; hasRetake?: boolean }> = [];
+        for (let i = 0; i < clusters.length; i++) {
+            const prevEndTs = i === 0 ? videoStartTs : (clusters[i - 1].endTs ?? clusters[i - 1].firstStartTs);
+            const startTs = prevEndTs;
+            const endTs = clusters[i].firstStartTs;
+            const startSec = Math.max(0, (startTs - videoStartTs) / 1000);
+            let endSec = Math.max(startSec + 0.5, (endTs - videoStartTs) / 1000);
+            endSec = Math.min(total, Math.max(endSec, startSec + MIN_OVERLAY_SECONDS));
+            const pStart = Math.max(0, Math.min(100, (startSec / total) * 100));
+            const pWidth = Math.max(0.5, Math.min(100 - pStart, ((endSec - startSec) / total) * 100));
+            const qe = questionEvaluations.find(q => (q.question_number ?? (i + 1)) === (i + 1));
+            segs.push({
+                id: i,
+                start: startSec,
+                end: endSec,
+                percentageStart: pStart,
+                percentageWidth: pWidth,
+                questionIndex: i,
+                question: qe?.question,
+                hasRetake: clusters[i].hasRetake,
+            });
+        }
+        return segs;
+    }, [interviewEvents, computedDuration, duration, questionEvaluations]);
+
     return (
         <div className="relative">
-            <video
-                ref={videoRef}
-                className={className}
-                controls={controls}
-                autoPlay={autoPlay}
-                preload={preload}
-                poster={poster}
-            >
-                {/* Provide fallback sources for broader compatibility */}
-                {videoUrl.endsWith(".mp4") && (
-                    <source src={videoUrl} type="video/mp4" />
-                )}
-                {videoUrl.endsWith(".webm") && (
-                    <source src={videoUrl} type="video/webm" />
-                )}
-                {videoUrl.endsWith(".ogg") && (
-                    <source src={videoUrl} type="video/ogg" />
-                )}
-                {videoUrl.endsWith(".m3u8") && (
-                    <source src={videoUrl} type="application/vnd.apple.mpegurl" />
-                )}
-                Your browser does not support the video tag.
-            </video>
+            {isDriveUrl(normalizeVideoUrl) ? (
+                <div className={className} style={{ position: 'relative' }}>
+                    {/* Question overlay for Drive during narration segments */}
+                    {/* {questionSegments.map(seg => (
+                        <QuestionOverlay key={`qo-${seg.id}`} segment={seg} isDrive={true} />
+                    ))} */}
+                    <iframe
+                        title="Video"
+                        src={normalizeVideoUrl}
+                        style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+                        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                        allowFullScreen
+                        loading="eager"
+                    />
+                </div>
+            ) : (
+                <div className="relative">
+                    {/* Question overlay for native video */}
+                    {/* {questionSegments.map(seg => (
+                        <QuestionOverlay key={`qo-native-${seg.id}`} segment={seg} />
+                    ))} */}
+                    <video
+                        ref={videoRef}
+                        className={className}
+                        controls={controls}
+                        autoPlay={autoPlay}
+                        preload={preload}
+                        poster={poster}
+                    >
+                        {/* Provide fallback sources for broader compatibility */}
+                        {videoUrl.endsWith(".mp4") && (
+                            <source src={videoUrl} type="video/mp4" />
+                        )}
+                        {videoUrl.endsWith(".webm") && (
+                            <source src={videoUrl} type="video/webm" />
+                        )}
+                        {videoUrl.endsWith(".ogg") && (
+                            <source src={videoUrl} type="video/ogg" />
+                        )}
+                        {videoUrl.endsWith(".m3u8") && (
+                            <source src={videoUrl} type="application/vnd.apple.mpegurl" />
+                        )}
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            )}
 
             {/* Timeline Controls */}
             {interviewEvents.length > 0 && (
@@ -192,11 +351,23 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                         <div className="relative">
                             {/* Timeline Bar */}
                             <div className="relative h-8 bg-gray-200 rounded-lg overflow-hidden">
-                                {/* Current Time Indicator */}
-                                <div
-                                    className="absolute top-0 h-full bg-blue-400 opacity-30"
-                                    style={{ width: `${(currentTime / duration) * 100}%` }}
-                                />
+                                {/* Current Time Indicator (hidden for Drive preview) */}
+                                {!isDrive && (
+                                    <div
+                                        className="absolute top-0 h-full bg-blue-400 opacity-30"
+                                        style={{ width: `${(currentTime / (computedDuration || 1)) * 100}%` }}
+                                    />
+                                )}
+
+                                {/* Question narration segments */}
+                                {questionSegments.map(seg => (
+                                    <div
+                                        key={`qseg-${seg.id}`}
+                                        className={`absolute top-0 h-full ${seg.hasRetake ? 'bg-orange-200/70 border-orange-500' : 'bg-yellow-200/60 border-yellow-400'} border-t border-b`}
+                                        style={{ left: `${seg.percentageStart}%`, width: `${seg.percentageWidth}%` }}
+                                        title={(seg.hasRetake ? '[Retake] ' : '') + (seg.question ? seg.question : `Question ${((seg.questionIndex ?? 0) + 1)}`)}
+                                    />
+                                ))}
 
                                 {/* Event Markers */}
                                 {timelineMarkers.map((marker) => (
@@ -232,6 +403,14 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                                     <span>Answer End</span>
                                 </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-3 h-2 bg-yellow-300 border border-yellow-500"></div>
+                                    <span>Question Narration</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-3 h-2 bg-orange-300 border border-orange-500"></div>
+                                    <span>Retake Window</span>
+                                </div>
                             </div>
 
                             {/* Event List */}
@@ -251,6 +430,7 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                                         ? `Q${marker.questionIndex + 1} Started`
                                                         : 'Question Started')}
                                                 {marker.event === 'user_response_started' && 'Answer Started'}
+                                                {marker.event === 'user_response_retake_started' && 'Answer Retake Started'}
                                                 {marker.event === 'user_response_ended' && `Answer Ended (${marker.responseLength} chars)`}
                                             </span>
                                         </div>
