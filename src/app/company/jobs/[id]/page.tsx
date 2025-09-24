@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist, resetVideoInterview, downloadContactsCsv } from '@/lib/adminService';
 import ReactMarkdown from 'react-markdown';
 import { toast } from "@/hooks/use-toast";
-import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit, FaClock, FaPlay, FaPause, FaStop, FaEye, FaEyeSlash, FaMousePointer, FaKeyboard, FaMobile, FaDesktop } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit, FaClock, FaPlay, FaPause, FaStop, FaEye, FaEyeSlash, FaMousePointer, FaKeyboard, FaMobile, FaDesktop, FaEnvelope } from 'react-icons/fa';
 import { use } from 'react';
 // import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -131,6 +131,15 @@ export default function JobCandidatesPage({ params }: PageProps) {
         fetchCandidates();
     }, [jobId, activeTab, currentPage, pageSize]);
 
+    // Refetch on inline Seen filters change (only for Seen tab)
+    useEffect(() => {
+        if (activeTab !== 'seen') return;
+        // Reset to first page when filters change
+        setCurrentPage(1);
+        fetchCandidates();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filters.audioAttended, filters.videoAttended, filters.videoInterviewSent, activeTab]);
+
     // Listen to card-level view actions
     useEffect(() => {
         const handler = (e: any) => {
@@ -155,6 +164,8 @@ export default function JobCandidatesPage({ params }: PageProps) {
             // Map active tab to backend params only (minimalistic)
             let applicationStatus: boolean | string | undefined;
             let audioAttendedParam: boolean | undefined;
+            let videoAttendedParam: boolean | undefined;
+            let videoInterviewSentParam: boolean | undefined;
             let shortlistedParam: boolean | undefined;
 
             switch (activeTab) {
@@ -162,7 +173,20 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     audioAttendedParam = false; // profile created only
                     break;
                 case 'seen':
-                    audioAttendedParam = true; // audio completed
+                    {
+                        const audioSelected = filters.audioAttended === true;
+                        const videoSelected = filters.videoAttended === true;
+                        const sentSelected = filters.videoInterviewSent === true;
+
+                        // If no explicit filter selected, default Seen to audio completed
+                        if (!audioSelected && !videoSelected && !sentSelected) {
+                            audioAttendedParam = true;
+                        } else {
+                            if (audioSelected) audioAttendedParam = true;
+                            if (videoSelected) videoAttendedParam = true;
+                            if (sentSelected) videoInterviewSentParam = true;
+                        }
+                    }
                     break;
                 case 'shortlisted':
                     shortlistedParam = true; // sent to hiring manager
@@ -179,11 +203,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 currentPage,
                 smartPageSize,
                 applicationStatus,
-                undefined, // video_attended (unused for tabs)
+                videoAttendedParam, // video_attended
                 shortlistedParam, // shortlisted
                 undefined, // call_for_interview
                 audioAttendedParam, // audio_attended
-                undefined, // video_interview_sent
+                videoInterviewSentParam, // video_interview_sent
             );
             setCandidates(response.candidates);
             setJobDetails(response.job_details);
@@ -210,6 +234,8 @@ export default function JobCandidatesPage({ params }: PageProps) {
             // Mirror the same mapping as the main fetch based on activeTab
             let nextApplicationStatus: boolean | string | undefined;
             let nextAudioAttended: boolean | undefined;
+            let nextVideoAttended: boolean | undefined;
+            let nextVideoInterviewSent: boolean | undefined;
             let nextShortlisted: boolean | undefined;
 
             switch (activeTab) {
@@ -217,7 +243,19 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     nextAudioAttended = false;
                     break;
                 case 'seen':
-                    nextAudioAttended = true;
+                    {
+                        const audioSelected = filters.audioAttended === true;
+                        const videoSelected = filters.videoAttended === true;
+                        const sentSelected = filters.videoInterviewSent === true;
+
+                        if (!audioSelected && !videoSelected && !sentSelected) {
+                            nextAudioAttended = true;
+                        } else {
+                            if (audioSelected) nextAudioAttended = true;
+                            if (videoSelected) nextVideoAttended = true;
+                            if (sentSelected) nextVideoInterviewSent = true;
+                        }
+                    }
                     break;
                 case 'shortlisted':
                     nextShortlisted = true;
@@ -232,11 +270,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 nextPage,
                 pageSize,
                 nextApplicationStatus,
-                undefined,
+                nextVideoAttended,
                 nextShortlisted,
                 undefined,
                 nextAudioAttended,
-                undefined,
+                nextVideoInterviewSent,
             );
 
             // Append new candidates to existing ones
@@ -263,99 +301,34 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const filteredCandidates = useMemo(() => {
         if (!candidates) return [];
 
+        // Apply inline filters ONLY for the Seen tab; otherwise, do not filter
+        if (activeTab !== 'seen') {
+            return candidates;
+        }
+
         const filtered = candidates.filter(candidate => {
-            // Search filter - search by full name (using debounced search term)
-            const matchesSearch = candidate?.basic_information?.full_name?.toLowerCase().includes(debouncedSearchTerm?.toLowerCase());
+            // Only apply three Seen inline filters
 
-            // Location filter - Frontend-based filtering for Indian cities
-            let matchesLocation = true;
-            if (filters.location !== 'all') {
-                const candidateLocation = candidate?.basic_information?.current_location?.toLowerCase() || '';
-
-                if (filters.location === 'remote') {
-                    // Check if candidate is open to remote work or location indicates remote
-                    matchesLocation = candidate?.basic_information?.open_to_relocation === true ||
-                        candidateLocation.includes('remote') ||
-                        candidateLocation.includes('work from home');
-                } else {
-                    // Check for specific city match
-                    matchesLocation = candidateLocation.includes(filters.location.toLowerCase());
-                }
-            }
-
-            // Audio attended filter
+            // Audio completed
             let matchesAudioAttended = true;
             if (filters.audioAttended) {
                 matchesAudioAttended = candidate?.interview_status?.audio_interview_attended === true;
             }
 
-            // Video interview sent filter (check if application status indicates video link sent)
+            // Video interview sent
             let matchesVideoInterviewSent = true;
             if (filters.videoInterviewSent) {
-                // Check if application_status is "SendVideoLink" or if video interview URL exists
                 matchesVideoInterviewSent = candidate?.application_status === 'SendVideoLink' ||
-                    candidate?.interview_status?.video_interview_url !== null;
+                    candidate?.interview_status?.video_interview_url != null;
             }
 
-            // Video attended filter
+            // Video completed
             let matchesVideoAttended = true;
             if (filters.videoAttended) {
                 matchesVideoAttended = candidate?.interview_status?.video_interview_attended === true;
             }
 
-            // Send to hiring manager filter (using shortlisted)
-            let matchesSendToHiringManager = true;
-            if (filters.sendToHiringManager) {
-                matchesSendToHiringManager = candidate?.final_shortlist === true;
-            }
-
-            // Profile only filter (candidates who haven't attended audio interview)
-            let matchesProfileOnly = true;
-            if (filters.profileOnly) {
-                matchesProfileOnly = candidate?.interview_status?.audio_interview_attended !== true;
-            }
-
-            // Experience range filter
-            let matchesExperience = true;
-            if (filters.experienceRange !== 'all') {
-                const totalExp = candidate?.career_overview?.total_years_experience || 0;
-                switch (filters.experienceRange) {
-                    case '0-2':
-                        matchesExperience = totalExp >= 0 && totalExp <= 2;
-                        break;
-                    case '3-5':
-                        matchesExperience = totalExp >= 3 && totalExp <= 5;
-                        break;
-                    case '5-10':
-                        matchesExperience = totalExp >= 5 && totalExp <= 10;
-                        break;
-                    case '10+':
-                        matchesExperience = totalExp >= 10;
-                        break;
-                }
-            }
-
-            // Sales experience range filter
-            let matchesSalesExperience = true;
-            if (filters.salesExperienceRange !== 'all') {
-                const salesExp = candidate?.career_overview?.years_sales_experience || 0;
-                switch (filters.salesExperienceRange) {
-                    case '0-1':
-                        matchesSalesExperience = salesExp >= 0 && salesExp <= 1;
-                        break;
-                    case '1-3':
-                        matchesSalesExperience = salesExp >= 1 && salesExp <= 3;
-                        break;
-                    case '3-5':
-                        matchesSalesExperience = salesExp >= 3 && salesExp <= 5;
-                        break;
-                    case '5+':
-                        matchesSalesExperience = salesExp >= 5;
-                        break;
-                }
-            }
-
-            return matchesSearch && matchesLocation && matchesAudioAttended && matchesVideoInterviewSent && matchesVideoAttended && matchesSendToHiringManager && matchesProfileOnly && matchesExperience && matchesSalesExperience;
+            return matchesAudioAttended && matchesVideoInterviewSent && matchesVideoAttended;
         });
 
         // Update smart filtering state
@@ -792,7 +765,49 @@ export default function JobCandidatesPage({ params }: PageProps) {
                             </div>
                         ) : (
                             <div className="space-y-3 mt-4">
-                                {candidates.map((c) => (
+                                {activeTab === 'seen' && (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-sm text-gray-600 mr-1">Filter:</span>
+                                        <Button
+                                            size="sm"
+                                            variant={filters.audioAttended ? 'default' : 'outline'}
+                                            onClick={() => setFilters({ ...filters, audioAttended: !filters.audioAttended })}
+                                            disabled={pageLoading}
+                                        >
+                                            <FaMicrophone className="h-3 w-3 mr-2" />
+                                            Audio Completed
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant={filters.videoAttended ? 'default' : 'outline'}
+                                            onClick={() => setFilters({ ...filters, videoAttended: !filters.videoAttended })}
+                                            disabled={pageLoading}
+                                        >
+                                            <FaVideo className="h-3 w-3 mr-2" />
+                                            Video Completed
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant={filters.videoInterviewSent ? 'default' : 'outline'}
+                                            onClick={() => setFilters({ ...filters, videoInterviewSent: !filters.videoInterviewSent })}
+                                            disabled={pageLoading}
+                                        >
+                                            <FaEnvelope className="h-3 w-3 mr-2" />
+                                            Video Interview Sent
+                                        </Button>
+                                        {(filters.audioAttended || filters.videoAttended || filters.videoInterviewSent) && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => setFilters({ ...filters, audioAttended: false, videoAttended: false, videoInterviewSent: false })}
+                                                disabled={pageLoading}
+                                            >
+                                                Clear
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+                                {(activeTab === 'seen' ? candidates : candidates).map((c) => (
                                     activeTab === 'seen' ? (
                                         <SeenApplicantCard key={c.profile_id} candidate={c} jobId={jobId} roleTitle={jobDetails?.title || ''} />
                                     ) : activeTab === 'shortlisted' ? (
