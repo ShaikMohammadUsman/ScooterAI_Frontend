@@ -765,7 +765,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                             </div>
                         ) : (
                             <div className="space-y-3 mt-4">
-                                {activeTab === 'seen' && (
+                                {/* {activeTab === 'seen' && (
                                     <div className="flex flex-wrap items-center gap-2">
                                         <span className="text-sm text-gray-600 mr-1">Filter:</span>
                                         <Button
@@ -806,7 +806,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             </Button>
                                         )}
                                     </div>
-                                )}
+                                )} */}
                                 {(activeTab === 'seen' ? candidates : candidates).map((c) => (
                                     activeTab === 'seen' ? (
                                         <SeenApplicantCard key={c.profile_id} candidate={c} jobId={jobId} roleTitle={jobDetails?.title || ''} />
