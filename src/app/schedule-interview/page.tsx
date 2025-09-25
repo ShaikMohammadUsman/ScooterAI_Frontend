@@ -187,7 +187,7 @@ export default function ScheduleInterviewPage() {
                         <Button variant="primary" className="text-sm" onClick={() => router.push(`/candidate-portfolio/${jobId}`)}>
                             View Shortlisted Candidates
                         </Button>
-                        <Button variant="secondary" className="text-sm" onClick={() => router.push(`/company/jobs/${jobId}`)}>
+                        <Button variant="secondary" className="text-sm" onClick={() => router.push(`/manager/jobs/${jobId}`)}>
                             Continue To Browse Candidates
                         </Button>
                     </DialogFooter>
