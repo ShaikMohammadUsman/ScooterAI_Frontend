@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Hls from "hls.js";
 
 interface VideoPlayerProps {
@@ -22,6 +22,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const lastTriedUrlRef = useRef<string | null>(null);
+    const [hasError, setHasError] = useState(false);
+    const [isUsingFallback, setIsUsingFallback] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const isDriveUrl = (u: string) => {
         try { return new URL(u).hostname.includes('drive.google.com'); } catch { return false; }
@@ -60,6 +63,35 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (videoUrl.endsWith(".m3u8")) {
             if (Hls.isSupported()) {
                 const hls = new Hls();
+
+                // Add error handling for HLS
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('HLS error:', data);
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.log('Fatal network error encountered, trying to recover...');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.log('Fatal media error encountered, trying to recover...');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                console.log('Fatal error, destroying HLS instance');
+                                hls.destroy();
+                                // Try fallback URL if available
+                                if (fallbackUrl && lastTriedUrlRef.current !== fallbackUrl) {
+                                    console.log('Attempting fallback to:', fallbackUrl);
+                                    lastTriedUrlRef.current = fallbackUrl;
+                                    video.src = fallbackUrl;
+                                    video.load();
+                                }
+                                break;
+                        }
+                    }
+                });
+
                 hls.loadSource(videoUrl);
                 hls.attachMedia(video);
 
@@ -82,15 +114,36 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (!video) return;
 
         const handleError = () => {
-            if (!fallbackUrl) return;
-            const currentSrc = (video as HTMLVideoElement).currentSrc || videoUrl;
-            if (lastTriedUrlRef.current === fallbackUrl) return;
+            setHasError(true);
+            setErrorMessage('Failed to load video');
+
+            if (!fallbackUrl) {
+                setErrorMessage('Failed to load video and no fallback available');
+                return;
+            }
+
+            // Prevent infinite retry loop
+            if (lastTriedUrlRef.current === fallbackUrl) {
+                setErrorMessage('Both primary and fallback videos failed to load');
+                return;
+            }
+
+            console.log('Video error occurred, attempting fallback to:', fallbackUrl);
             lastTriedUrlRef.current = fallbackUrl;
+            setIsUsingFallback(true);
+            setErrorMessage('Using fallback video...');
+
             try {
+                // Clear current source and load fallback
+                video.src = '';
+                video.load();
                 video.src = fallbackUrl;
                 video.load();
                 video.play().catch(() => {/* ignore autoplay block */ });
-            } catch { /* ignore */ }
+            } catch (error) {
+                console.error('Failed to load fallback video:', error);
+                setErrorMessage('Failed to load both primary and fallback videos');
+            }
         };
 
         video.addEventListener('error', handleError);
@@ -99,41 +152,63 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         };
     }, [fallbackUrl, videoUrl]);
 
+    // Reset error state when video URL changes
+    useEffect(() => {
+        setHasError(false);
+        setIsUsingFallback(false);
+        setErrorMessage(null);
+        lastTriedUrlRef.current = null;
+    }, [videoUrl]);
+
     return (
-        isDriveUrl(normalizeVideoUrl) ? (
-            <iframe
-                title="Video"
-                style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
-                src={normalizeVideoUrl}
-                className={className}
-                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                allowFullScreen
-            />
-        ) : (
-            <video
-                ref={videoRef}
-                className={className}
-                controls={controls}
-                autoPlay={autoPlay}
-                preload={preload}
-                poster={poster}
-            >
-                {/* Provide fallback sources for broader compatibility */}
-                {videoUrl.endsWith(".mp4") && (
-                    <source src={videoUrl} type="video/mp4" />
-                )}
-                {videoUrl.endsWith(".webm") && (
-                    <source src={videoUrl} type="video/webm" />
-                )}
-                {videoUrl.endsWith(".ogg") && (
-                    <source src={videoUrl} type="video/ogg" />
-                )}
-                {videoUrl.endsWith(".m3u8") && (
-                    <source src={videoUrl} type="application/vnd.apple.mpegurl" />
-                )}
-                Your browser does not support the video tag.
-            </video>
-        )
+        <div className="relative">
+            {isDriveUrl(normalizeVideoUrl) ? (
+                <iframe
+                    title="Video"
+                    style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+                    src={normalizeVideoUrl}
+                    className={className}
+                    allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                />
+            ) : (
+                <video
+                    ref={videoRef}
+                    className={className}
+                    controls={controls}
+                    autoPlay={autoPlay}
+                    preload={preload}
+                    poster={poster}
+                >
+                    {/* Provide fallback sources for broader compatibility */}
+                    {videoUrl.endsWith(".mp4") && (
+                        <source src={videoUrl} type="video/mp4" />
+                    )}
+                    {videoUrl.endsWith(".webm") && (
+                        <source src={videoUrl} type="video/webm" />
+                    )}
+                    {videoUrl.endsWith(".ogg") && (
+                        <source src={videoUrl} type="video/ogg" />
+                    )}
+                    {videoUrl.endsWith(".m3u8") && (
+                        <source src={videoUrl} type="application/vnd.apple.mpegurl" />
+                    )}
+                    Your browser does not support the video tag.
+                </video>
+            )}
+
+            {/* Error/Status Messages */}
+            {errorMessage && (
+                <div className={`absolute top-2 left-2 right-2 p-2 rounded text-sm ${hasError && !isUsingFallback
+                    ? 'bg-red-100 text-red-800 border border-red-200'
+                    : isUsingFallback
+                        ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                        : 'bg-blue-100 text-blue-800 border border-blue-200'
+                    }`}>
+                    {errorMessage}
+                </div>
+            )}
+        </div>
     );
 };
 

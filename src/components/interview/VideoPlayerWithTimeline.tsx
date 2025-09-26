@@ -37,6 +37,10 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
 }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const lastTriedUrlRef = useRef<string | null>(null);
+    const [hasError, setHasError] = useState(false);
+    const [isUsingFallback, setIsUsingFallback] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
     const isDriveUrl = (u: string) => {
         try { return new URL(u).hostname.includes('drive.google.com'); } catch { return false; }
     };
@@ -88,7 +92,9 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
     const timelineMarkers = React.useMemo(() => {
         if (!interviewEvents.length || !computedDuration) return [];
 
-        const startTime = new Date(interviewEvents[0]?.timestamp).getTime();
+        // Find the first question narration start as the reference point
+        const firstQuestionEvent = interviewEvents.find(ev => ev.event === 'question_narration_started');
+        const startTime = firstQuestionEvent ? new Date(firstQuestionEvent.timestamp).getTime() : new Date(interviewEvents[0]?.timestamp).getTime();
 
         return interviewEvents
             .filter(event =>
@@ -143,6 +149,35 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         if (videoUrl.endsWith(".m3u8")) {
             if (Hls.isSupported()) {
                 const hls = new Hls();
+
+                // Add error handling for HLS
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('HLS error:', data);
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.log('Fatal network error encountered, trying to recover...');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.log('Fatal media error encountered, trying to recover...');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                console.log('Fatal error, destroying HLS instance');
+                                hls.destroy();
+                                // Try fallback URL if available
+                                if (fallbackUrl && lastTriedUrlRef.current !== fallbackUrl) {
+                                    console.log('Attempting fallback to:', fallbackUrl);
+                                    lastTriedUrlRef.current = fallbackUrl;
+                                    video.src = fallbackUrl;
+                                    video.load();
+                                }
+                                break;
+                        }
+                    }
+                });
+
                 hls.loadSource(videoUrl);
                 hls.attachMedia(video);
 
@@ -172,14 +207,36 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         if (!video) return;
 
         const handleError = () => {
-            if (!fallbackUrl) return;
-            if (lastTriedUrlRef.current === fallbackUrl) return;
+            setHasError(true);
+            setErrorMessage('Failed to load video');
+
+            if (!fallbackUrl) {
+                setErrorMessage('Failed to load video and no fallback available');
+                return;
+            }
+
+            // Prevent infinite retry loop
+            if (lastTriedUrlRef.current === fallbackUrl) {
+                setErrorMessage('Both primary and fallback videos failed to load');
+                return;
+            }
+
+            console.log('Video error occurred, attempting fallback to:', fallbackUrl);
             lastTriedUrlRef.current = fallbackUrl;
+            setIsUsingFallback(true);
+            setErrorMessage('Using fallback video...');
+
             try {
+                // Clear current source and load fallback
+                video.src = '';
+                video.load();
                 video.src = fallbackUrl;
                 video.load();
                 video.play().catch(() => {/* ignore autoplay block */ });
-            } catch { /* ignore */ }
+            } catch (error) {
+                console.error('Failed to load fallback video:', error);
+                setErrorMessage('Failed to load both primary and fallback videos');
+            }
         };
 
         video.addEventListener('error', handleError);
@@ -187,6 +244,14 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             video.removeEventListener('error', handleError);
         };
     }, [fallbackUrl, videoUrl]);
+
+    // Reset error state when video URL changes
+    useEffect(() => {
+        setHasError(false);
+        setIsUsingFallback(false);
+        setErrorMessage(null);
+        lastTriedUrlRef.current = null;
+    }, [videoUrl]);
 
     const handleTimelineClick = (time: number) => {
         if (isDrive) {
@@ -257,7 +322,10 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         const result: Segment[] = [];
         if (!interviewEvents.length) return result;
         const total = computedDuration || duration || 1;
-        const videoStartTs = new Date(interviewEvents[0]?.timestamp).getTime();
+
+        // Find the first question narration start as the reference point
+        const firstQuestionEvent = interviewEvents.find(ev => ev.event === 'question_narration_started');
+        const videoStartTs = firstQuestionEvent ? new Date(firstQuestionEvent.timestamp).getTime() : new Date(interviewEvents[0]?.timestamp).getTime();
 
         // Group narration events by questionIndex
         const byQuestion = new Map<number, { startTs?: number; endTs?: number; question?: string }>();
@@ -291,12 +359,12 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             if (typeof entry.startTs !== 'number') return;
 
             // Start display 5 seconds before narration actually starts
-            const displayStartTs = entry.startTs - 5000; // 5 seconds before
+            const displayStartTs = entry.startTs - 0; // 0 seconds before
             const startSec = Math.max(0, (displayStartTs - videoStartTs) / 1000);
 
             // Calculate end time: minimum 5 seconds from display start, or until narration ends (whichever is longer)
             const narrationEndTs = typeof entry.endTs === 'number' ? entry.endTs : null;
-            const minDisplayEndTs = displayStartTs + 5000; // 5 seconds minimum from display start
+            const minDisplayEndTs = displayStartTs + 10000; // 10 seconds minimum from display start
 
             let endTs;
             if (narrationEndTs) {
@@ -326,6 +394,55 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
 
         return result;
     }, [interviewEvents, computedDuration, duration, questionEvaluations]);
+
+    // Build retake segments from retake start/end events
+    const retakeSegments = React.useMemo(() => {
+        type RetakeSegment = { id: string; start: number; end: number; percentageStart: number; percentageWidth: number; questionIndex?: number };
+        const result: RetakeSegment[] = [];
+        if (!interviewEvents.length) return result;
+        const total = computedDuration || duration || 1;
+
+        // Find the first question narration start as the reference point
+        const firstQuestionEvent = interviewEvents.find(ev => ev.event === 'question_narration_started');
+        const videoStartTs = firstQuestionEvent ? new Date(firstQuestionEvent.timestamp).getTime() : new Date(interviewEvents[0]?.timestamp).getTime();
+
+        // Group retake events by questionIndex
+        const retakeEvents = new Map<number, { startTs?: number; endTs?: number }>();
+        for (const ev of interviewEvents) {
+            if (ev.event === 'answer_retake_started' || ev.event === 'answer_retake_ended') {
+                const qi = ev.details?.questionIndex ?? undefined;
+                if (typeof qi !== 'number') continue;
+                const entry = retakeEvents.get(qi) || {};
+                if (ev.event === 'answer_retake_started') {
+                    entry.startTs = new Date(ev.timestamp).getTime();
+                } else if (ev.event === 'answer_retake_ended') {
+                    entry.endTs = new Date(ev.timestamp).getTime();
+                }
+                retakeEvents.set(qi, entry);
+            }
+        }
+
+        // Build retake segments
+        retakeEvents.forEach((entry, qi) => {
+            if (typeof entry.startTs !== 'number' || typeof entry.endTs !== 'number') return;
+
+            const startSec = Math.max(0, (entry.startTs - videoStartTs) / 1000);
+            const endSec = Math.max(startSec + 0.5, (entry.endTs - videoStartTs) / 1000);
+            const pStart = Math.max(0, Math.min(100, (startSec / total) * 100));
+            const pWidth = Math.max(0.5, Math.min(100 - pStart, ((endSec - startSec) / total) * 100));
+
+            result.push({
+                id: `retake-${qi}`,
+                start: startSec,
+                end: endSec,
+                percentageStart: pStart,
+                percentageWidth: pWidth,
+                questionIndex: qi,
+            });
+        });
+
+        return result;
+    }, [interviewEvents, computedDuration, duration]);
 
     return (
         <div className="relative">
@@ -376,6 +493,18 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                 </div>
             )}
 
+            {/* Error/Status Messages */}
+            {errorMessage && (
+                <div className={`absolute top-2 left-2 right-2 p-2 rounded text-sm z-30 ${hasError && !isUsingFallback
+                    ? 'bg-red-100 text-red-800 border border-red-200'
+                    : isUsingFallback
+                        ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                        : 'bg-blue-100 text-blue-800 border border-blue-200'
+                    }`}>
+                    {errorMessage}
+                </div>
+            )}
+
             {/* Timeline Controls */}
             {interviewEvents.length > 0 && (
                 <div className="mt-2">
@@ -407,9 +536,19 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                 {questionSegments.map(seg => (
                                     <div
                                         key={`qseg-${seg.id}`}
-                                        className={`absolute top-0 h-full ${seg.hasRetake ? 'bg-orange-200/70 border-orange-500' : 'bg-yellow-200/60 border-yellow-400'} border-t border-b`}
+                                        className="absolute top-0 h-full bg-yellow-200/60 border-yellow-400 border-t border-b"
                                         style={{ left: `${seg.percentageStart}%`, width: `${seg.percentageWidth}%` }}
                                         title={(seg.hasRetake ? '[Retake] ' : '') + (seg.question ? seg.question : `Question ${((seg.questionIndex ?? 0) + 1)}`)}
+                                    />
+                                ))}
+
+                                {/* Retake segments */}
+                                {retakeSegments.map(seg => (
+                                    <div
+                                        key={`retake-${seg.id}`}
+                                        className="absolute top-0 h-full bg-orange-200/70 border-orange-500 border-t border-b"
+                                        style={{ left: `${seg.percentageStart}%`, width: `${seg.percentageWidth}%` }}
+                                        title={`Retake - Question ${((seg.questionIndex ?? 0) + 1)}`}
                                     />
                                 ))}
 
