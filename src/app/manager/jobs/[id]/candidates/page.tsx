@@ -363,10 +363,12 @@ export default function CandidatesPage() {
                                             </div>
                                         )}
 
-                                        {videoPlaying === selectedCandidate.profile_id && selectedCandidate.interview_status.video_interview_url && (
+                                        {videoPlaying === selectedCandidate.profile_id && (selectedCandidate.interview_status.processed_video_interview_url || selectedCandidate.interview_status.video_interview_url) && (
                                             <div className="mb-4">
                                                 <VideoPlayer
-                                                    videoUrl={selectedCandidate.interview_status.video_interview_url}
+                                                    videoUrl={selectedCandidate.interview_status.processed_video_interview_url || selectedCandidate.interview_status.video_interview_url!}
+                                                    fallbackUrl={selectedCandidate.interview_status.processed_video_interview_url ? selectedCandidate.interview_status.video_interview_url : null}
+                                                    poster='/assets/images/scooterLogo.png'
                                                     controls={true}
                                                     className="w-full rounded-lg"
                                                 />

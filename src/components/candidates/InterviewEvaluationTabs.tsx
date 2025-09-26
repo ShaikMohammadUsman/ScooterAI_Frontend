@@ -83,6 +83,7 @@ export default function InterviewEvaluationTabs({ candidate }: InterviewEvaluati
                             controls={true}
                             autoPlay={true}
                             className="w-full rounded-lg"
+                            poster='/assets/images/scooterLogo.png'
                         />
                     </div>
                 )}

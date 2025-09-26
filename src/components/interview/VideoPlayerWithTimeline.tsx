@@ -14,6 +14,7 @@ interface InterviewEvent {
 
 interface VideoPlayerWithTimelineProps {
     videoUrl: string;
+    fallbackUrl?: string | null;
     interviewEvents?: InterviewEvent[];
     questionEvaluations?: Array<{ question_number?: number; question?: string }>;
     poster?: string;
@@ -25,6 +26,7 @@ interface VideoPlayerWithTimelineProps {
 
 const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
     videoUrl,
+    fallbackUrl,
     interviewEvents = [],
     questionEvaluations = [],
     poster = "",
@@ -34,6 +36,7 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
     className = "w-full h-full rounded-lg shadow-lg",
 }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
+    const lastTriedUrlRef = useRef<string | null>(null);
     const isDriveUrl = (u: string) => {
         try { return new URL(u).hostname.includes('drive.google.com'); } catch { return false; }
     };
@@ -167,6 +170,28 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             video.removeEventListener('timeupdate', handleTimeUpdate);
         };
     }, [videoUrl, normalizeVideoUrl]);
+
+    // Runtime error fallback: if processed video fails, try original video URL if provided
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const handleError = () => {
+            if (!fallbackUrl) return;
+            if (lastTriedUrlRef.current === fallbackUrl) return;
+            lastTriedUrlRef.current = fallbackUrl;
+            try {
+                video.src = fallbackUrl;
+                video.load();
+                video.play().catch(() => {/* ignore autoplay block */ });
+            } catch { /* ignore */ }
+        };
+
+        video.addEventListener('error', handleError);
+        return () => {
+            video.removeEventListener('error', handleError);
+        };
+    }, [fallbackUrl, videoUrl]);
 
     const handleTimelineClick = (time: number) => {
         if (isDrive) {

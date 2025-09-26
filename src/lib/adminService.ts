@@ -79,6 +79,7 @@ export interface Candidate {
         video_interview_attended: boolean;
         audio_interview_attended: boolean;
         video_email_sent?: boolean;
+        processed_video_interview_url?: string | null;
         video_interview_url: string | null;
         audio_interview_url: string | null;
         resume_url: string | null;

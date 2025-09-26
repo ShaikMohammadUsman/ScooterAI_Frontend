@@ -851,12 +851,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             <div className="bg-bg-main rounded-none p-4 sm:p-6 shadow-sm">
                                                 {(() => {
                                                     const candidateData = selectedCandidate?.profile_id ? getCandidateHighlights(selectedCandidate.profile_id) : null;
-                                                    const videoUrl = candidateData?.main_video_url || selectedCandidate.interview_status?.video_interview_url;
+                                                    const videoUrl = candidateData?.main_video_url || selectedCandidate.interview_status?.processed_video_interview_url || selectedCandidate.interview_status?.video_interview_url;
                                                     const interviewEvents = selectedCandidate?.video_proctoring_details?.interview_events || [];
 
                                                     return videoUrl ? (
                                                         <VideoPlayerWithTimeline
                                                             videoUrl={videoUrl}
+                                                            fallbackUrl={selectedCandidate.interview_status?.processed_video_interview_url ? selectedCandidate.interview_status?.video_interview_url : null}
                                                             interviewEvents={interviewEvents}
                                                             className="w-full h-64 sm:h-80 rounded-none"
                                                             controls={true}
@@ -1306,6 +1307,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     interviewEvents={selectedCandidate?.video_proctoring_details?.interview_events || []}
                                     className="w-full h-64 sm:h-80 lg:h-96 rounded-lg"
                                     controls={true}
+                                    poster='/assets/images/scooterLogo.png'
                                 />
                             ) : (
                                 <div className="w-full h-64 sm:h-80 lg:h-96 bg-gray-200 rounded-lg flex items-center justify-center">
