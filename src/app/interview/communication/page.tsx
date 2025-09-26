@@ -105,6 +105,21 @@ function CommunicationInterview() {
     const [isLeaving, setIsLeaving] = useState(false);
     const [cameraAccessDenied, setCameraAccessDenied] = useState(false);
     const [showCameraRetry, setShowCameraRetry] = useState(false);
+
+    // Comprehensive permission checking states
+    const [permissionStatus, setPermissionStatus] = useState<{
+        camera: 'checking' | 'granted' | 'denied' | 'not-requested';
+        microphone: 'checking' | 'granted' | 'denied' | 'not-requested';
+        screenShare: 'checking' | 'granted' | 'denied' | 'not-requested';
+        screenAudio: 'checking' | 'granted' | 'denied' | 'not-requested';
+    }>({
+        camera: 'not-requested',
+        microphone: 'not-requested',
+        screenShare: 'not-requested',
+        screenAudio: 'not-requested'
+    });
+    const [showPermissionChecker, setShowPermissionChecker] = useState(false);
+    const [permissionError, setPermissionError] = useState<string | null>(null);
     const [isProcessingFinalResponse, setIsProcessingFinalResponse] = useState(false);
     const [speechDuration, setSpeechDuration] = useState<number>(0);
     // System audio availability hint (shown for macOS Chrome or when permission denied)
@@ -362,7 +377,7 @@ function CommunicationInterview() {
     };
 
     // Start interview with camera check
-    const handleStart = async () => {
+    const handleStart = async (skipPermissionCheck = false) => {
         setShowWelcomeScreen(false);
         setLoading(true);
         setError(null);
@@ -374,13 +389,17 @@ function CommunicationInterview() {
         }
 
         try {
-
-            // Check camera access first
-            const hasCameraAccess = await checkCameraAccess();
-            if (!hasCameraAccess) {
-                setLoading(false);
-                return;
+            // Check all required permissions first (unless already checked)
+            if (!skipPermissionCheck) {
+                const allPermissionsGranted = await checkAllPermissions();
+                if (!allPermissionsGranted) {
+                    setLoading(false);
+                    return; // Stay on permission checker screen
+                }
             }
+
+            // All permissions granted, proceed with interview
+            setShowPermissionChecker(false);
 
             // Activate proctoring when camera check starts
             setProctoringActive(true);
@@ -433,7 +452,176 @@ function CommunicationInterview() {
         }
     };
 
-    // Check camera access
+    // Comprehensive permission checker
+    const checkAllPermissions = async (): Promise<boolean> => {
+        setShowPermissionChecker(true);
+        setPermissionError(null);
+
+        // Reset all permissions to checking
+        setPermissionStatus({
+            camera: 'checking',
+            microphone: 'checking',
+            screenShare: 'checking',
+            screenAudio: 'checking'
+        });
+
+        let allPermissionsGranted = true;
+
+        // 1. Check Camera Permission
+        try {
+            const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            cameraStream.getTracks().forEach(track => track.stop());
+            setPermissionStatus(prev => ({ ...prev, camera: 'granted' }));
+        } catch (err: any) {
+            console.error("Camera permission error:", err);
+            setPermissionStatus(prev => ({ ...prev, camera: 'denied' }));
+            allPermissionsGranted = false;
+        }
+
+        // 2. Check Microphone Permission
+        try {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream.getTracks().forEach(track => track.stop());
+            setPermissionStatus(prev => ({ ...prev, microphone: 'granted' }));
+        } catch (err: any) {
+            console.error("Microphone permission error:", err);
+            setPermissionStatus(prev => ({ ...prev, microphone: 'denied' }));
+            allPermissionsGranted = false;
+        }
+
+        // 3. Check Screen Share Permission (with audio)
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: true
+            });
+
+            // Check if audio tracks are present (system audio)
+            const audioTracks = screenStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                setPermissionStatus(prev => ({
+                    ...prev,
+                    screenShare: 'granted',
+                    screenAudio: 'granted'
+                }));
+                // Persist this stream for later recording to avoid re-prompting
+                try { screenStream.getVideoTracks().forEach(t => { try { t.enabled = false; } catch { } }); } catch { }
+                displayAudioStreamRef.current = screenStream;
+                systemAudioAttemptedRef.current = true;
+            } else {
+                setPermissionStatus(prev => ({
+                    ...prev,
+                    screenShare: 'granted',
+                    screenAudio: 'denied'
+                }));
+                // No usable audio, stop the stream
+                try { screenStream.getTracks().forEach(track => track.stop()); } catch { }
+                allPermissionsGranted = false;
+            }
+        } catch (err: any) {
+            console.error("Screen share permission error:", err);
+            setPermissionStatus(prev => ({
+                ...prev,
+                screenShare: 'denied',
+                screenAudio: 'denied'
+            }));
+            allPermissionsGranted = false;
+        }
+
+        if (!allPermissionsGranted) {
+            setPermissionError("Some permissions are missing. Please grant all required permissions to continue.");
+        } else {
+            // Clear any previous errors when all permissions are granted
+            setPermissionError(null);
+        }
+
+        return allPermissionsGranted;
+    };
+
+    // Handle individual permission retry
+    const retryPermission = async (permissionType: 'camera' | 'microphone' | 'screenShare' | 'screenAudio') => {
+        setPermissionError(null);
+
+        try {
+            if (permissionType === 'camera') {
+                setPermissionStatus(prev => ({ ...prev, camera: 'checking' }));
+                const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraStream.getTracks().forEach(track => track.stop());
+                setPermissionStatus(prev => ({ ...prev, camera: 'granted' }));
+                // Check if all permissions are now granted
+                setTimeout(() => {
+                    setPermissionStatus(current => {
+                        if (current.camera === 'granted' && current.microphone === 'granted' &&
+                            current.screenShare === 'granted' && current.screenAudio === 'granted') {
+                            setPermissionError(null);
+                        }
+                        return current;
+                    });
+                }, 100);
+            } else if (permissionType === 'microphone') {
+                setPermissionStatus(prev => ({ ...prev, microphone: 'checking' }));
+                const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micStream.getTracks().forEach(track => track.stop());
+                setPermissionStatus(prev => ({ ...prev, microphone: 'granted' }));
+                // Check if all permissions are now granted
+                setTimeout(() => {
+                    setPermissionStatus(current => {
+                        if (current.camera === 'granted' && current.microphone === 'granted' &&
+                            current.screenShare === 'granted' && current.screenAudio === 'granted') {
+                            setPermissionError(null);
+                        }
+                        return current;
+                    });
+                }, 100);
+            } else if (permissionType === 'screenShare' || permissionType === 'screenAudio') {
+                setPermissionStatus(prev => ({
+                    ...prev,
+                    screenShare: 'checking',
+                    screenAudio: 'checking'
+                }));
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: true
+                });
+
+                const audioTracks = screenStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    setPermissionStatus(prev => ({
+                        ...prev,
+                        screenShare: 'granted',
+                        screenAudio: 'granted'
+                    }));
+                    // Check if all permissions are now granted
+                    setTimeout(() => {
+                        setPermissionStatus(current => {
+                            if (current.camera === 'granted' && current.microphone === 'granted' &&
+                                current.screenShare === 'granted' && current.screenAudio === 'granted') {
+                                setPermissionError(null);
+                            }
+                            return current;
+                        });
+                    }, 100);
+                } else {
+                    setPermissionStatus(prev => ({
+                        ...prev,
+                        screenShare: 'granted',
+                        screenAudio: 'denied'
+                    }));
+                    setPermissionError("Screen sharing granted but system audio was not enabled. Please make sure to check 'Share system audio' when sharing your screen.");
+                }
+                // Persist this stream for later recording to avoid re-prompting
+                try { screenStream.getVideoTracks().forEach(t => { try { t.enabled = false; } catch { } }); } catch { }
+                displayAudioStreamRef.current = screenStream;
+                systemAudioAttemptedRef.current = true;
+            }
+        } catch (err: any) {
+            console.error(`${permissionType} permission error:`, err);
+            setPermissionStatus(prev => ({ ...prev, [permissionType]: 'denied' }));
+            setPermissionError(`Failed to get ${permissionType} permission. Please try again.`);
+        }
+    };
+
+    // Legacy camera access function (for backward compatibility)
     const checkCameraAccess = async (): Promise<boolean> => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -534,7 +722,7 @@ function CommunicationInterview() {
             return userMedia;
         }
 
-        // Mix mic + system audio into a single track for maximum recorder compatibility
+        // Mix mic + system audio into a single track with light processing to avoid clipping
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         audioContextRef.current = audioContext;
 
@@ -544,6 +732,28 @@ function CommunicationInterview() {
 
         micSource.connect(destinationNode);
         systemSource.connect(destinationNode);
+        // // Create gain nodes to balance levels
+        // const micGain = audioContext.createGain();
+        // micGain.gain.value = 0.9; // slight reduction to avoid peaking
+        // const systemGain = audioContext.createGain();
+        // systemGain.gain.value = 0.9;
+
+        // // Dynamics compressor to tame loud peaks without distorting
+        // const compressor = audioContext.createDynamicsCompressor();
+        // compressor.threshold.setValueAtTime(-18, audioContext.currentTime);
+        // compressor.knee.setValueAtTime(30, audioContext.currentTime);
+        // compressor.ratio.setValueAtTime(4, audioContext.currentTime);
+        // compressor.attack.setValueAtTime(0.003, audioContext.currentTime);
+        // compressor.release.setValueAtTime(0.25, audioContext.currentTime);
+
+        // // Wire graph: mic->micGain ->\
+        // //                     \       -> compressor -> destination
+        // //            system->systemGain /
+        // micSource.connect(micGain);
+        // systemSource.connect(systemGain);
+        // micGain.connect(compressor);
+        // systemGain.connect(compressor);
+        // compressor.connect(destinationNode);
 
         // Build final combined stream: camera video + mixed audio
         const combined = new MediaStream();
@@ -576,10 +786,10 @@ function CommunicationInterview() {
             }
 
             const resetCount = (verifiedUser?.reset_count || 0) + 1;
-            console.log('Using reset_count for filename:', {
-                originalResetCount: verifiedUser?.reset_count || 0,
-                incrementedResetCount: resetCount
-            });
+            // console.log('Using reset_count for filename:', {
+            //     originalResetCount: verifiedUser?.reset_count || 0,
+            //     incrementedResetCount: resetCount
+            // });
 
             const uploader = createChunkedUploader({
                 userId,
@@ -1544,12 +1754,245 @@ function CommunicationInterview() {
                     {/* Welcome Screen */}
                     {showWelcomeScreen ? (
                         <WelcomeScreen
-                            onStart={handleStart}
+                            onStart={() => handleStart()}
                             loading={loading}
                             jobTitle={jobTitle}
                             jobDescription={jobDescription}
                             isDarkTheme={isDarkTheme}
                         />
+                    ) : showPermissionChecker ? (
+                        /* Permission Checker Screen */
+                        <div className={`flex-1 flex items-center justify-center transition-all duration-1000 ease-in-out ${isDarkTheme
+                            ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+                            : 'bg-gradient-to-br from-white via-slate-50 to-white'
+                            }`}>
+                            <div className="max-w-2xl mx-auto p-8 text-center">
+                                <div className="mb-8">
+                                    <h1 className={`text-3xl font-bold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                        Permission Check Required
+                                    </h1>
+                                    <p className={`text-lg ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        We need to verify all required permissions before starting the interview.
+                                    </p>
+                                </div>
+
+                                {/* Permission Status Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                    {/* Camera Permission */}
+                                    <div className={`p-4 rounded-lg border-2 ${permissionStatus.camera === 'granted'
+                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                        : permissionStatus.camera === 'denied'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                            : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        }`}>
+                                        <div className="flex items-center justify-center mb-2">
+                                            {permissionStatus.camera === 'granted' ? (
+                                                <FaCheck className="text-green-500 text-xl" />
+                                            ) : permissionStatus.camera === 'denied' ? (
+                                                <FaUser className="text-red-500 text-xl" />
+                                            ) : (
+                                                <LoadingDots bg="gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                            Camera Access
+                                        </h3>
+                                        <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {permissionStatus.camera === 'granted' ? 'Granted' :
+                                                permissionStatus.camera === 'denied' ? 'Denied' : 'Checking...'}
+                                        </p>
+                                        {permissionStatus.camera === 'denied' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => retryPermission('camera')}
+                                                className="mt-2 text-xs"
+                                            >
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* Microphone Permission */}
+                                    <div className={`p-4 rounded-lg border-2 ${permissionStatus.microphone === 'granted'
+                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                        : permissionStatus.microphone === 'denied'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                            : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        }`}>
+                                        <div className="flex items-center justify-center mb-2">
+                                            {permissionStatus.microphone === 'granted' ? (
+                                                <FaCheck className="text-green-500 text-xl" />
+                                            ) : permissionStatus.microphone === 'denied' ? (
+                                                <FaMicrophone className="text-red-500 text-xl" />
+                                            ) : (
+                                                <LoadingDots bg="gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                            Microphone Access
+                                        </h3>
+                                        <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {permissionStatus.microphone === 'granted' ? 'Granted' :
+                                                permissionStatus.microphone === 'denied' ? 'Denied' : 'Checking...'}
+                                        </p>
+                                        {permissionStatus.microphone === 'denied' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => retryPermission('microphone')}
+                                                className="mt-2 text-xs"
+                                            >
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* Screen Share Permission */}
+                                    <div className={`p-4 rounded-lg border-2 ${permissionStatus.screenShare === 'granted'
+                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                        : permissionStatus.screenShare === 'denied'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                            : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        }`}>
+                                        <div className="flex items-center justify-center mb-2">
+                                            {permissionStatus.screenShare === 'granted' ? (
+                                                <FaCheck className="text-green-500 text-xl" />
+                                            ) : permissionStatus.screenShare === 'denied' ? (
+                                                <FaUser className="text-red-500 text-xl" />
+                                            ) : (
+                                                <LoadingDots bg="gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                            Screen Sharing
+                                        </h3>
+                                        <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {permissionStatus.screenShare === 'granted' ? 'Granted' :
+                                                permissionStatus.screenShare === 'denied' ? 'Denied' : 'Checking...'}
+                                        </p>
+                                        {permissionStatus.screenShare === 'denied' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => retryPermission('screenShare')}
+                                                className="mt-2 text-xs"
+                                            >
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* System Audio Permission */}
+                                    <div className={`p-4 rounded-lg border-2 ${permissionStatus.screenAudio === 'granted'
+                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                        : permissionStatus.screenAudio === 'denied'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                            : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        }`}>
+                                        <div className="flex items-center justify-center mb-2">
+                                            {permissionStatus.screenAudio === 'granted' ? (
+                                                <FaCheck className="text-green-500 text-xl" />
+                                            ) : permissionStatus.screenAudio === 'denied' ? (
+                                                <FaMicrophone className="text-red-500 text-xl" />
+                                            ) : (
+                                                <LoadingDots bg="gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                            System Audio
+                                        </h3>
+                                        <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {permissionStatus.screenAudio === 'granted' ? 'Granted' :
+                                                permissionStatus.screenAudio === 'denied' ? 'Denied' : 'Checking...'}
+                                        </p>
+                                        {permissionStatus.screenAudio === 'denied' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => retryPermission('screenAudio')}
+                                                className="mt-2 text-xs"
+                                            >
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Success Message */}
+                                {permissionStatus.camera === 'granted' &&
+                                    permissionStatus.microphone === 'granted' &&
+                                    permissionStatus.screenShare === 'granted' &&
+                                    permissionStatus.screenAudio === 'granted' && (
+                                        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <FaCheck className="text-green-600 dark:text-green-400" />
+                                                <p className="text-green-600 dark:text-green-400 font-semibold">
+                                                    All permissions granted! You can now proceed to the interview.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                {/* Error Message */}
+                                {permissionError && (
+                                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <p className="text-red-600 dark:text-red-400">{permissionError}</p>
+                                    </div>
+                                )}
+
+                                {/* Instructions */}
+                                <div className={`mb-8 p-6 rounded-lg ${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                                    <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                        Important Instructions:
+                                    </h3>
+                                    <ul className={`text-left space-y-2 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        <li>• <strong>Camera:</strong> Allow access to your camera for video recording</li>
+                                        <li>• <strong>Microphone:</strong> Allow access to your microphone for audio recording</li>
+                                        <li>• <strong>Screen Sharing:</strong> Select "Entire Screen" or "Application Window"</li>
+                                        <li>• <strong>System Audio:</strong> Make sure to check "Share system audio" when sharing your screen</li>
+                                    </ul>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    {/* Show Continue button when all permissions are granted */}
+                                    {permissionStatus.camera === 'granted' &&
+                                        permissionStatus.microphone === 'granted' &&
+                                        permissionStatus.screenShare === 'granted' &&
+                                        permissionStatus.screenAudio === 'granted' ? (
+                                        <Button
+                                            onClick={() => {
+                                                setShowPermissionChecker(false);
+                                                // Proceed with the interview (skip permission check since already granted)
+                                                handleStart(true);
+                                            }}
+                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                        >
+                                            Continue to Interview
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            onClick={checkAllPermissions}
+                                            disabled={loading}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                        >
+                                            {loading ? <LoadingDots bg="white" /> : 'Retry Permission Check'}
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setShowPermissionChecker(false);
+                                            setShowWelcomeScreen(true);
+                                        }}
+                                        className="border-gray-300 dark:border-gray-600"
+                                    >
+                                        Back to Welcome
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
                     ) : (
                         <>
                             {/* Main Content - AI Speaking Animation and User Video */}
@@ -1634,7 +2077,7 @@ function CommunicationInterview() {
                                     )}
                                     {!started ? (
                                         <div className="flex justify-center">
-                                            <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
+                                            <Button onClick={() => handleStart()} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
                                                 Start Camera Check
                                             </Button>
                                         </div>
