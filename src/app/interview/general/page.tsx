@@ -78,6 +78,41 @@ export default function VoiceInterviewPage() {
 
     // New UI states for consistent design
     const [showChat, setShowChat] = useState(false);
+
+    // Mic permission checker (mobile-friendly)
+    const [showPermissionChecker, setShowPermissionChecker] = useState(false);
+    const [micPermissionStatus, setMicPermissionStatus] = useState<'not-requested' | 'checking' | 'granted' | 'denied' | 'unsupported'>('not-requested');
+    const [permissionError, setPermissionError] = useState<string | null>(null);
+
+    const checkMicPermission = async (): Promise<boolean> => {
+        setShowPermissionChecker(true);
+        setPermissionError(null);
+        setMicPermissionStatus('checking');
+
+        try {
+            if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+                setMicPermissionStatus('unsupported');
+                setPermissionError('Microphone is only available in the browser runtime.');
+                return false;
+            }
+            const mediaDevices = (navigator as any).mediaDevices as MediaDevices | undefined;
+            if (!mediaDevices || typeof mediaDevices.getUserMedia !== 'function') {
+                setMicPermissionStatus('unsupported');
+                setPermissionError('This browser does not support microphone access. On iOS, use Safari. Ensure HTTPS.');
+                return false;
+            }
+
+            const testStream = await mediaDevices.getUserMedia({ audio: true });
+            testStream.getTracks().forEach(t => t.stop());
+            setMicPermissionStatus('granted');
+            return true;
+        } catch (e: any) {
+            console.warn('[General] Mic permission error:', e?.name || e, e?.message || '');
+            setMicPermissionStatus('denied');
+            setPermissionError('Microphone permission denied. Please allow mic access and try again.');
+            return false;
+        }
+    };
     const [speechDuration, setSpeechDuration] = useState(0);
     const [isQuestionAnswered, setIsQuestionAnswered] = useState(false);
 
@@ -260,6 +295,13 @@ export default function VoiceInterviewPage() {
             setMessages([]);
             setShowResults(false);
             setRetakeCount(new Array(res.questions.length).fill(0));
+
+            // Ensure microphone permission first
+            const micOk = await checkMicPermission();
+            if (!micOk) {
+                setLoading(false);
+                return;
+            }
 
             // Set questions
             setQuestions(res.questions);
@@ -874,12 +916,51 @@ export default function VoiceInterviewPage() {
                         }`}>
                         {!started ? (
                             <div className="flex justify-center items-center h-full">
-                                <AnimatedPlaceholder
-                                    onStart={handleStart}
-                                    title="Ready to Say Hello?"
-                                    description="Click the button below to share a little about yourself"
-                                    buttonText="Let's Go"
-                                />
+                                {showPermissionChecker ? (
+                                    <div className="max-w-md mx-auto p-6 text-center">
+                                        <h2 className="text-2xl font-semibold mb-2">Microphone Access</h2>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">We need your microphone to record your answers.</p>
+                                        <div className={`p-4 rounded-lg border mb-4 ${micPermissionStatus === 'granted'
+                                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                            : micPermissionStatus === 'denied'
+                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                                : micPermissionStatus === 'unsupported'
+                                                    ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                                    : 'border-gray-300 dark:border-gray-600'
+                                            }`}>
+                                            <p className="text-sm">
+                                                {micPermissionStatus === 'granted' && 'Permission granted. You can start the interview.'}
+                                                {micPermissionStatus === 'denied' && 'Permission denied. Please allow microphone access and retry.'}
+                                                {micPermissionStatus === 'unsupported' && 'Microphone is not supported in this browser/device context.'}
+                                                {micPermissionStatus === 'checking' && 'Checking permission...'}
+                                                {micPermissionStatus === 'not-requested' && 'Click Retry to request microphone permission.'}
+                                            </p>
+                                        </div>
+                                        {permissionError && (
+                                            <p className="text-red-600 dark:text-red-400 mb-4 text-sm">{permissionError}</p>
+                                        )}
+                                        <div className="flex gap-3 justify-center">
+                                            {micPermissionStatus === 'granted' ? (
+                                                <Button onClick={() => handleStart()} className="bg-green-600 hover:bg-green-700 text-white">Continue</Button>
+                                            ) : (
+                                                <Button onClick={checkMicPermission} className="bg-blue-600 hover:bg-blue-700 text-white">Retry Permission</Button>
+                                            )}
+                                        </div>
+                                        <div className="mt-4 text-xs text-gray-500">
+                                            Tip: On iOS, use Safari. Ensure site is opened over HTTPS.
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <AnimatedPlaceholder
+                                        onStart={async () => {
+                                            const ok = await checkMicPermission();
+                                            if (ok) { await handleStart(); }
+                                        }}
+                                        title="Ready to Say Hello?"
+                                        description="Click the button below to share a little about yourself"
+                                        buttonText="Let's Go"
+                                    />
+                                )}
                             </div>
                         ) : (
                             <div className="flex-1">
