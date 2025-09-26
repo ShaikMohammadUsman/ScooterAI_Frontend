@@ -1235,7 +1235,6 @@ function CommunicationInterview() {
             // If interview is not completed, continue with next question
             if (res.question) {
                 setCurrentQuestion(res.question);
-                setCurrentQuestionIndex(prev => prev + 1); // Increment question index for retake tracking
                 // Update final question indicator for the new shown question
                 setIsFinalQuestion(res.step === 'done');
             }
@@ -1257,8 +1256,11 @@ function CommunicationInterview() {
 
             // Speak the next question
             if (res.question) {
+                // Increment question index before narration for subsequent questions
+                setCurrentQuestionIndex(prev => prev + 1);
+
                 // Track question narration start for subsequent questions
-                handleQuestionNarrationStart(currentQuestionIndex, res.question);
+                handleQuestionNarrationStart(currentQuestionIndex + 1, res.question);
 
                 const duration = await textInAudioOut(
                     res.question,
@@ -1279,7 +1281,7 @@ function CommunicationInterview() {
                 setSpeechDuration(duration);
 
                 // Track question narration end for subsequent questions
-                handleQuestionNarrationEnd(currentQuestionIndex);
+                handleQuestionNarrationEnd(currentQuestionIndex + 1);
             }
 
             setMicEnabled(true);
