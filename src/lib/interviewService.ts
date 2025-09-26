@@ -302,6 +302,7 @@ export interface VideoInterviewLoginResponse {
   user_id: string | null;
   full_name: string | null;
   resume_status: boolean;
+  reset_count: number;
   job_title: string | null;
   job_description: string | null;
 }

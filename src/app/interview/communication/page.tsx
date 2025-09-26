@@ -5,8 +5,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserVideo } from './components/UserVideo';
-import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, videoInterviewLogin, updateVideoProctoringLogs } from '@/lib/interviewService';
+import { startConversationalInterview, continueConversationalInterview, videoInterviewLogin, updateVideoProctoringLogs } from '@/lib/interviewService';
 import { textInAudioOut } from '@/lib/voiceBot';
+import { AzureChunkedUploader, createChunkedUploader } from '@/lib/azureChunkedUploader';
 
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -134,6 +135,7 @@ function CommunicationInterview() {
     const recordedChunksRef = useRef<Blob[]>([]);
     const videoStreamRef = useRef<MediaStream | null>(null);
     const recordingFormatRef = useRef<{ fileExtension: string; mimeType: string }>({ fileExtension: 'mp4', mimeType: 'video/mp4;codecs=h264,aac' });
+    const chunkedUploaderRef = useRef<AzureChunkedUploader | null>(null);
     // Additional refs for progressive system-audio capture
     const displayAudioStreamRef = useRef<MediaStream | null>(null);
     const userMediaStreamRef = useRef<MediaStream | null>(null);
@@ -187,7 +189,7 @@ function CommunicationInterview() {
     const [email, setEmail] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
     const [verificationError, setVerificationError] = useState<string | null>(null);
-    const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string; resume_status: boolean } | null>(null);
+    const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string; resume_status: boolean; reset_count: number } | null>(null);
     const [jobTitle, setJobTitle] = useState<string | null>(null);
     const [jobDescription, setJobDescription] = useState<string | null>(null);
 
@@ -229,7 +231,7 @@ function CommunicationInterview() {
         // If bypass flag is enabled, set a dummy verified user and skip verification UI
         if (BYPASS_VIDEO_VERIFICATION) {
             const userId = localStorage.getItem('scooterUserId');
-            setVerifiedUser({ user_id: userId || '', full_name: 'Developer', resume_status: true });
+            setVerifiedUser({ user_id: userId || '', full_name: 'Developer', resume_status: true, reset_count: 0 });
             setShowVerification(false);
             setShowUnauthorized(false);
             // Trigger dark theme transition for consistency
@@ -322,7 +324,8 @@ function CommunicationInterview() {
                 setVerifiedUser({
                     user_id: response.user_id!,
                     full_name: response.full_name!,
-                    resume_status: response.resume_status || false
+                    resume_status: response.resume_status || false,
+                    reset_count: response.reset_count || 0
                 });
                 setJobTitle(response.job_title || null);
                 setJobDescription(response.job_description || null);
@@ -566,14 +569,58 @@ function CommunicationInterview() {
             // Store format info in ref for later use
             recordingFormatRef.current = { fileExtension: format.fileExtension, mimeType: format.mimeType };
 
-            mediaRecorder.ondataavailable = (event) => {
+            // Initialize chunked uploader
+            const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
+            if (!userId) {
+                throw new Error("No user ID found for video upload");
+            }
+
+            const resetCount = (verifiedUser?.reset_count || 0) + 1;
+            console.log('Using reset_count for filename:', {
+                originalResetCount: verifiedUser?.reset_count || 0,
+                incrementedResetCount: resetCount
+            });
+
+            const uploader = createChunkedUploader({
+                userId,
+                fileExtension: format.fileExtension,
+                resetCount: resetCount, // Increment reset_count by 1 for filename
+                onProgress: (uploadedBytes) => {
+                    // Update progress (we'll estimate total based on time elapsed)
+                    const estimatedTotal = uploadedBytes * 2; // Rough estimate
+                    const progress = Math.min(uploadedBytes / estimatedTotal, 0.95); // Cap at 95% until finalization
+                    setUploadProgress(progress);
+                },
+                onError: (error) => {
+                    console.error('Chunked upload error:', error);
+                    toast({
+                        title: "Upload Error",
+                        description: "Failed to upload video chunk. Please check your connection.",
+                        variant: "destructive",
+                    });
+                },
+                onComplete: (blobUrl) => {
+                    console.log('Video upload completed:', blobUrl);
+                    setUploadProgress(1);
+                }
+            });
+
+            chunkedUploaderRef.current = uploader;
+
+            mediaRecorder.ondataavailable = async (event) => {
                 if (event.data.size > 0) {
-                    recordedChunksRef.current.push(event.data);
+                    // Upload chunk immediately instead of buffering
+                    try {
+                        await uploader.enqueueChunk(event.data);
+                    } catch (error) {
+                        console.error('Failed to upload chunk:', error);
+                        // Continue recording even if chunk upload fails
+                    }
                 }
             };
 
             mediaRecorderRef.current = mediaRecorder;
-            recordedChunksRef.current = [];
+            recordedChunksRef.current = []; // Keep for fallback if needed
             mediaRecorder.start(1000); // Collect data every second
             setIsRecording(true);
         } catch (err) {
@@ -583,20 +630,34 @@ function CommunicationInterview() {
     };
 
     // Stop video recording
-    const stopRecording = async (): Promise<{ blob: Blob; fileExtension: string; mimeType: string }> => {
-        return new Promise((resolve) => {
+    const stopRecording = async (): Promise<{ blobUrl: string; fileExtension: string; mimeType: string }> => {
+        return new Promise(async (resolve, reject) => {
             if (mediaRecorderRef.current && isRecording) {
-                mediaRecorderRef.current.onstop = () => {
+                mediaRecorderRef.current.onstop = async () => {
                     const { fileExtension, mimeType } = recordingFormatRef.current;
 
-                    const blob = new Blob(recordedChunksRef.current, {
-                        type: mimeType
-                    });
-
-                    resolve({ blob, fileExtension, mimeType });
+                    try {
+                        // Finalize the chunked upload
+                        if (chunkedUploaderRef.current) {
+                            const blobUrl = await chunkedUploaderRef.current.finalize();
+                            resolve({ blobUrl, fileExtension, mimeType });
+                        } else {
+                            // Fallback: create blob from buffered chunks if uploader failed
+                            const blob = new Blob(recordedChunksRef.current, {
+                                type: mimeType
+                            });
+                            // This is a fallback - we'd need to upload this blob separately
+                            reject(new Error("Chunked uploader not available and fallback blob creation not implemented"));
+                        }
+                    } catch (error) {
+                        console.error("Error finalizing upload:", error);
+                        reject(error);
+                    }
                 };
                 mediaRecorderRef.current.stop();
                 setIsRecording(false);
+            } else {
+                reject(new Error("No active recording to stop"));
             }
         });
     };
@@ -621,6 +682,10 @@ function CommunicationInterview() {
         }
         mediaRecorderRef.current = null;
         recordedChunksRef.current = [];
+        if (chunkedUploaderRef.current) {
+            chunkedUploaderRef.current.abort();
+            chunkedUploaderRef.current = null;
+        }
         setIsRecording(false);
     };
 
@@ -856,7 +921,7 @@ function CommunicationInterview() {
         // Don't clear recognizedText yet - keep it for retake functionality
         setCurrentAnswer(recognizedText); // Store current answer for retake
         // Retake not available until user answers the new question
-        console.log("messages", messages);
+        // console.log("messages", messages);
         try {
             // If the server marked the currently shown question as final (step "done"),
             // show the submitting modal immediately after sending the answer to reflect backend processing.
@@ -905,47 +970,41 @@ function CommunicationInterview() {
                     setProctoringActive(false);
                 }, 900000); // 15 minutes timeout
 
-                // Stop recording and get final video
-                const { blob, fileExtension, mimeType } = await stopRecording();
-                const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
+                // Stop recording and finalize chunked upload
+                try {
+                    const { blobUrl, fileExtension, mimeType } = await stopRecording();
+                    const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
-                if (userId) {
-                    try {
-                        // Upload the complete video
+                    if (userId) {
+                        // Video is already uploaded via chunked uploader
                         setIsUploadingVideo(true);
                         setSubmissionStep('uploading');
-
-                        // Upload video file
                         addInterviewEvent('video_upload_started', { timestamp: new Date() });
+                        setUploadProgress(1); // Set to 100% since upload is complete
 
-                        await uploadInterviewVideo({
-                            file: new File([blob], `interview_${Date.now()}.${fileExtension}`, {
-                                type: mimeType
-                            }),
-                            user_id: userId,
-                            onProgress: (progress) => {
-                                setUploadProgress(Math.round(progress * 100));
-                            }
+                        addInterviewEvent('video_upload_completed', {
+                            timestamp: new Date(),
+                            blobUrl: blobUrl,
+                            fileExtension: fileExtension,
+                            mimeType: mimeType
                         });
-
-                        addInterviewEvent('video_upload_completed', { timestamp: new Date() });
 
                         // Upload video proctoring logs
                         await uploadVideoProctoringLogs(userId);
 
                         // Clear timeout since submission completed successfully
                         clearTimeout(submissionTimeout);
-                    } catch (err: any) {
-                        console.error("Error in final submission process:", err);
-                        setError(err.message || "Failed to complete interview submission");
-                        setShowSubmissionModal(false);
-                        setIsSubmittingFinal(false);
-                        setIsUploadingVideo(false);
-                        cleanupRecording();
-                        setProctoringActive(false);
-                        clearTimeout(submissionTimeout);
-                        return;
                     }
+                } catch (err: any) {
+                    console.error("Error in final submission process:", err);
+                    setError(err.message || "Failed to complete interview submission");
+                    setShowSubmissionModal(false);
+                    setIsSubmittingFinal(false);
+                    setIsUploadingVideo(false);
+                    cleanupRecording();
+                    setProctoringActive(false);
+                    clearTimeout(submissionTimeout);
+                    return;
                 }
 
                 // Add completion message to chat
@@ -1075,44 +1134,40 @@ function CommunicationInterview() {
                 }
             }
 
-            // Stop recording
-            const { blob, fileExtension, mimeType } = await stopRecording();
-            const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
+            // Stop recording and finalize chunked upload
+            try {
+                const { blobUrl, fileExtension, mimeType } = await stopRecording();
+                const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
-            if (userId) {
-                try {
-                    // Upload the complete video
+                if (userId) {
+                    // Video is already uploaded via chunked uploader
                     setIsUploadingVideo(true);
                     setSubmissionStep('uploading');
+                    setUploadProgress(1); // Set to 100% since upload is complete
 
-                    // Upload video file
-                    addInterviewEvent('early_video_upload_started', { timestamp: new Date() });
-
-                    await uploadInterviewVideo({
-                        file: new File([blob], `interview_${Date.now()}.${fileExtension}`, {
-                            type: mimeType
-                        }),
-                        user_id: userId
+                    addInterviewEvent('early_video_upload_completed', {
+                        timestamp: new Date(),
+                        blobUrl: blobUrl,
+                        fileExtension: fileExtension,
+                        mimeType: mimeType
                     });
-
-                    addInterviewEvent('early_video_upload_completed', { timestamp: new Date() });
 
                     // Upload video proctoring logs
                     await uploadVideoProctoringLogs(userId);
 
                     // Clear timeout since process completed successfully
                     clearTimeout(earlyEndingTimeout);
-                } catch (err: any) {
-                    console.error("Error in early interview ending process:", err);
-                    setError(err.message || "Failed to complete early interview ending");
-                    setShowSubmissionModal(false);
-                    setIsSubmittingFinal(false);
-                    setIsUploadingVideo(false);
-                    cleanupRecording();
-                    setProctoringActive(false);
-                    clearTimeout(earlyEndingTimeout);
-                    return;
                 }
+            } catch (err: any) {
+                console.error("Error in early interview ending process:", err);
+                setError(err.message || "Failed to complete early interview ending");
+                setShowSubmissionModal(false);
+                setIsSubmittingFinal(false);
+                setIsUploadingVideo(false);
+                cleanupRecording();
+                setProctoringActive(false);
+                clearTimeout(earlyEndingTimeout);
+                return;
             }
 
             setShowCompletionScreen(true);
