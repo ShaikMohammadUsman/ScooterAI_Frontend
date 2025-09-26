@@ -1941,6 +1941,22 @@ function CommunicationInterview() {
                                     </div>
                                 )}
 
+                                {/* Guidance: Show how to enable system audio */}
+                                {permissionStatus.screenShare === 'granted' && permissionStatus.screenAudio === 'denied' && (
+                                    <div className={`mb-8 p-4 rounded-lg border ${isDarkTheme ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                                        <p className={`${isDarkTheme ? 'text-gray-200' : 'text-gray-800'} mb-3`}>
+                                            System audio was not shared. When selecting the screen/window, make sure to check "Share system audio".
+                                        </p>
+                                        <div className="flex justify-center">
+                                            <img
+                                                src="/assets/images/macShareSystemAudio.png"
+                                                alt="Enable Share System Audio"
+                                                className="max-w-full h-auto rounded-md border border-gray-200 dark:border-gray-700"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Instructions */}
                                 <div className={`mb-8 p-6 rounded-lg ${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'}`}>
                                     <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
@@ -2072,7 +2088,14 @@ function CommunicationInterview() {
                                             ? 'bg-blue-900/20 border-blue-500/30 text-blue-200'
                                             : 'bg-blue-50 border-blue-200 text-blue-800'
                                             }`}>
-                                            {systemAudioHint}
+                                            <div className="mb-2">{systemAudioHint}</div>
+                                            <div className="flex justify-center">
+                                                <img
+                                                    src="/assets/images/macShareSystemAudio.png"
+                                                    alt="Enable Share System Audio"
+                                                    className="max-w-full h-auto rounded-md border border-blue-200 dark:border-blue-700"
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                     {!started ? (
