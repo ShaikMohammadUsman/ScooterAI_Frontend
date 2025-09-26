@@ -26,7 +26,7 @@ import ResetVideoInterviewModal from '@/components/ResetVideoInterviewModal';
 import ProctoringDetailsDialog from '@/components/ProctoringDetailsDialog';
 import InterviewScoreCompact from '@/components/candidates/InterviewScoreCompact';
 import InterviewScoreCard from '@/components/candidates/InterviewScoreCard';
-import VideoPlayer from '@/components/interview/VideoPlayer';
+import VideoPlayerWithTimeline from '@/components/interview/VideoPlayerWithTimeline';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -1648,7 +1648,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             {showVideoPlayer && (selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
                                                 <div className="mb-6 bg-gray-50 p-4 rounded-lg">
                                                     <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-                                                        <VideoPlayer
+                                                        <VideoPlayerWithTimeline
                                                             videoUrl={selectedCandidate.interview_status.processed_video_interview_url || selectedCandidate.interview_status.video_interview_url!}
                                                             fallbackUrl={selectedCandidate.interview_status.processed_video_interview_url ? selectedCandidate.interview_status.video_interview_url : null}
                                                             poster="/assets/images/scooterLogo.png"
@@ -1656,6 +1656,8 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                             controls={true}
                                                             preload="metadata"
                                                             className="w-full h-full rounded-lg shadow-lg"
+                                                            interviewEvents={selectedCandidate?.video_proctoring_details?.interview_events || []}
+                                                            questionEvaluations={selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations || []}
                                                         />
                                                     </div>
 

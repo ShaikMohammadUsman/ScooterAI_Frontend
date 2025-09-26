@@ -236,7 +236,9 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
 
     // Inline component to render question overlay
     const QuestionOverlay: React.FC<{ segment: { start: number; end: number; question?: string; questionIndex?: number; hasRetake?: boolean }; isDrive?: boolean }> = ({ segment }) => {
-        const visible = !isNaN(currentTime) && currentTime >= segment.start && currentTime <= segment.end;
+        // For Drive previews, we can't track currentTime, so show all segments
+        // For native video, use currentTime for precise timing
+        const visible = isDrive || (!isNaN(currentTime) && currentTime >= segment.start && currentTime <= segment.end);
         if (!visible) return null;
         const base = segment.question || (typeof segment.questionIndex === 'number' ? `Question ${segment.questionIndex + 1}` : 'Question');
         const text = segment.hasRetake ? `[Retake] ${base}` : base;
@@ -287,8 +289,24 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         sortedIndices.forEach((qi, idx) => {
             const entry = byQuestion.get(qi)!;
             if (typeof entry.startTs !== 'number') return;
-            const startSec = Math.max(0, (entry.startTs - videoStartTs) / 1000);
-            const endTs = typeof entry.endTs === 'number' ? entry.endTs : entry.startTs + 4000; // fallback 4s if missing end
+
+            // Start display 5 seconds before narration actually starts
+            const displayStartTs = entry.startTs - 5000; // 5 seconds before
+            const startSec = Math.max(0, (displayStartTs - videoStartTs) / 1000);
+
+            // Calculate end time: minimum 5 seconds from display start, or until narration ends (whichever is longer)
+            const narrationEndTs = typeof entry.endTs === 'number' ? entry.endTs : null;
+            const minDisplayEndTs = displayStartTs + 5000; // 5 seconds minimum from display start
+
+            let endTs;
+            if (narrationEndTs) {
+                // Use the longer of: narration end or 5 seconds from display start
+                endTs = Math.max(narrationEndTs, minDisplayEndTs);
+            } else {
+                // No narration end event, use 5 seconds minimum from display start
+                endTs = minDisplayEndTs;
+            }
+
             const endSec = Math.max(startSec + 0.5, (endTs - videoStartTs) / 1000);
             const pStart = Math.max(0, Math.min(100, (startSec / total) * 100));
             const pWidth = Math.max(0.5, Math.min(100 - pStart, ((endSec - startSec) / total) * 100));
@@ -314,9 +332,9 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             {isDriveUrl(normalizeVideoUrl) ? (
                 <div className={className} style={{ position: 'relative' }}>
                     {/* Question overlay for Drive during narration segments */}
-                    {/* {questionSegments.map(seg => (
+                    {questionSegments.map(seg => (
                         <QuestionOverlay key={`qo-${seg.id}`} segment={seg} isDrive={true} />
-                    ))} */}
+                    ))}
                     <iframe
                         title="Video"
                         src={normalizeVideoUrl}
@@ -329,9 +347,9 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             ) : (
                 <div className="relative">
                     {/* Question overlay for native video */}
-                    {/* {questionSegments.map(seg => (
+                    {questionSegments.map(seg => (
                         <QuestionOverlay key={`qo-native-${seg.id}`} segment={seg} />
-                    ))} */}
+                    ))}
                     <video
                         ref={videoRef}
                         className={className}
