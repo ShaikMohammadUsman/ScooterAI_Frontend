@@ -74,6 +74,10 @@ const SystemAudioInstructions: React.FC<SystemAudioInstructionsProps> = ({
     platformTabs = true,
     defaultPlatform
 }) => {
+    const [preview, setPreview] = React.useState<{ open: boolean; src: string; alt: string }>({ open: false, src: "", alt: "" });
+
+    const openPreview = (src: string, alt: string) => setPreview({ open: true, src, alt });
+    const closePreview = () => setPreview((p) => ({ ...p, open: false }));
     const baseClasses = `transition-all duration-1000 ease-in-out ${isDarkTheme
         ? 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-blue-700/50'
         : 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200'
@@ -90,7 +94,7 @@ const SystemAudioInstructions: React.FC<SystemAudioInstructionsProps> = ({
 
     const stepClasses = `${isDarkTheme ? 'text-blue-100' : 'text-blue-900'} ${compact ? 'text-xs' : 'text-sm'} space-y-2`;
 
-    const imageClasses = `flex justify-center items-center mt-2 rounded-md overflow-hidden border border-gray-200 ${compact ? 'max-w-xs' : 'w-full'}`;
+    const imageClasses = `flex justify-center items-center mt-2 rounded-md overflow-hidden border border-gray-200 ${compact ? 'max-w-xs h-36' : 'w-full h-40 md:h-48'}`;
 
     const detectDefaultPlatform = (): 'windows' | 'macos' | 'other' => {
         if (defaultPlatform) return defaultPlatform;
@@ -113,47 +117,52 @@ const SystemAudioInstructions: React.FC<SystemAudioInstructionsProps> = ({
             </TabsList>
 
             <TabsContent value="windows">
-                <div className={`rounded-lg p-3 md:p-4 border ${isDarkTheme ? 'border-blue-700/40 bg-blue-900/10' : 'border-blue-200 bg-white'}`}>
+                <div className={`rounded-lg p-3 md:p-4  ${isDarkTheme ? 'bg-blue-900/10' : 'bg-white'}`}>
                     <div className="flex items-center gap-2 mb-2">
                         <Monitor className="w-4 h-4" />
                         <h4 className={`font-semibold ${compact ? 'text-sm' : 'text-base'} ${isDarkTheme ? 'text-blue-200' : 'text-blue-800'}`}>Windows (Chrome/Edge)</h4>
                     </div>
-                    <ol className={`list-decimal ml-4 md:ml-5 ${stepClasses}`}>
-                        <li>Select "Entire Screen".
+                    <div className={`grid grid-cols-1 lg:grid-cols-3 auto-rows-fr items-stretch gap-4 ${stepClasses}`}>
+                        <div className="flex flex-col h-full">
+                            <div className="font-semibold mb-1">1. Select "Entire Screen".</div>
                             {showImages && (
-                                <div className={imageClasses}>
+                                <div className={`${imageClasses} cursor-zoom-in`} onClick={() => openPreview('/assets/images/selectEntireScreen.png', 'Windows - Select Entire Screen')}>
                                     <img
                                         src="/assets/images/selectEntireScreen.png"
                                         alt="Windows - Select Entire Screen"
-                                        className="w-full h-auto"
+                                        className="w-full h-full object-contain"
                                     />
                                 </div>
                             )}
-                        </li>
-                        <li>Choose the desktop/window to share.
+                        </div>
+                        <div className="flex flex-col h-full">
+                            <div className="font-semibold mb-1">2. Choose the desktop/window to share.</div>
                             {showImages && (
-                                <div className={imageClasses}>
+                                <div className={`${imageClasses} cursor-zoom-in`} onClick={() => openPreview('/assets/images/selectWindow.png', 'Windows - Select Window')}>
                                     <img
                                         src="/assets/images/selectWindow.png"
                                         alt="Windows - Select Window"
-                                        className="w-full h-auto"
+                                        className="w-full h-full object-contain"
                                     />
                                 </div>
                             )}
-                        </li>
-                        <li>Check "Share audio".
+                        </div>
+                        <div className="flex flex-col h-full">
+                            <div className="font-semibold mb-1">3. Check "Share audio".</div>
                             {showImages && (
-                                <div className={imageClasses}>
+                                <div className={`${imageClasses} cursor-zoom-in`} onClick={() => openPreview('/assets/images/allowAudio.png', 'Windows - Allow System Audio')}>
                                     <img
                                         src="/assets/images/allowAudio.png"
                                         alt="Windows - Allow System Audio"
-                                        className="w-full h-auto p-auto"
+                                        className="w-full h-full object-contain"
                                     />
                                 </div>
                             )}
-                        </li>
-                        <li>Click "Share".</li>
-                    </ol>
+                        </div>
+                        <div className="lg:col-span-3">
+                            <div className="font-semibold">4. Click "Share".</div>
+                        </div>
+                    </div>
                     <div className={`mt-3 ${compact ? 'text-xs' : 'text-xs'} ${isDarkTheme ? 'text-blue-300/90' : 'text-blue-700'}`}>
                         Tip: If you don't see the audio checkbox, select "Entire Screen".
                     </div>
@@ -161,63 +170,70 @@ const SystemAudioInstructions: React.FC<SystemAudioInstructionsProps> = ({
             </TabsContent>
 
             <TabsContent value="macos">
-                <div className={`rounded-lg p-3 md:p-4 border ${isDarkTheme ? 'border-blue-700/40 bg-blue-900/10' : 'border-blue-200 bg-white'}`}>
+                <div className={`rounded-lg p-3 md:p-4 ${isDarkTheme ? 'bg-blue-900/10' : 'bg-white'}`}>
                     <div className="flex items-center gap-2 mb-2">
                         <Smartphone className="w-4 h-4" />
                         <h4 className={`font-semibold ${compact ? 'text-sm' : 'text-base'} ${isDarkTheme ? 'text-blue-200' : 'text-blue-800'}`}>macOS (Chrome preferred)</h4>
                     </div>
-                    <ol className={`list-decimal ml-4 md:ml-5 ${stepClasses}`}>
-                        <li>Allow Chrome in System Settings → Privacy & Security → Screen Recording and Microphone.
+                    <div className={`grid grid-cols-1 lg:grid-cols-3 auto-rows-fr items-stretch gap-4 ${stepClasses}`}>
+                        <div className="flex flex-col justify-between h-full">
+                            <div className="font-semibold mb-1">1. Allow Chrome in System Settings → Privacy & Security → Screen Recording and Microphone.</div>
                             {showImages && (
-                                <div className={imageClasses}>
+                                <div className={`${imageClasses} cursor-zoom-in`} onClick={() => openPreview('/assets/images/macAllowChromeAccess.png', 'macOS - Allow Chrome in Screen Recording and Microphone')}>
                                     <img
                                         src="/assets/images/macAllowChromeAccess.png"
                                         alt="macOS - Allow Chrome in Screen Recording and Microphone"
-                                        className="w-full h-auto"
+                                        className="w-full h-full object-contain"
                                     />
                                 </div>
                             )}
-                        </li>
-                        <li>In the share prompt, go to the "Entire Screen" tab.
+                        </div>
+                        <div className="flex flex-col justify-between h-full">
+                            <div className="font-semibold mb-1">2. In the share prompt, go to the "Entire Screen" tab.</div>
                             {showImages && (
-                                <div className={imageClasses}>
+                                <div className={`${imageClasses} cursor-zoom-in`} onClick={() => openPreview('/assets/images/macGoToEntireScreenTab.png', 'macOS - Go to Entire Screen tab')}>
                                     <img
                                         src="/assets/images/macGoToEntireScreenTab.png"
                                         alt="macOS - Go to Entire Screen tab"
-                                        className="w-full h-auto"
+                                        className="w-full h-full object-contain"
                                     />
                                 </div>
                             )}
-                        </li>
-                        <li>Select the screen tile you want to share.
+                        </div>
+                        <div className="flex flex-col justify-between h-full">
+                            <div className="font-semibold mb-1">3. Select the screen tile you want to share.</div>
                             {showImages && (
-                                <div className={imageClasses}>
+                                <div className={`${imageClasses} cursor-zoom-in`} onClick={() => openPreview('/assets/images/macSelectEntireScreen.png', 'macOS - Select screen to share')}>
                                     <img
                                         src="/assets/images/macSelectEntireScreen.png"
                                         alt="macOS - Select screen to share"
-                                        className="w-full h-auto"
+                                        className="w-full h-full object-contain"
                                     />
                                 </div>
                             )}
-                        </li>
-                        <li>Check "Share audio".
+                        </div>
+                        <div className="flex flex-col justify-between h-full">
+                            <div className="font-semibold mb-1">4. Check "Share audio".</div>
                             {showImages && (
-                                <div className={imageClasses}>
+                                <div className={`${imageClasses} cursor-zoom-in`} onClick={() => openPreview('/assets/images/macShareSystemAudio.png', 'macOS - Enable Share audio')}>
                                     <img
                                         src="/assets/images/macShareSystemAudio.png"
                                         alt="macOS - Enable Share audio"
-                                        className="w-full h-auto"
+                                        className="w-full h-full object-contain"
                                     />
                                 </div>
                             )}
-                        </li>
-                        <li>Click "Share".</li>
-                        <li>If you don't see the audio checkbox, enable the Chrome flag and restart Chrome:
+                        </div>
+                        <div className="lg:col-span-3">
+                            <div className="font-semibold">5. Click "Share".</div>
+                        </div>
+                        <div className="lg:col-span-3">
+                            <div className="font-semibold mb-1">6. If you don't see the audio checkbox, enable the Chrome flag and restart Chrome:</div>
                             <div className={`mt-2 rounded-md p-2 md:p-3 ${isDarkTheme ? 'bg-gray-800 text-gray-100' : 'bg-gray-100 text-gray-800'} ${compact ? 'text-xs' : 'text-sm'}`}>
                                 chrome://flags/#mac-system-audio-loopback → Enable → Relaunch
                             </div>
-                        </li>
-                    </ol>
+                        </div>
+                    </div>
                     <div className={`mt-3 ${compact ? 'text-xs' : 'text-xs'} ${isDarkTheme ? 'text-blue-300/90' : 'text-blue-700'}`}>
                         Note: Safari/Firefox do not reliably support system audio capture.
                     </div>
@@ -225,7 +241,7 @@ const SystemAudioInstructions: React.FC<SystemAudioInstructionsProps> = ({
             </TabsContent>
 
             <TabsContent value="other">
-                <div className={`rounded-lg p-3 md:p-4 border ${isDarkTheme ? 'border-blue-700/40 bg-blue-900/10' : 'border-blue-200 bg-white'}`}>
+                <div className={`rounded-lg p-3 md:p-4  ${isDarkTheme ? 'bg-blue-900/10' : 'bg-white'}`}>
                     <div className="flex items-center gap-2 mb-2">
                         <Info className="w-4 h-4" />
                         <h4 className={`font-semibold ${compact ? 'text-sm' : 'text-base'} ${isDarkTheme ? 'text-blue-200' : 'text-blue-800'}`}>Other devices</h4>
@@ -346,14 +362,30 @@ const SystemAudioInstructions: React.FC<SystemAudioInstructionsProps> = ({
 
     // Static variant (default)
     return (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className={className}
-        >
-            {renderContent()}
-        </motion.div>
+        <>
+            <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                className={className}
+            >
+                {renderContent()}
+            </motion.div>
+
+            {/* Image preview dialog */}
+            <Dialog open={preview.open} onOpenChange={(o) => (o ? setPreview((p) => ({ ...p, open: true })) : closePreview())}>
+                <DialogContent className="max-w-5xl p-0">
+                    <DialogHeader className="px-4 pt-4">
+                        <DialogTitle className="text-base">{preview.alt}</DialogTitle>
+                    </DialogHeader>
+                    <div className="w-full h-[70vh] flex items-center justify-center bg-black/80">
+                        {preview.src && (
+                            <img src={preview.src} alt={preview.alt} className="max-w-full max-h-full object-contain" />
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
 
