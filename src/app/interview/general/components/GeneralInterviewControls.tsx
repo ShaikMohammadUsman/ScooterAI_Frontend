@@ -120,6 +120,16 @@ export function GeneralInterviewControls({
                         </div>
                     )}
 
+                    {/* Stop listening tooltip - shows when user is currently listening */}
+                    {isListening && (
+                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20">
+                            <div className="bg-orange-500 text-white text-center px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
+                                🛑 Click to stop recording and submit
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-orange-500"></div>
+                        </div>
+                    )}
+
                     {/* Submit/Retake Buttons */}
                     {recognizedText && !isListening && (
                         <motion.div

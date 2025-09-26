@@ -62,6 +62,23 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
                 <div className="flex items-center gap-3 px-6 py-3 bg-gray-900/95 backdrop-blur-sm rounded-full border border-gray-700 shadow-2xl">
 
+                    {/* Chat Button */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white"
+                                onClick={onChatToggle}
+                                disabled={disabled}
+                            >
+                                <MdOutlineChat className="w-5 h-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Toggle chat panel</p>
+                        </TooltipContent>
+                    </Tooltip>
                     {/* Microphone Button - Only show when not listening and no recognized text */}
                     {!isListening && !recognizedText && (
                         <Tooltip>
@@ -97,7 +114,7 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                     {isListening && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <div className="relative">
+                                <div className="relative overflow-visible">
                                     <Button
                                         variant="ghost"
                                         size="icon"
@@ -110,6 +127,14 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                                     {/* Ripple effect */}
                                     <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-red-400 animate-ping opacity-75"></div>
                                     <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-red-300 animate-ping opacity-50" style={{ animationDelay: '0.5s' }}></div>
+
+                                    {/* Stop listening tooltip - shows when user is currently listening */}
+                                    <div className="absolute -top-20 left-1/2 min-w-36 transform -translate-x-1/2 z-20">
+                                        <div className="bg-orange-500 text-white text-center px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
+                                            🛑 Click to stop recording and submit
+                                        </div>
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-orange-500"></div>
+                                    </div>
                                 </div>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -163,7 +188,7 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                     )}
 
                     {/* Camera Button */}
-                    <Tooltip>
+                    {/* <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 variant="ghost"
@@ -188,25 +213,8 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                         <TooltipContent>
                             <p>{isCameraOn ? 'Turn off camera' : 'Turn on camera'}</p>
                         </TooltipContent>
-                    </Tooltip>
+                    </Tooltip> */}
 
-                    {/* Chat Button */}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white"
-                                onClick={onChatToggle}
-                                disabled={disabled}
-                            >
-                                <MdOutlineChat className="w-5 h-5" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Toggle chat panel</p>
-                        </TooltipContent>
-                    </Tooltip>
 
                     {/* Leave Button */}
                     <Tooltip>

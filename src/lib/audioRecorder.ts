@@ -22,7 +22,31 @@ export class InterviewAudioRecorder {
     // Start recording user audio
     async startUserRecording(): Promise<void> {
         try {
-            this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // Guard: run only in browser, secure context, and when API exists
+            if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+                throw new Error('Audio recording is only available in the browser runtime.');
+            }
+
+            // Some mobile/embedded browsers do not expose mediaDevices or getUserMedia
+            const mediaDevices = (navigator as any).mediaDevices as MediaDevices | undefined;
+            const legacyGetUserMedia = (navigator as any).getUserMedia as
+                | ((constraints: MediaStreamConstraints, success: any, error: any) => void)
+                | undefined;
+
+            if (!mediaDevices || typeof mediaDevices.getUserMedia !== 'function') {
+                // Provide a friendly, actionable error message
+                throw new Error(
+                    'Microphone access is not supported on this device/browser. On iOS Chrome/Firefox, WebKit limitations apply. Please use Safari or Desktop Chrome, and ensure HTTPS.'
+                );
+            }
+
+            // Request mic with light DSP hints; let the UA pick best sample rate
+            this.audioStream = await mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true
+                } as MediaTrackConstraints
+            });
             
             // Use a widely supported format
             const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
@@ -56,7 +80,9 @@ export class InterviewAudioRecorder {
             this.isRecording = true;
         } catch (error) {
             console.error('Error starting user recording:', error);
-            throw error;
+            // Re-throw with a normalized, user-friendly message
+            const message = error instanceof Error ? error.message : 'Unknown recording error';
+            throw new Error(message);
         }
     }
 
