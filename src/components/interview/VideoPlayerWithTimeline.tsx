@@ -72,19 +72,13 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         return Math.max(seconds, duration || 0);
     }, [isDrive, interviewEvents, duration]);
 
-    // Detect retake starts: consecutive response starts without an intervening response end
+    // Detect retake starts using explicit events
     const retakeStartMs = React.useMemo(() => {
         const set = new Set<number>();
         if (!interviewEvents.length) return set;
-        let seenOpenResponse = false;
         for (const ev of interviewEvents) {
-            if (ev.event === 'user_response_started') {
-                if (seenOpenResponse) {
-                    set.add(new Date(ev.timestamp).getTime());
-                }
-                seenOpenResponse = true;
-            } else if (ev.event === 'user_response_ended') {
-                seenOpenResponse = false;
+            if (ev.event === 'answer_retake_started') {
+                set.add(new Date(ev.timestamp).getTime());
             }
         }
         return set;
@@ -100,13 +94,14 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             .filter(event =>
                 event.event === 'question_narration_started' ||
                 event.event === 'user_response_started' ||
-                event.event === 'user_response_ended'
+                event.event === 'user_response_ended' ||
+                event.event === 'answer_retake_started'
             )
             .map((event, index) => {
                 const eventTime = new Date(event.timestamp).getTime();
                 const relativeTime = (eventTime - startTime) / 1000; // Convert to seconds
                 const percentage = (relativeTime / computedDuration) * 100;
-                const isRetake = event.event === 'user_response_started' && retakeStartMs.has(eventTime);
+                const isRetake = event.event === 'answer_retake_started' || retakeStartMs.has(eventTime);
 
                 return {
                     id: index,
@@ -254,58 +249,64 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         );
     };
 
-    // Build question segments primarily from answer clusters (requested):
+    // Build question narration segments from explicit narration start/end events
     const questionSegments = React.useMemo(() => {
-        if (!interviewEvents.length) return [] as Array<{ id: number; start: number; end: number; percentageStart: number; percentageWidth: number; questionIndex?: number; question?: string; hasRetake?: boolean }>;
+        type Segment = { id: number; start: number; end: number; percentageStart: number; percentageWidth: number; questionIndex?: number; question?: string; hasRetake?: boolean };
+        const result: Segment[] = [];
+        if (!interviewEvents.length) return result;
+        const total = computedDuration || duration || 1;
         const videoStartTs = new Date(interviewEvents[0]?.timestamp).getTime();
-        // Build clusters of answers per question: a cluster starts at first user_response_started after previous end, ends at user_response_ended
-        type Cluster = { firstStartTs: number; endTs?: number; hasRetake: boolean };
-        const clusters: Cluster[] = [];
-        let inAnswer = false;
+
+        // Group narration events by questionIndex
+        const byQuestion = new Map<number, { startTs?: number; endTs?: number; question?: string }>();
         for (const ev of interviewEvents) {
-            if (ev.event === 'user_response_started') {
-                const ts = new Date(ev.timestamp).getTime();
-                if (!inAnswer) {
-                    clusters.push({ firstStartTs: ts, hasRetake: false });
-                    inAnswer = true;
-                } else {
-                    // retake within same cluster
-                    if (clusters.length) clusters[clusters.length - 1].hasRetake = true;
+            if (ev.event === 'question_narration_started' || ev.event === 'question_narration_ended') {
+                const qi = ev.details?.questionIndex ?? undefined;
+                if (typeof qi !== 'number') continue;
+                const entry = byQuestion.get(qi) || {};
+                if (ev.event === 'question_narration_started') {
+                    entry.startTs = new Date(ev.timestamp).getTime();
+                    entry.question = ev.details?.question;
+                } else if (ev.event === 'question_narration_ended') {
+                    entry.endTs = new Date(ev.timestamp).getTime();
                 }
-            } else if (ev.event === 'user_response_ended') {
-                const ts = new Date(ev.timestamp).getTime();
-                if (inAnswer && clusters.length) {
-                    clusters[clusters.length - 1].endTs = ts;
-                }
-                inAnswer = false;
+                byQuestion.set(qi, entry);
             }
         }
-        // Derive question windows from clusters: Qi window is from prev cluster end (or video start) to current cluster firstStart
-        const total = computedDuration || duration || 1;
-        const MIN_OVERLAY_SECONDS = 12;
-        const segs: Array<{ id: number; start: number; end: number; percentageStart: number; percentageWidth: number; questionIndex?: number; question?: string; hasRetake?: boolean }> = [];
-        for (let i = 0; i < clusters.length; i++) {
-            const prevEndTs = i === 0 ? videoStartTs : (clusters[i - 1].endTs ?? clusters[i - 1].firstStartTs);
-            const startTs = prevEndTs;
-            const endTs = clusters[i].firstStartTs;
-            const startSec = Math.max(0, (startTs - videoStartTs) / 1000);
-            let endSec = Math.max(startSec + 0.5, (endTs - videoStartTs) / 1000);
-            endSec = Math.min(total, Math.max(endSec, startSec + MIN_OVERLAY_SECONDS));
+
+        // Determine which questions had retakes
+        const retakeQuestions = new Set<number>();
+        for (const ev of interviewEvents) {
+            if (ev.event === 'answer_retake_started' && typeof ev.details?.questionIndex === 'number') {
+                retakeQuestions.add(ev.details.questionIndex);
+            }
+        }
+
+        // Build segments in order of questionIndex
+        const sortedIndices = Array.from(byQuestion.keys()).sort((a, b) => a - b);
+        sortedIndices.forEach((qi, idx) => {
+            const entry = byQuestion.get(qi)!;
+            if (typeof entry.startTs !== 'number') return;
+            const startSec = Math.max(0, (entry.startTs - videoStartTs) / 1000);
+            const endTs = typeof entry.endTs === 'number' ? entry.endTs : entry.startTs + 4000; // fallback 4s if missing end
+            const endSec = Math.max(startSec + 0.5, (endTs - videoStartTs) / 1000);
             const pStart = Math.max(0, Math.min(100, (startSec / total) * 100));
             const pWidth = Math.max(0.5, Math.min(100 - pStart, ((endSec - startSec) / total) * 100));
-            const qe = questionEvaluations.find(q => (q.question_number ?? (i + 1)) === (i + 1));
-            segs.push({
-                id: i,
+            // Prefer explicit question text from event; otherwise from evaluations
+            const qe = questionEvaluations.find(q => (q.question_number ?? (qi + 1)) === (qi + 1));
+            result.push({
+                id: idx,
                 start: startSec,
                 end: endSec,
                 percentageStart: pStart,
                 percentageWidth: pWidth,
-                questionIndex: i,
-                question: qe?.question,
-                hasRetake: clusters[i].hasRetake,
+                questionIndex: qi,
+                question: entry.question || qe?.question,
+                hasRetake: retakeQuestions.has(qi),
             });
-        }
-        return segs;
+        });
+
+        return result;
     }, [interviewEvents, computedDuration, duration, questionEvaluations]);
 
     return (

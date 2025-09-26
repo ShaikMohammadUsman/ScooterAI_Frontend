@@ -1257,6 +1257,9 @@ function CommunicationInterview() {
 
             // Speak the next question
             if (res.question) {
+                // Track question narration start for subsequent questions
+                handleQuestionNarrationStart(currentQuestionIndex, res.question);
+
                 const duration = await textInAudioOut(
                     res.question,
                     (spokenText) => {
@@ -1274,6 +1277,9 @@ function CommunicationInterview() {
                     setIsSpeaking
                 );
                 setSpeechDuration(duration);
+
+                // Track question narration end for subsequent questions
+                handleQuestionNarrationEnd(currentQuestionIndex);
             }
 
             setMicEnabled(true);
@@ -1541,11 +1547,15 @@ function CommunicationInterview() {
 
     // Handle user response events
     const handleUserResponseStart = () => {
-        addInterviewEvent('user_response_started', { timestamp: new Date() });
+        addInterviewEvent('user_response_started', {
+            questionIndex: currentQuestionIndex,
+            timestamp: new Date()
+        });
     };
 
     const handleUserResponseEnd = (response: string) => {
         addInterviewEvent('user_response_ended', {
+            questionIndex: currentQuestionIndex,
             responseLength: response.length,
             timestamp: new Date()
         });
