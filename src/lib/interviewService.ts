@@ -325,6 +325,7 @@ export async function videoInterviewLogin(
 // UPDATE VIDEO PROCTORING LOGS
 export interface UpdateVideoProctoringLogsRequest {
   user_id: string;
+  video_url: string;
   video_proctoring_logs: Record<string, any>;
 }
 

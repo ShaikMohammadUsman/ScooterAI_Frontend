@@ -785,7 +785,7 @@ function CommunicationInterview() {
                 throw new Error("No user ID found for video upload");
             }
 
-            const resetCount = (verifiedUser?.reset_count || 0) + 1;
+            const resetCount = (verifiedUser?.reset_count || 0);
             // console.log('Using reset_count for filename:', {
             //     originalResetCount: verifiedUser?.reset_count || 0,
             //     incrementedResetCount: resetCount
@@ -794,7 +794,7 @@ function CommunicationInterview() {
             const uploader = createChunkedUploader({
                 userId,
                 fileExtension: format.fileExtension,
-                resetCount: resetCount, // Increment reset_count by 1 for filename
+                resetCount: resetCount,
                 onProgress: (uploadedBytes) => {
                     // Update progress (we'll estimate total based on time elapsed)
                     const estimatedTotal = uploadedBytes * 2; // Rough estimate
@@ -1199,8 +1199,8 @@ function CommunicationInterview() {
                             mimeType: mimeType
                         });
 
-                        // Upload video proctoring logs
-                        await uploadVideoProctoringLogs(userId);
+                        // Upload video proctoring logs AFTER video is finalized; include video_url
+                        await uploadVideoProctoringLogs(userId, blobUrl);
 
                         // Clear timeout since submission completed successfully
                         clearTimeout(submissionTimeout);
@@ -1362,8 +1362,8 @@ function CommunicationInterview() {
                         mimeType: mimeType
                     });
 
-                    // Upload video proctoring logs
-                    await uploadVideoProctoringLogs(userId);
+                    // Upload video proctoring logs AFTER video is finalized; include video_url
+                    await uploadVideoProctoringLogs(userId, blobUrl);
 
                     // Clear timeout since process completed successfully
                     clearTimeout(earlyEndingTimeout);
@@ -1422,7 +1422,7 @@ function CommunicationInterview() {
     };
 
     // Upload video proctoring logs
-    const uploadVideoProctoringLogs = async (userId: string) => {
+    const uploadVideoProctoringLogs = async (userId: string, videoUrl: string) => {
         try {
             const endTime = new Date();
             const proctoringData = proctoringRef.current?.getProctoringData();
@@ -1451,6 +1451,7 @@ function CommunicationInterview() {
 
             await updateVideoProctoringLogs({
                 user_id: userId,
+                video_url: videoUrl,
                 video_proctoring_logs: proctoringLogs
             });
 
