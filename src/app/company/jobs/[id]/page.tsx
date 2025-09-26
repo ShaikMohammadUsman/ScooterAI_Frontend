@@ -26,7 +26,7 @@ import ResetVideoInterviewModal from '@/components/ResetVideoInterviewModal';
 import ProctoringDetailsDialog from '@/components/ProctoringDetailsDialog';
 import InterviewScoreCompact from '@/components/candidates/InterviewScoreCompact';
 import InterviewScoreCard from '@/components/candidates/InterviewScoreCard';
-import VideoPlayer from '@/components/interview/VideoPlayer';
+import VideoPlayerWithTimeline from '@/components/interview/VideoPlayerWithTimeline';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -1628,7 +1628,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         <div className="mt-8">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="text-lg font-semibold text-gray-900">Video Interview Evaluation</h4>
-                                                {selectedCandidate?.interview_status?.video_interview_url && (
+                                                {(selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -1645,16 +1645,19 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             </div>
 
                                             {/* Video Player */}
-                                            {showVideoPlayer && selectedCandidate?.interview_status?.video_interview_url && (
+                                            {showVideoPlayer && (selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
                                                 <div className="mb-6 bg-gray-50 p-4 rounded-lg">
                                                     <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-                                                        <VideoPlayer
-                                                            videoUrl={selectedCandidate.interview_status.video_interview_url}
-                                                            poster="/public/assets/images/scooterLogo.png"
+                                                        <VideoPlayerWithTimeline
+                                                            videoUrl={selectedCandidate.interview_status.processed_video_interview_url || selectedCandidate.interview_status.video_interview_url!}
+                                                            fallbackUrl={selectedCandidate.interview_status.processed_video_interview_url ? selectedCandidate.interview_status.video_interview_url : null}
+                                                            poster="/assets/images/scooterLogo.png"
                                                             autoPlay={true}
                                                             controls={true}
                                                             preload="metadata"
                                                             className="w-full h-full rounded-lg shadow-lg"
+                                                            interviewEvents={selectedCandidate?.video_proctoring_details?.interview_events || []}
+                                                            questionEvaluations={selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations || []}
                                                         />
                                                     </div>
 
@@ -1670,9 +1673,10 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                                                                 const fileName = `${candidateName}_${jobRole}_${videoDate}.mp4`;
 
-                                                                if (selectedCandidate?.interview_status?.video_interview_url) {
+                                                                const downloadUrl = selectedCandidate?.interview_status?.video_interview_url;
+                                                                if (downloadUrl) {
                                                                     const link = document.createElement('a');
-                                                                    link.href = selectedCandidate.interview_status.video_interview_url;
+                                                                    link.href = downloadUrl;
                                                                     link.download = fileName;
                                                                     link.target = '_blank';
                                                                     document.body.appendChild(link);

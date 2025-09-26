@@ -5,8 +5,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserVideo } from './components/UserVideo';
-import { startConversationalInterview, continueConversationalInterview, uploadInterviewVideo, videoInterviewLogin, updateVideoProctoringLogs } from '@/lib/interviewService';
+import { startConversationalInterview, continueConversationalInterview, videoInterviewLogin, updateVideoProctoringLogs } from '@/lib/interviewService';
 import { textInAudioOut } from '@/lib/voiceBot';
+import { AzureChunkedUploader, createChunkedUploader } from '@/lib/azureChunkedUploader';
 
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -104,8 +105,26 @@ function CommunicationInterview() {
     const [isLeaving, setIsLeaving] = useState(false);
     const [cameraAccessDenied, setCameraAccessDenied] = useState(false);
     const [showCameraRetry, setShowCameraRetry] = useState(false);
+
+    // Comprehensive permission checking states
+    const [permissionStatus, setPermissionStatus] = useState<{
+        camera: 'checking' | 'granted' | 'denied' | 'not-requested';
+        microphone: 'checking' | 'granted' | 'denied' | 'not-requested';
+        screenShare: 'checking' | 'granted' | 'denied' | 'not-requested';
+        screenAudio: 'checking' | 'granted' | 'denied' | 'not-requested';
+    }>({
+        camera: 'not-requested',
+        microphone: 'not-requested',
+        screenShare: 'not-requested',
+        screenAudio: 'not-requested'
+    });
+    const [showPermissionChecker, setShowPermissionChecker] = useState(false);
+    const [permissionError, setPermissionError] = useState<string | null>(null);
     const [isProcessingFinalResponse, setIsProcessingFinalResponse] = useState(false);
     const [speechDuration, setSpeechDuration] = useState<number>(0);
+    // System audio availability hint (shown for macOS Chrome or when permission denied)
+    const [systemAudioHint, setSystemAudioHint] = useState<string | null>(null);
+    const [systemAudioPrompted, setSystemAudioPrompted] = useState<boolean>(false);
 
     // Interview event timestamps
     const [interviewEvents, setInterviewEvents] = useState<Array<{
@@ -131,6 +150,52 @@ function CommunicationInterview() {
     const recordedChunksRef = useRef<Blob[]>([]);
     const videoStreamRef = useRef<MediaStream | null>(null);
     const recordingFormatRef = useRef<{ fileExtension: string; mimeType: string }>({ fileExtension: 'mp4', mimeType: 'video/mp4;codecs=h264,aac' });
+    const chunkedUploaderRef = useRef<AzureChunkedUploader | null>(null);
+    // Additional refs for progressive system-audio capture
+    const displayAudioStreamRef = useRef<MediaStream | null>(null);
+    const userMediaStreamRef = useRef<MediaStream | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const systemAudioAttemptedRef = useRef<boolean>(false);
+    // Pre-acquire system audio at camera check time to avoid re-prompt later
+    const requestSystemAudioEarly = async () => {
+        systemAudioAttemptedRef.current = true;
+        if (displayAudioStreamRef.current && displayAudioStreamRef.current.getAudioTracks().length) {
+            console.log('[Recording] System audio already acquired early');
+            return;
+        }
+        if (typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
+            console.log('[Recording] getDisplayMedia not supported in this browser');
+            return;
+        }
+        console.log('[Recording] Early request for system audio via getDisplayMedia({ video: true, audio: true })');
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            if (!stream.getAudioTracks().length) {
+                console.warn('[Recording] Early system audio stream has 0 audio tracks');
+                stream.getTracks().forEach(t => t.stop());
+                return;
+            }
+            // Keep this stream alive for later use; disable its video track to reduce overhead
+            stream.getVideoTracks().forEach(t => { try { t.enabled = false; } catch { } });
+            displayAudioStreamRef.current = stream;
+            setSystemAudioHint(null);
+            console.log('[Recording] Early system audio acquired');
+        } catch (e: any) {
+            console.warn('[Recording] Early system audio request failed:', e?.name || e, e?.message || '');
+            if (!systemAudioPrompted) {
+                try {
+                    toast({
+                        title: 'Allow system audio to be included',
+                        description: 'Please allow screen sharing and ensure "Share audio" is checked to include narration in the recording.',
+                        variant: 'warning'
+                    });
+                } catch { }
+                setSystemAudioHint('System audio permission was not granted. You can allow it when prompted to include narration in the recording.');
+                setSystemAudioPrompted(true);
+            }
+        }
+    };
+
 
     // Verification states
     const [showVerification, setShowVerification] = useState(false);
@@ -139,7 +204,7 @@ function CommunicationInterview() {
     const [email, setEmail] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
     const [verificationError, setVerificationError] = useState<string | null>(null);
-    const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string; resume_status: boolean } | null>(null);
+    const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string; resume_status: boolean; reset_count: number } | null>(null);
     const [jobTitle, setJobTitle] = useState<string | null>(null);
     const [jobDescription, setJobDescription] = useState<string | null>(null);
 
@@ -181,7 +246,7 @@ function CommunicationInterview() {
         // If bypass flag is enabled, set a dummy verified user and skip verification UI
         if (BYPASS_VIDEO_VERIFICATION) {
             const userId = localStorage.getItem('scooterUserId');
-            setVerifiedUser({ user_id: userId || '', full_name: 'Developer', resume_status: true });
+            setVerifiedUser({ user_id: userId || '', full_name: 'Developer', resume_status: true, reset_count: 0 });
             setShowVerification(false);
             setShowUnauthorized(false);
             // Trigger dark theme transition for consistency
@@ -245,11 +310,12 @@ function CommunicationInterview() {
     // Handle proctoring violations
     const handleProctoringViolation = (violation: string) => {
         setProctoringViolations(prev => [...prev, violation]);
-        toast({
-            title: "Proctoring Alert",
-            description: violation,
-            variant: "destructive",
-        });
+        // toast({
+        //     title: "Proctoring Alert",
+        //     description: violation,
+        //     variant: "destructive",
+        // });
+        // Track silently without showing a toast to avoid UI interruptions
     };
 
     // Handle verification
@@ -273,7 +339,8 @@ function CommunicationInterview() {
                 setVerifiedUser({
                     user_id: response.user_id!,
                     full_name: response.full_name!,
-                    resume_status: response.resume_status || false
+                    resume_status: response.resume_status || false,
+                    reset_count: response.reset_count || 0
                 });
                 setJobTitle(response.job_title || null);
                 setJobDescription(response.job_description || null);
@@ -310,7 +377,7 @@ function CommunicationInterview() {
     };
 
     // Start interview with camera check
-    const handleStart = async () => {
+    const handleStart = async (skipPermissionCheck = false) => {
         setShowWelcomeScreen(false);
         setLoading(true);
         setError(null);
@@ -322,13 +389,17 @@ function CommunicationInterview() {
         }
 
         try {
-
-            // Check camera access first
-            const hasCameraAccess = await checkCameraAccess();
-            if (!hasCameraAccess) {
-                setLoading(false);
-                return;
+            // Check all required permissions first (unless already checked)
+            if (!skipPermissionCheck) {
+                const allPermissionsGranted = await checkAllPermissions();
+                if (!allPermissionsGranted) {
+                    setLoading(false);
+                    return; // Stay on permission checker screen
+                }
             }
+
+            // All permissions granted, proceed with interview
+            setShowPermissionChecker(false);
 
             // Activate proctoring when camera check starts
             setProctoringActive(true);
@@ -336,6 +407,9 @@ function CommunicationInterview() {
 
             // Wait for proctoring to be fully activated before proceeding
             await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Early prompt for system audio permission to avoid later interruption
+            await requestSystemAudioEarly();
 
             // Start with a test question for camera check
             // const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in the role${jobTitle ? ` of ${jobTitle}` : ""}${jobTitle && jobDescription ? ` at ${jobDescription}` : ""}.`;
@@ -378,7 +452,176 @@ function CommunicationInterview() {
         }
     };
 
-    // Check camera access
+    // Comprehensive permission checker
+    const checkAllPermissions = async (): Promise<boolean> => {
+        setShowPermissionChecker(true);
+        setPermissionError(null);
+
+        // Reset all permissions to checking
+        setPermissionStatus({
+            camera: 'checking',
+            microphone: 'checking',
+            screenShare: 'checking',
+            screenAudio: 'checking'
+        });
+
+        let allPermissionsGranted = true;
+
+        // 1. Check Camera Permission
+        try {
+            const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            cameraStream.getTracks().forEach(track => track.stop());
+            setPermissionStatus(prev => ({ ...prev, camera: 'granted' }));
+        } catch (err: any) {
+            console.error("Camera permission error:", err);
+            setPermissionStatus(prev => ({ ...prev, camera: 'denied' }));
+            allPermissionsGranted = false;
+        }
+
+        // 2. Check Microphone Permission
+        try {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream.getTracks().forEach(track => track.stop());
+            setPermissionStatus(prev => ({ ...prev, microphone: 'granted' }));
+        } catch (err: any) {
+            console.error("Microphone permission error:", err);
+            setPermissionStatus(prev => ({ ...prev, microphone: 'denied' }));
+            allPermissionsGranted = false;
+        }
+
+        // 3. Check Screen Share Permission (with audio)
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: true
+            });
+
+            // Check if audio tracks are present (system audio)
+            const audioTracks = screenStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                setPermissionStatus(prev => ({
+                    ...prev,
+                    screenShare: 'granted',
+                    screenAudio: 'granted'
+                }));
+                // Persist this stream for later recording to avoid re-prompting
+                try { screenStream.getVideoTracks().forEach(t => { try { t.enabled = false; } catch { } }); } catch { }
+                displayAudioStreamRef.current = screenStream;
+                systemAudioAttemptedRef.current = true;
+            } else {
+                setPermissionStatus(prev => ({
+                    ...prev,
+                    screenShare: 'granted',
+                    screenAudio: 'denied'
+                }));
+                // No usable audio, stop the stream
+                try { screenStream.getTracks().forEach(track => track.stop()); } catch { }
+                allPermissionsGranted = false;
+            }
+        } catch (err: any) {
+            console.error("Screen share permission error:", err);
+            setPermissionStatus(prev => ({
+                ...prev,
+                screenShare: 'denied',
+                screenAudio: 'denied'
+            }));
+            allPermissionsGranted = false;
+        }
+
+        if (!allPermissionsGranted) {
+            setPermissionError("Some permissions are missing. Please grant all required permissions to continue.");
+        } else {
+            // Clear any previous errors when all permissions are granted
+            setPermissionError(null);
+        }
+
+        return allPermissionsGranted;
+    };
+
+    // Handle individual permission retry
+    const retryPermission = async (permissionType: 'camera' | 'microphone' | 'screenShare' | 'screenAudio') => {
+        setPermissionError(null);
+
+        try {
+            if (permissionType === 'camera') {
+                setPermissionStatus(prev => ({ ...prev, camera: 'checking' }));
+                const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraStream.getTracks().forEach(track => track.stop());
+                setPermissionStatus(prev => ({ ...prev, camera: 'granted' }));
+                // Check if all permissions are now granted
+                setTimeout(() => {
+                    setPermissionStatus(current => {
+                        if (current.camera === 'granted' && current.microphone === 'granted' &&
+                            current.screenShare === 'granted' && current.screenAudio === 'granted') {
+                            setPermissionError(null);
+                        }
+                        return current;
+                    });
+                }, 100);
+            } else if (permissionType === 'microphone') {
+                setPermissionStatus(prev => ({ ...prev, microphone: 'checking' }));
+                const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micStream.getTracks().forEach(track => track.stop());
+                setPermissionStatus(prev => ({ ...prev, microphone: 'granted' }));
+                // Check if all permissions are now granted
+                setTimeout(() => {
+                    setPermissionStatus(current => {
+                        if (current.camera === 'granted' && current.microphone === 'granted' &&
+                            current.screenShare === 'granted' && current.screenAudio === 'granted') {
+                            setPermissionError(null);
+                        }
+                        return current;
+                    });
+                }, 100);
+            } else if (permissionType === 'screenShare' || permissionType === 'screenAudio') {
+                setPermissionStatus(prev => ({
+                    ...prev,
+                    screenShare: 'checking',
+                    screenAudio: 'checking'
+                }));
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: true
+                });
+
+                const audioTracks = screenStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    setPermissionStatus(prev => ({
+                        ...prev,
+                        screenShare: 'granted',
+                        screenAudio: 'granted'
+                    }));
+                    // Check if all permissions are now granted
+                    setTimeout(() => {
+                        setPermissionStatus(current => {
+                            if (current.camera === 'granted' && current.microphone === 'granted' &&
+                                current.screenShare === 'granted' && current.screenAudio === 'granted') {
+                                setPermissionError(null);
+                            }
+                            return current;
+                        });
+                    }, 100);
+                } else {
+                    setPermissionStatus(prev => ({
+                        ...prev,
+                        screenShare: 'granted',
+                        screenAudio: 'denied'
+                    }));
+                    setPermissionError("Screen sharing granted but system audio was not enabled. Please make sure to check 'Share system audio' when sharing your screen.");
+                }
+                // Persist this stream for later recording to avoid re-prompting
+                try { screenStream.getVideoTracks().forEach(t => { try { t.enabled = false; } catch { } }); } catch { }
+                displayAudioStreamRef.current = screenStream;
+                systemAudioAttemptedRef.current = true;
+            }
+        } catch (err: any) {
+            console.error(`${permissionType} permission error:`, err);
+            setPermissionStatus(prev => ({ ...prev, [permissionType]: 'denied' }));
+            setPermissionError(`Failed to get ${permissionType} permission. Please try again.`);
+        }
+    };
+
+    // Legacy camera access function (for backward compatibility)
     const checkCameraAccess = async (): Promise<boolean> => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -410,30 +653,184 @@ function CommunicationInterview() {
         }
     };
 
+    // Build a combined media stream that includes camera video, mic audio, and system audio (if supported)
+    const getCombinedMediaStream = async (): Promise<MediaStream> => {
+        // Always acquire user's camera + mic first (widest support)
+        const userMedia = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        userMediaStreamRef.current = userMedia;
+
+        // Try to use any early-acquired system audio. If not present, acquire now only if not attempted before.
+        let displayAudio: MediaStream | null = displayAudioStreamRef.current || null;
+        console.log('[Recording] Preparing system audio for combined stream');
+        try {
+            const hasLiveAudio = !!displayAudio && displayAudio.getAudioTracks().some(t => t.readyState === 'live');
+            if (!hasLiveAudio) {
+                if (systemAudioAttemptedRef.current) {
+                    console.log('[Recording] System audio already attempted earlier; will not re-prompt');
+                    displayAudio = null;
+                } else {
+                    console.log('[Recording] Trying to capture system audio with getDisplayMedia({ video: true, audio: true })');
+                    systemAudioAttemptedRef.current = true;
+                    // Request video+audio to ensure the picker shows the "Share audio" option widely
+                    displayAudio = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                }
+            }
+            // If stream has no audio tracks, treat as unsupported
+            if (!displayAudio || !displayAudio.getAudioTracks().length) {
+                console.warn('[Recording] System audio stream acquired but contains 0 audio tracks');
+                if (displayAudio) { displayAudio.getTracks().forEach(t => t.stop()); }
+                displayAudio = null;
+            } else {
+                console.log('[Recording] System audio track acquired');
+                displayAudioStreamRef.current = displayAudio;
+                // Do not stop the display video track; disabling is safer to keep audio alive
+                try { displayAudio.getVideoTracks().forEach(t => { try { t.enabled = false; } catch { } }); } catch { }
+            }
+        } catch (e: any) {
+            // System audio not available or permission denied — proceed without it
+            const supported = typeof navigator.mediaDevices.getDisplayMedia === 'function';
+            console.warn('[Recording] System audio preparation failed:', e?.name || e, e?.message || '');
+            if (supported && !systemAudioPrompted && !systemAudioAttemptedRef.current) {
+                // Likely permission denied or "Share audio" unchecked in picker
+                try {
+                    toast({
+                        title: 'Allow system audio to be included',
+                        description: 'Please allow screen sharing and ensure "Share audio" is checked to include narration in the recording.',
+                        variant: 'warning'
+                    });
+                } catch { }
+                setSystemAudioHint('System audio permission was not granted. Please allow screen sharing with "Share audio" enabled.');
+                setSystemAudioPrompted(true);
+            }
+            displayAudio = null;
+        }
+
+        // If no system audio, just return the original user media stream
+        if (!displayAudio) {
+            // Detect macOS Chrome and show guidance to enable flag and share audio
+            try {
+                const ua = navigator.userAgent || '';
+                const isMac = /Macintosh|Mac OS X/.test(ua);
+                const isChrome = /Chrome\//.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua);
+                if (isMac && isChrome) {
+                    setSystemAudioHint(
+                        'System audio is not available. On macOS Chrome, enable chrome://flags/#mac-system-audio-loopback, restart Chrome, and when sharing, check "Share audio".'
+                    );
+                }
+            } catch { }
+            console.log('[Recording] Proceeding with mic-only audio (system audio unavailable)');
+            return userMedia;
+        }
+
+        // Mix mic + system audio into a single track with light processing to avoid clipping
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = audioContext;
+
+        const destinationNode = audioContext.createMediaStreamDestination();
+        const micSource = audioContext.createMediaStreamSource(userMedia);
+        const systemSource = audioContext.createMediaStreamSource(displayAudio);
+
+        micSource.connect(destinationNode);
+        systemSource.connect(destinationNode);
+        // // Create gain nodes to balance levels
+        // const micGain = audioContext.createGain();
+        // micGain.gain.value = 0.9; // slight reduction to avoid peaking
+        // const systemGain = audioContext.createGain();
+        // systemGain.gain.value = 0.9;
+
+        // // Dynamics compressor to tame loud peaks without distorting
+        // const compressor = audioContext.createDynamicsCompressor();
+        // compressor.threshold.setValueAtTime(-18, audioContext.currentTime);
+        // compressor.knee.setValueAtTime(30, audioContext.currentTime);
+        // compressor.ratio.setValueAtTime(4, audioContext.currentTime);
+        // compressor.attack.setValueAtTime(0.003, audioContext.currentTime);
+        // compressor.release.setValueAtTime(0.25, audioContext.currentTime);
+
+        // // Wire graph: mic->micGain ->\
+        // //                     \       -> compressor -> destination
+        // //            system->systemGain /
+        // micSource.connect(micGain);
+        // systemSource.connect(systemGain);
+        // micGain.connect(compressor);
+        // systemGain.connect(compressor);
+        // compressor.connect(destinationNode);
+
+        // Build final combined stream: camera video + mixed audio
+        const combined = new MediaStream();
+        userMedia.getVideoTracks().forEach(track => combined.addTrack(track));
+        destinationNode.stream.getAudioTracks().forEach(track => combined.addTrack(track));
+        console.log('[Recording] Using combined stream with camera video + mixed mic+system audio');
+        return combined;
+    };
+
     // Start video recording
     const startRecording = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            videoStreamRef.current = stream;
+            const combinedStream = await getCombinedMediaStream();
+            videoStreamRef.current = combinedStream;
 
             // Get the best supported video format
             const format = getBestSupportedVideoFormat();
 
-            const mediaRecorder = new MediaRecorder(stream, {
+            const mediaRecorder = new MediaRecorder(combinedStream, {
                 mimeType: format.mimeType
             });
 
             // Store format info in ref for later use
             recordingFormatRef.current = { fileExtension: format.fileExtension, mimeType: format.mimeType };
 
-            mediaRecorder.ondataavailable = (event) => {
+            // Initialize chunked uploader
+            const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
+            if (!userId) {
+                throw new Error("No user ID found for video upload");
+            }
+
+            const resetCount = (verifiedUser?.reset_count || 0);
+            // console.log('Using reset_count for filename:', {
+            //     originalResetCount: verifiedUser?.reset_count || 0,
+            //     incrementedResetCount: resetCount
+            // });
+
+            const uploader = createChunkedUploader({
+                userId,
+                fileExtension: format.fileExtension,
+                resetCount: resetCount,
+                onProgress: (uploadedBytes) => {
+                    // Update progress (we'll estimate total based on time elapsed)
+                    const estimatedTotal = uploadedBytes * 2; // Rough estimate
+                    const progress = Math.min(uploadedBytes / estimatedTotal, 0.95); // Cap at 95% until finalization
+                    setUploadProgress(progress);
+                },
+                onError: (error) => {
+                    console.error('Chunked upload error:', error);
+                    toast({
+                        title: "Upload Error",
+                        description: "Failed to upload video chunk. Please check your connection.",
+                        variant: "destructive",
+                    });
+                },
+                onComplete: (blobUrl) => {
+                    console.log('Video upload completed:', blobUrl);
+                    setUploadProgress(1);
+                }
+            });
+
+            chunkedUploaderRef.current = uploader;
+
+            mediaRecorder.ondataavailable = async (event) => {
                 if (event.data.size > 0) {
-                    recordedChunksRef.current.push(event.data);
+                    // Upload chunk immediately instead of buffering
+                    try {
+                        await uploader.enqueueChunk(event.data);
+                    } catch (error) {
+                        console.error('Failed to upload chunk:', error);
+                        // Continue recording even if chunk upload fails
+                    }
                 }
             };
 
             mediaRecorderRef.current = mediaRecorder;
-            recordedChunksRef.current = [];
+            recordedChunksRef.current = []; // Keep for fallback if needed
             mediaRecorder.start(1000); // Collect data every second
             setIsRecording(true);
         } catch (err) {
@@ -443,20 +840,34 @@ function CommunicationInterview() {
     };
 
     // Stop video recording
-    const stopRecording = async (): Promise<{ blob: Blob; fileExtension: string; mimeType: string }> => {
-        return new Promise((resolve) => {
+    const stopRecording = async (): Promise<{ blobUrl: string; fileExtension: string; mimeType: string }> => {
+        return new Promise(async (resolve, reject) => {
             if (mediaRecorderRef.current && isRecording) {
-                mediaRecorderRef.current.onstop = () => {
+                mediaRecorderRef.current.onstop = async () => {
                     const { fileExtension, mimeType } = recordingFormatRef.current;
 
-                    const blob = new Blob(recordedChunksRef.current, {
-                        type: mimeType
-                    });
-
-                    resolve({ blob, fileExtension, mimeType });
+                    try {
+                        // Finalize the chunked upload
+                        if (chunkedUploaderRef.current) {
+                            const blobUrl = await chunkedUploaderRef.current.finalize();
+                            resolve({ blobUrl, fileExtension, mimeType });
+                        } else {
+                            // Fallback: create blob from buffered chunks if uploader failed
+                            const blob = new Blob(recordedChunksRef.current, {
+                                type: mimeType
+                            });
+                            // This is a fallback - we'd need to upload this blob separately
+                            reject(new Error("Chunked uploader not available and fallback blob creation not implemented"));
+                        }
+                    } catch (error) {
+                        console.error("Error finalizing upload:", error);
+                        reject(error);
+                    }
                 };
                 mediaRecorderRef.current.stop();
                 setIsRecording(false);
+            } else {
+                reject(new Error("No active recording to stop"));
             }
         });
     };
@@ -467,8 +878,24 @@ function CommunicationInterview() {
             videoStreamRef.current.getTracks().forEach(track => track.stop());
             videoStreamRef.current = null;
         }
+        if (userMediaStreamRef.current) {
+            userMediaStreamRef.current.getTracks().forEach(track => track.stop());
+            userMediaStreamRef.current = null;
+        }
+        if (displayAudioStreamRef.current) {
+            displayAudioStreamRef.current.getTracks().forEach(track => track.stop());
+            displayAudioStreamRef.current = null;
+        }
+        if (audioContextRef.current) {
+            try { audioContextRef.current.close(); } catch { }
+            audioContextRef.current = null;
+        }
         mediaRecorderRef.current = null;
         recordedChunksRef.current = [];
+        if (chunkedUploaderRef.current) {
+            chunkedUploaderRef.current.abort();
+            chunkedUploaderRef.current = null;
+        }
         setIsRecording(false);
     };
 
@@ -704,7 +1131,7 @@ function CommunicationInterview() {
         // Don't clear recognizedText yet - keep it for retake functionality
         setCurrentAnswer(recognizedText); // Store current answer for retake
         // Retake not available until user answers the new question
-        console.log("messages", messages);
+        // console.log("messages", messages);
         try {
             // If the server marked the currently shown question as final (step "done"),
             // show the submitting modal immediately after sending the answer to reflect backend processing.
@@ -753,47 +1180,41 @@ function CommunicationInterview() {
                     setProctoringActive(false);
                 }, 900000); // 15 minutes timeout
 
-                // Stop recording and get final video
-                const { blob, fileExtension, mimeType } = await stopRecording();
-                const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
+                // Stop recording and finalize chunked upload
+                try {
+                    const { blobUrl, fileExtension, mimeType } = await stopRecording();
+                    const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
-                if (userId) {
-                    try {
-                        // Upload the complete video
+                    if (userId) {
+                        // Video is already uploaded via chunked uploader
                         setIsUploadingVideo(true);
                         setSubmissionStep('uploading');
-
-                        // Upload video file
                         addInterviewEvent('video_upload_started', { timestamp: new Date() });
+                        setUploadProgress(1); // Set to 100% since upload is complete
 
-                        await uploadInterviewVideo({
-                            file: new File([blob], `interview_${Date.now()}.${fileExtension}`, {
-                                type: mimeType
-                            }),
-                            user_id: userId,
-                            onProgress: (progress) => {
-                                setUploadProgress(Math.round(progress * 100));
-                            }
+                        addInterviewEvent('video_upload_completed', {
+                            timestamp: new Date(),
+                            blobUrl: blobUrl,
+                            fileExtension: fileExtension,
+                            mimeType: mimeType
                         });
 
-                        addInterviewEvent('video_upload_completed', { timestamp: new Date() });
-
-                        // Upload video proctoring logs
-                        await uploadVideoProctoringLogs(userId);
+                        // Upload video proctoring logs AFTER video is finalized; include video_url
+                        await uploadVideoProctoringLogs(userId, blobUrl);
 
                         // Clear timeout since submission completed successfully
                         clearTimeout(submissionTimeout);
-                    } catch (err: any) {
-                        console.error("Error in final submission process:", err);
-                        setError(err.message || "Failed to complete interview submission");
-                        setShowSubmissionModal(false);
-                        setIsSubmittingFinal(false);
-                        setIsUploadingVideo(false);
-                        cleanupRecording();
-                        setProctoringActive(false);
-                        clearTimeout(submissionTimeout);
-                        return;
                     }
+                } catch (err: any) {
+                    console.error("Error in final submission process:", err);
+                    setError(err.message || "Failed to complete interview submission");
+                    setShowSubmissionModal(false);
+                    setIsSubmittingFinal(false);
+                    setIsUploadingVideo(false);
+                    cleanupRecording();
+                    setProctoringActive(false);
+                    clearTimeout(submissionTimeout);
+                    return;
                 }
 
                 // Add completion message to chat
@@ -836,6 +1257,9 @@ function CommunicationInterview() {
 
             // Speak the next question
             if (res.question) {
+                // Track question narration start for subsequent questions
+                handleQuestionNarrationStart(currentQuestionIndex, res.question);
+
                 const duration = await textInAudioOut(
                     res.question,
                     (spokenText) => {
@@ -853,6 +1277,9 @@ function CommunicationInterview() {
                     setIsSpeaking
                 );
                 setSpeechDuration(duration);
+
+                // Track question narration end for subsequent questions
+                handleQuestionNarrationEnd(currentQuestionIndex);
             }
 
             setMicEnabled(true);
@@ -923,44 +1350,40 @@ function CommunicationInterview() {
                 }
             }
 
-            // Stop recording
-            const { blob, fileExtension, mimeType } = await stopRecording();
-            const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
+            // Stop recording and finalize chunked upload
+            try {
+                const { blobUrl, fileExtension, mimeType } = await stopRecording();
+                const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
-            if (userId) {
-                try {
-                    // Upload the complete video
+                if (userId) {
+                    // Video is already uploaded via chunked uploader
                     setIsUploadingVideo(true);
                     setSubmissionStep('uploading');
+                    setUploadProgress(1); // Set to 100% since upload is complete
 
-                    // Upload video file
-                    addInterviewEvent('early_video_upload_started', { timestamp: new Date() });
-
-                    await uploadInterviewVideo({
-                        file: new File([blob], `interview_${Date.now()}.${fileExtension}`, {
-                            type: mimeType
-                        }),
-                        user_id: userId
+                    addInterviewEvent('early_video_upload_completed', {
+                        timestamp: new Date(),
+                        blobUrl: blobUrl,
+                        fileExtension: fileExtension,
+                        mimeType: mimeType
                     });
 
-                    addInterviewEvent('early_video_upload_completed', { timestamp: new Date() });
-
-                    // Upload video proctoring logs
-                    await uploadVideoProctoringLogs(userId);
+                    // Upload video proctoring logs AFTER video is finalized; include video_url
+                    await uploadVideoProctoringLogs(userId, blobUrl);
 
                     // Clear timeout since process completed successfully
                     clearTimeout(earlyEndingTimeout);
-                } catch (err: any) {
-                    console.error("Error in early interview ending process:", err);
-                    setError(err.message || "Failed to complete early interview ending");
-                    setShowSubmissionModal(false);
-                    setIsSubmittingFinal(false);
-                    setIsUploadingVideo(false);
-                    cleanupRecording();
-                    setProctoringActive(false);
-                    clearTimeout(earlyEndingTimeout);
-                    return;
                 }
+            } catch (err: any) {
+                console.error("Error in early interview ending process:", err);
+                setError(err.message || "Failed to complete early interview ending");
+                setShowSubmissionModal(false);
+                setIsSubmittingFinal(false);
+                setIsUploadingVideo(false);
+                cleanupRecording();
+                setProctoringActive(false);
+                clearTimeout(earlyEndingTimeout);
+                return;
             }
 
             setShowCompletionScreen(true);
@@ -1005,7 +1428,7 @@ function CommunicationInterview() {
     };
 
     // Upload video proctoring logs
-    const uploadVideoProctoringLogs = async (userId: string) => {
+    const uploadVideoProctoringLogs = async (userId: string, videoUrl: string) => {
         try {
             const endTime = new Date();
             const proctoringData = proctoringRef.current?.getProctoringData();
@@ -1034,6 +1457,7 @@ function CommunicationInterview() {
 
             await updateVideoProctoringLogs({
                 user_id: userId,
+                video_url: videoUrl,
                 video_proctoring_logs: proctoringLogs
             });
 
@@ -1123,11 +1547,15 @@ function CommunicationInterview() {
 
     // Handle user response events
     const handleUserResponseStart = () => {
-        addInterviewEvent('user_response_started', { timestamp: new Date() });
+        addInterviewEvent('user_response_started', {
+            questionIndex: currentQuestionIndex,
+            timestamp: new Date()
+        });
     };
 
     const handleUserResponseEnd = (response: string) => {
         addInterviewEvent('user_response_ended', {
+            questionIndex: currentQuestionIndex,
             responseLength: response.length,
             timestamp: new Date()
         });
@@ -1337,12 +1765,261 @@ function CommunicationInterview() {
                     {/* Welcome Screen */}
                     {showWelcomeScreen ? (
                         <WelcomeScreen
-                            onStart={handleStart}
+                            onStart={() => handleStart()}
                             loading={loading}
                             jobTitle={jobTitle}
                             jobDescription={jobDescription}
                             isDarkTheme={isDarkTheme}
                         />
+                    ) : showPermissionChecker ? (
+                        /* Permission Checker Screen */
+                        <div className={`flex-1 flex items-center justify-center transition-all duration-1000 ease-in-out ${isDarkTheme
+                            ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+                            : 'bg-gradient-to-br from-white via-slate-50 to-white'
+                            }`}>
+                            <div className="max-w-2xl mx-auto p-8 text-center">
+                                <div className="mb-8">
+                                    <h1 className={`text-3xl font-bold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                        Permission Check Required
+                                    </h1>
+                                    <p className={`text-lg ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        We need to verify all required permissions before starting the interview.
+                                    </p>
+                                </div>
+
+                                {/* Permission Status Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                    {/* Camera Permission */}
+                                    <div className={`p-4 rounded-lg border-2 ${permissionStatus.camera === 'granted'
+                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                        : permissionStatus.camera === 'denied'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                            : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        }`}>
+                                        <div className="flex items-center justify-center mb-2">
+                                            {permissionStatus.camera === 'granted' ? (
+                                                <FaCheck className="text-green-500 text-xl" />
+                                            ) : permissionStatus.camera === 'denied' ? (
+                                                <FaUser className="text-red-500 text-xl" />
+                                            ) : (
+                                                <LoadingDots bg="gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                            Camera Access
+                                        </h3>
+                                        <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {permissionStatus.camera === 'granted' ? 'Granted' :
+                                                permissionStatus.camera === 'denied' ? 'Denied' : 'Checking...'}
+                                        </p>
+                                        {permissionStatus.camera === 'denied' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => retryPermission('camera')}
+                                                className="mt-2 text-xs"
+                                            >
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* Microphone Permission */}
+                                    <div className={`p-4 rounded-lg border-2 ${permissionStatus.microphone === 'granted'
+                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                        : permissionStatus.microphone === 'denied'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                            : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        }`}>
+                                        <div className="flex items-center justify-center mb-2">
+                                            {permissionStatus.microphone === 'granted' ? (
+                                                <FaCheck className="text-green-500 text-xl" />
+                                            ) : permissionStatus.microphone === 'denied' ? (
+                                                <FaMicrophone className="text-red-500 text-xl" />
+                                            ) : (
+                                                <LoadingDots bg="gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                            Microphone Access
+                                        </h3>
+                                        <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {permissionStatus.microphone === 'granted' ? 'Granted' :
+                                                permissionStatus.microphone === 'denied' ? 'Denied' : 'Checking...'}
+                                        </p>
+                                        {permissionStatus.microphone === 'denied' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => retryPermission('microphone')}
+                                                className="mt-2 text-xs"
+                                            >
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* Screen Share Permission */}
+                                    <div className={`p-4 rounded-lg border-2 ${permissionStatus.screenShare === 'granted'
+                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                        : permissionStatus.screenShare === 'denied'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                            : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        }`}>
+                                        <div className="flex items-center justify-center mb-2">
+                                            {permissionStatus.screenShare === 'granted' ? (
+                                                <FaCheck className="text-green-500 text-xl" />
+                                            ) : permissionStatus.screenShare === 'denied' ? (
+                                                <FaUser className="text-red-500 text-xl" />
+                                            ) : (
+                                                <LoadingDots bg="gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                            Screen Sharing
+                                        </h3>
+                                        <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {permissionStatus.screenShare === 'granted' ? 'Granted' :
+                                                permissionStatus.screenShare === 'denied' ? 'Denied' : 'Checking...'}
+                                        </p>
+                                        {permissionStatus.screenShare === 'denied' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => retryPermission('screenShare')}
+                                                className="mt-2 text-xs"
+                                            >
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {/* System Audio Permission */}
+                                    <div className={`p-4 rounded-lg border-2 ${permissionStatus.screenAudio === 'granted'
+                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                        : permissionStatus.screenAudio === 'denied'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                            : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        }`}>
+                                        <div className="flex items-center justify-center mb-2">
+                                            {permissionStatus.screenAudio === 'granted' ? (
+                                                <FaCheck className="text-green-500 text-xl" />
+                                            ) : permissionStatus.screenAudio === 'denied' ? (
+                                                <FaMicrophone className="text-red-500 text-xl" />
+                                            ) : (
+                                                <LoadingDots bg="gray-400" />
+                                            )}
+                                        </div>
+                                        <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                            System Audio
+                                        </h3>
+                                        <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {permissionStatus.screenAudio === 'granted' ? 'Granted' :
+                                                permissionStatus.screenAudio === 'denied' ? 'Denied' : 'Checking...'}
+                                        </p>
+                                        {permissionStatus.screenAudio === 'denied' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => retryPermission('screenAudio')}
+                                                className="mt-2 text-xs"
+                                            >
+                                                Retry
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Success Message */}
+                                {permissionStatus.camera === 'granted' &&
+                                    permissionStatus.microphone === 'granted' &&
+                                    permissionStatus.screenShare === 'granted' &&
+                                    permissionStatus.screenAudio === 'granted' && (
+                                        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <FaCheck className="text-green-600 dark:text-green-400" />
+                                                <p className="text-green-600 dark:text-green-400 font-semibold">
+                                                    All permissions granted! You can now proceed to the interview.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                {/* Error Message */}
+                                {permissionError && (
+                                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <p className="text-red-600 dark:text-red-400">{permissionError}</p>
+                                    </div>
+                                )}
+
+                                {/* Guidance: Show how to enable system audio */}
+                                {permissionStatus.screenShare === 'granted' && permissionStatus.screenAudio === 'denied' && (
+                                    <div className={`mb-8 p-4 rounded-lg border ${isDarkTheme ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                                        <p className={`${isDarkTheme ? 'text-gray-200' : 'text-gray-800'} mb-3`}>
+                                            System audio was not shared. When selecting the screen/window, make sure to check "Share system audio".
+                                        </p>
+                                        <div className="flex justify-center">
+                                            <img
+                                                src="/assets/images/macShareSystemAudio.png"
+                                                alt="Enable Share System Audio"
+                                                className="max-w-full h-auto rounded-md border border-gray-200 dark:border-gray-700"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Instructions */}
+                                <div className={`mb-8 p-6 rounded-lg ${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                                    <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                                        Important Instructions:
+                                    </h3>
+                                    <ul className={`text-left space-y-2 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        <li>• <strong>Camera:</strong> Allow access to your camera for video recording</li>
+                                        <li>• <strong>Microphone:</strong> Allow access to your microphone for audio recording</li>
+                                        <li>• <strong>Screen Sharing:</strong> Select "Entire Screen" or "Application Window"</li>
+                                        <li>• <strong>System Audio:</strong> Make sure to check "Share system audio" when sharing your screen</li>
+                                    </ul>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    {/* Show Continue button when all permissions are granted */}
+                                    {permissionStatus.camera === 'granted' &&
+                                        permissionStatus.microphone === 'granted' &&
+                                        permissionStatus.screenShare === 'granted' &&
+                                        permissionStatus.screenAudio === 'granted' ? (
+                                        <Button
+                                            onClick={() => {
+                                                setShowPermissionChecker(false);
+                                                // Proceed with the interview (skip permission check since already granted)
+                                                handleStart(true);
+                                            }}
+                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                        >
+                                            Continue to Interview
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            onClick={checkAllPermissions}
+                                            disabled={loading}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                        >
+                                            {loading ? <LoadingDots bg="white" /> : 'Retry Permission Check'}
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setShowPermissionChecker(false);
+                                            setShowWelcomeScreen(true);
+                                        }}
+                                        className="border-gray-300 dark:border-gray-600"
+                                    >
+                                        Back to Welcome
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
                     ) : (
                         <>
                             {/* Main Content - AI Speaking Animation and User Video */}
@@ -1417,9 +2094,24 @@ function CommunicationInterview() {
                                     ? 'border-gray-700 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800/90'
                                     : 'border-gray-200 bg-gradient-to-r from-white via-gray-50 to-white/90'
                                     }`}>
+                                    {systemAudioHint && (
+                                        <div className={`mb-4 p-4 rounded-lg border ${isDarkTheme
+                                            ? 'bg-blue-900/20 border-blue-500/30 text-blue-200'
+                                            : 'bg-blue-50 border-blue-200 text-blue-800'
+                                            }`}>
+                                            <div className="mb-2">{systemAudioHint}</div>
+                                            <div className="flex justify-center">
+                                                <img
+                                                    src="/assets/images/macShareSystemAudio.png"
+                                                    alt="Enable Share System Audio"
+                                                    className="max-w-full h-auto rounded-md border border-blue-200 dark:border-blue-700"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                     {!started ? (
                                         <div className="flex justify-center">
-                                            <Button onClick={handleStart} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
+                                            <Button onClick={() => handleStart()} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
                                                 Start Camera Check
                                             </Button>
                                         </div>

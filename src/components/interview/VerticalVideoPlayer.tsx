@@ -40,7 +40,53 @@ const VerticalVideoPlayer: React.FC<VerticalVideoPlayerProps> = ({
     const touchStartY = useRef(0);
     const lastTouchY = useRef(0);
 
-    const currentVideo = videos[currentIndex];
+    // Normalize Google Drive links or other sources for playback
+    const isDriveUrl = (u: string) => {
+        try { return new URL(u).hostname.includes('drive.google.com'); } catch { return false; }
+    };
+
+    const extractDriveId = (rawUrl: string): string | null => {
+        try {
+            const url = new URL(rawUrl);
+            const m = url.pathname.match(/\/file\/d\/([^/]+)\//);
+            if (m && m[1]) return m[1];
+            const id = url.searchParams.get('id');
+            return id;
+        } catch { return null; }
+    };
+
+    const normalizeVideoUrl = useCallback((rawUrl: string): string => {
+        if (!rawUrl) return rawUrl;
+        try {
+            const url = new URL(rawUrl);
+            const isDrive = url.hostname.includes('drive.google.com');
+            if (isDrive) {
+                // Handle formats like: /file/d/{id}/view?usp=sharing
+                const fileIdMatch = url.pathname.match(/\/file\/d\/([^/]+)\//);
+                if (fileIdMatch && fileIdMatch[1]) {
+                    // Prefer preview embed for reliable playback inside iframe
+                    return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+                }
+                // Handle formats like: /uc?id={id}&export=download
+                const idParam = url.searchParams.get('id');
+                if (idParam) {
+                    return `https://drive.google.com/file/d/${idParam}/preview`;
+                }
+                // If already a preview URL, pass through
+                if (url.pathname.includes('/file/d/') && url.pathname.endsWith('/preview')) {
+                    return url.toString();
+                }
+            }
+        } catch (_) { /* ignore */ }
+        return rawUrl;
+    }, []);
+
+    const normalizedVideos = React.useMemo(() =>
+        videos.map(v => ({ ...v, url: normalizeVideoUrl(v.url) })),
+        [videos, normalizeVideoUrl]
+    );
+
+    const currentVideo = normalizedVideos[currentIndex];
 
     // Function to load video source with HLS support
     const loadVideoSource = useCallback((video: HTMLVideoElement, videoUrl: string, index: number) => {
@@ -125,26 +171,34 @@ const VerticalVideoPlayer: React.FC<VerticalVideoPlayerProps> = ({
     // Handle video source loading for rendered videos
     useEffect(() => {
         // Load current video
-        if (currentVideo && videoRefs.current[currentIndex]) {
+        if (currentVideo && videoRefs.current[currentIndex] && !isDriveUrl(currentVideo.url)) {
             loadVideoSource(videoRefs.current[currentIndex], currentVideo.url, currentIndex);
         }
 
         // Load previous video if it exists
-        if (currentIndex > 0 && videos[currentIndex - 1] && videoRefs.current[currentIndex - 1]) {
+        if (currentIndex > 0 && normalizedVideos[currentIndex - 1] && videoRefs.current[currentIndex - 1] && !isDriveUrl(normalizedVideos[currentIndex - 1].url)) {
             const prevVideo = videoRefs.current[currentIndex - 1];
             if (prevVideo) {
-                loadVideoSource(prevVideo, videos[currentIndex - 1].url, currentIndex - 1);
+                loadVideoSource(prevVideo, normalizedVideos[currentIndex - 1].url, currentIndex - 1);
             }
         }
 
         // Load next video if it exists
-        if (currentIndex < videos.length - 1 && videos[currentIndex + 1] && videoRefs.current[currentIndex + 1]) {
+        if (currentIndex < normalizedVideos.length - 1 && normalizedVideos[currentIndex + 1] && videoRefs.current[currentIndex + 1] && !isDriveUrl(normalizedVideos[currentIndex + 1].url)) {
             const nextVideo = videoRefs.current[currentIndex + 1];
             if (nextVideo) {
-                loadVideoSource(nextVideo, videos[currentIndex + 1].url, currentIndex + 1);
+                loadVideoSource(nextVideo, normalizedVideos[currentIndex + 1].url, currentIndex + 1);
             }
         }
-    }, [currentIndex, videos, currentVideo, loadVideoSource]);
+    }, [currentIndex, normalizedVideos, currentVideo, loadVideoSource]);
+
+    // Drive embed: ensure loading overlay clears shortly after mount
+    useEffect(() => {
+        if (currentVideo && isDriveUrl(currentVideo.url)) {
+            const t = setTimeout(() => setIsLoading(false), 1200);
+            return () => clearTimeout(t);
+        }
+    }, [currentVideo]);
 
     // Handle video play/pause
     useEffect(() => {
@@ -424,17 +478,17 @@ const VerticalVideoPlayer: React.FC<VerticalVideoPlayerProps> = ({
                             loop
                         >
                             {/* Provide fallback sources for broader compatibility */}
-                            {videos[currentIndex - 1]?.url.endsWith(".mp4") && (
-                                <source src={videos[currentIndex - 1].url} type="video/mp4" />
+                            {normalizedVideos[currentIndex - 1]?.url.endsWith(".mp4") && (
+                                <source src={normalizedVideos[currentIndex - 1].url} type="video/mp4" />
                             )}
-                            {videos[currentIndex - 1]?.url.endsWith(".webm") && (
-                                <source src={videos[currentIndex - 1].url} type="video/webm" />
+                            {normalizedVideos[currentIndex - 1]?.url.endsWith(".webm") && (
+                                <source src={normalizedVideos[currentIndex - 1].url} type="video/webm" />
                             )}
-                            {videos[currentIndex - 1]?.url.endsWith(".ogg") && (
-                                <source src={videos[currentIndex - 1].url} type="video/ogg" />
+                            {normalizedVideos[currentIndex - 1]?.url.endsWith(".ogg") && (
+                                <source src={normalizedVideos[currentIndex - 1].url} type="video/ogg" />
                             )}
-                            {videos[currentIndex - 1]?.url.endsWith(".m3u8") && (
-                                <source src={videos[currentIndex - 1].url} type="application/vnd.apple.mpegurl" />
+                            {normalizedVideos[currentIndex - 1]?.url.endsWith(".m3u8") && (
+                                <source src={normalizedVideos[currentIndex - 1].url} type="application/vnd.apple.mpegurl" />
                             )}
                             Your browser does not support the video tag.
                         </video>
@@ -443,33 +497,44 @@ const VerticalVideoPlayer: React.FC<VerticalVideoPlayerProps> = ({
 
                 {/* Current Video */}
                 <div className="relative w-full h-full bg-gray-800">
-                    <video
-                        ref={el => { videoRefs.current[currentIndex] = el; }}
-                        className="w-full h-full object-cover cursor-pointer"
-                        style={{ minHeight: '100%', minWidth: '100%' }}
-                        muted={isMuted}
-                        loop
-                        playsInline
-                        onClick={handleVideoClick}
-                        onLoadStart={handleVideoLoadStart}
-                        onCanPlay={handleVideoCanPlay}
-                        onWaiting={handleVideoWaiting}
-                    >
-                        {/* Provide fallback sources for broader compatibility */}
-                        {currentVideo?.url.endsWith(".mp4") && (
-                            <source src={currentVideo.url} type="video/mp4" />
-                        )}
-                        {currentVideo?.url.endsWith(".webm") && (
-                            <source src={currentVideo.url} type="video/webm" />
-                        )}
-                        {currentVideo?.url.endsWith(".ogg") && (
-                            <source src={currentVideo.url} type="video/ogg" />
-                        )}
-                        {currentVideo?.url.endsWith(".m3u8") && (
-                            <source src={currentVideo.url} type="application/vnd.apple.mpegurl" />
-                        )}
-                        Your browser does not support the video tag.
-                    </video>
+                    {isDriveUrl(currentVideo?.url || '') ? (
+                        <iframe
+                            title={currentVideo?.title || 'Magic Video'}
+                            src={currentVideo.url}
+                            className="w-full h-full"
+                            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                            allowFullScreen
+                            onLoad={() => setIsLoading(false)}
+                        />
+                    ) : (
+                        <video
+                            ref={el => { videoRefs.current[currentIndex] = el; }}
+                            className="w-full h-full object-cover cursor-pointer"
+                            style={{ minHeight: '100%', minWidth: '100%' }}
+                            muted={isMuted}
+                            loop
+                            playsInline
+                            onClick={handleVideoClick}
+                            onLoadStart={handleVideoLoadStart}
+                            onCanPlay={handleVideoCanPlay}
+                            onWaiting={handleVideoWaiting}
+                        >
+                            {/* Provide fallback sources for broader compatibility */}
+                            {currentVideo?.url.endsWith(".mp4") && (
+                                <source src={currentVideo.url} type="video/mp4" />
+                            )}
+                            {currentVideo?.url.endsWith(".webm") && (
+                                <source src={currentVideo.url} type="video/webm" />
+                            )}
+                            {currentVideo?.url.endsWith(".ogg") && (
+                                <source src={currentVideo.url} type="video/ogg" />
+                            )}
+                            {currentVideo?.url.endsWith(".m3u8") && (
+                                <source src={currentVideo.url} type="application/vnd.apple.mpegurl" />
+                            )}
+                            Your browser does not support the video tag.
+                        </video>
+                    )}
 
                     {/* Loading Indicator */}
                     {isLoading && (
@@ -481,8 +546,8 @@ const VerticalVideoPlayer: React.FC<VerticalVideoPlayerProps> = ({
                         </div>
                     )}
 
-                    {/* Play Button - Only show when paused */}
-                    {!isPlaying && (
+                    {/* Play Button - Only show when paused; for Drive, rely on iframe controls */}
+                    {!isDriveUrl(currentVideo?.url || '') && !isPlaying && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <button
                                 onClick={handleVideoClick}
@@ -494,14 +559,14 @@ const VerticalVideoPlayer: React.FC<VerticalVideoPlayerProps> = ({
                     )}
 
                     {/* Playing Indicator - Show when playing */}
-                    {isPlaying && (
+                    {(!isDriveUrl(currentVideo?.url || '') && isPlaying) && (
                         <div className="absolute top-4 left-4 bg-green-500 bg-opacity-80 rounded-full px-3 py-1 z-10">
                             <span className="text-white text-sm font-medium">● Playing</span>
                         </div>
                     )}
 
                     {/* Mute Status Indicator */}
-                    {isMuted && (
+                    {(!isDriveUrl(currentVideo?.url || '') && isMuted) && (
                         <div className="absolute top-4 right-20 bg-red-500 bg-opacity-80 rounded-full px-3 py-1 z-10">
                             <span className="text-white text-sm font-medium">🔇 Muted</span>
                         </div>
@@ -535,17 +600,19 @@ const VerticalVideoPlayer: React.FC<VerticalVideoPlayerProps> = ({
                     </button>
 
                     {/* Mute Button */}
-                    <button
-                        onClick={toggleMute}
-                        className="absolute top-16 right-4 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-3 transition-all z-20"
-                        title={isMuted ? "Unmute" : "Mute"}
-                    >
-                        {isMuted ? (
-                            <FaVolumeMute className="text-white text-xl" />
-                        ) : (
-                            <FaVolumeUp className="text-white text-xl" />
-                        )}
-                    </button>
+                    {!isDriveUrl(currentVideo?.url || '') && (
+                        <button
+                            onClick={toggleMute}
+                            className="absolute top-16 right-4 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-3 transition-all z-20"
+                            title={isMuted ? "Unmute" : "Mute"}
+                        >
+                            {isMuted ? (
+                                <FaVolumeMute className="text-white text-xl" />
+                            ) : (
+                                <FaVolumeUp className="text-white text-xl" />
+                            )}
+                        </button>
+                    )}
 
                     {/* Video Counter */}
                     <div className="absolute top-4 left-4 bg-black bg-opacity-30 rounded-full px-3 py-1">
@@ -566,17 +633,17 @@ const VerticalVideoPlayer: React.FC<VerticalVideoPlayerProps> = ({
                             playsInline
                         >
                             {/* Provide fallback sources for broader compatibility */}
-                            {videos[currentIndex + 1]?.url.endsWith(".mp4") && (
-                                <source src={videos[currentIndex + 1].url} type="video/mp4" />
+                            {normalizedVideos[currentIndex + 1]?.url.endsWith(".mp4") && (
+                                <source src={normalizedVideos[currentIndex + 1].url} type="video/mp4" />
                             )}
-                            {videos[currentIndex + 1]?.url.endsWith(".webm") && (
-                                <source src={videos[currentIndex + 1].url} type="video/webm" />
+                            {normalizedVideos[currentIndex + 1]?.url.endsWith(".webm") && (
+                                <source src={normalizedVideos[currentIndex + 1].url} type="video/webm" />
                             )}
-                            {videos[currentIndex + 1]?.url.endsWith(".ogg") && (
-                                <source src={videos[currentIndex + 1].url} type="video/ogg" />
+                            {normalizedVideos[currentIndex + 1]?.url.endsWith(".ogg") && (
+                                <source src={normalizedVideos[currentIndex + 1].url} type="video/ogg" />
                             )}
-                            {videos[currentIndex + 1]?.url.endsWith(".m3u8") && (
-                                <source src={videos[currentIndex + 1].url} type="application/vnd.apple.mpegurl" />
+                            {normalizedVideos[currentIndex + 1]?.url.endsWith(".m3u8") && (
+                                <source src={normalizedVideos[currentIndex + 1].url} type="application/vnd.apple.mpegurl" />
                             )}
                             Your browser does not support the video tag.
                         </video>

@@ -78,20 +78,19 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                 </div>
 
                 {/* CTA Buttons */}
-                <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
                     <Button
                         onClick={handleStartInterview}
-                        className="h-14 px-12 text-xl font-semibold bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                        className="h-14 px-12 text-xl font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 bg-primary hover:bg-primary/90 text-white"
                     >
                         Start Interview
                     </Button>
 
                     <Button
                         onClick={() => router.push('/interview/practice')}
-                        variant="outline"
-                        className="h-12 px-8 text-lg font-medium"
+                        className="h-14 px-12 text-xl font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 bg-white text-primary border-2 border-primary hover:bg-primary/5"
                     >
-                        Practice First (Mock Interview)
+                        Practice First
                     </Button>
                 </div>
             </div>

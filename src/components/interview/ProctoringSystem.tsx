@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from "react";
 import { Eye, EyeOff, AlertTriangle, X, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,6 +66,9 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
         const [hasAnimatedIn, setHasAnimatedIn] = useState(false);
         const [screenHeight, setScreenHeight] = useState(0);
         const [startTime, setStartTime] = useState<Date | null>(null);
+        const devToolsIntervalRef = useRef<number | null>(null);
+        const devtoolsOpenRef = useRef(false);
+        const hasShownDevtoolsWarningRef = useRef(false);
 
         // Check if browser supports fullscreen
         const isFullscreenSupported = () => {
@@ -405,25 +408,38 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
                 addViolation("right_click", "Right-click context menu blocked", "warning", "Right-click context menu was prevented");
             };
 
-            // Detect developer tools
+            // Detect developer tools (keep logging, show modal once)
             const detectDevTools = () => {
-                const devtools = {
-                    open: false,
-                    orientation: null as string | null
-                };
-
                 const threshold = 160;
                 const widthThreshold = window.outerWidth - window.innerWidth > threshold;
                 const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+                const isOpen = widthThreshold || heightThreshold;
 
-                if (widthThreshold || heightThreshold) {
-                    if (!devtools.open) {
-                        devtools.open = true;
-                        setDevToolsCount(prev => prev + 1);
-                        addViolation("dev_tools", "Developer tools detected", "critical", "Developer tools window was opened");
+                // Transition: closed -> open
+                if (isOpen && !devtoolsOpenRef.current) {
+                    setDevToolsCount(prev => prev + 1);
+                    const firstTime = !hasShownDevtoolsWarningRef.current;
+                    addViolation(
+                        "dev_tools",
+                        "Developer tools detected",
+                        firstTime ? "critical" : "warning",
+                        "Developer tools window was opened"
+                    );
+                    if (firstTime) {
+                        hasShownDevtoolsWarningRef.current = true;
                     }
-                } else {
-                    devtools.open = false;
+                    devtoolsOpenRef.current = true;
+                }
+
+                // Transition: open -> closed
+                if (!isOpen && devtoolsOpenRef.current) {
+                    addViolation(
+                        "dev_tools",
+                        "Developer tools closed",
+                        "warning",
+                        "Developer tools window was closed"
+                    );
+                    devtoolsOpenRef.current = false;
                 }
             };
 
@@ -431,19 +447,26 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
                 document.addEventListener('keydown', handleKeyDown);
                 document.addEventListener('contextmenu', handleContextMenu);
 
-                // Check for dev tools every 500ms
-                const devToolsInterval = setInterval(detectDevTools, 500);
+                // Check for dev tools every 500ms (stops after first detection)
+                devToolsIntervalRef.current = window.setInterval(detectDevTools, 500);
 
                 return () => {
                     document.removeEventListener('keydown', handleKeyDown);
                     document.removeEventListener('contextmenu', handleContextMenu);
-                    clearInterval(devToolsInterval);
+                    if (devToolsIntervalRef.current) {
+                        clearInterval(devToolsIntervalRef.current);
+                        devToolsIntervalRef.current = null;
+                    }
                 };
             }
 
             return () => {
                 document.removeEventListener('keydown', handleKeyDown);
                 document.removeEventListener('contextmenu', handleContextMenu);
+                if (devToolsIntervalRef.current) {
+                    clearInterval(devToolsIntervalRef.current);
+                    devToolsIntervalRef.current = null;
+                }
             };
         }, [isActive, addViolation]);
 
@@ -849,10 +872,10 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
                                 <p className="text-red-700 mb-4">{warningMessage}</p>
                                 <div className="flex justify-end gap-2">
                                     <Button
-                                        onClick={() => setShowWarning(false)}
+                                        onClick={async () => { await enterFullscreen(); setShowWarning(false); }}
                                         className="bg-red-600 hover:bg-red-700"
                                     >
-                                        Acknowledge
+                                        Go Fullscreen
                                     </Button>
                                 </div>
                             </CardContent>

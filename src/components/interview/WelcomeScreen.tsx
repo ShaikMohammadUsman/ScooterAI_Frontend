@@ -1,31 +1,17 @@
 "use client";
 
 import React from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardTitle, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
     MessageSquare,
-    Target,
-    Users,
-    Clock,
-    Mic,
-    Video,
     CheckCircle,
     ArrowRight,
-    Zap,
-    Lightbulb,
-    Wifi,
-    Sun,
-    Move,
-    Play,
-    Eye,
-    Shield,
-    AlertTriangle,
-    XCircle,
-    Monitor,
-    Smartphone
+    XCircle
 } from "lucide-react";
+import SystemAudioInstructions from "./SystemAudioInstructions";
 
 interface WelcomeScreenProps {
     onStart: () => void;
@@ -47,12 +33,12 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
             : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
             }`}>
-            <Card className={`w-full max-w-4xl shadow-2xl border-0 overflow-hidden flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme
+            <Card className={`w-full max-w-5xl shadow-2xl border-0 overflow-hidden flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme
                 ? 'bg-gray-800/95 backdrop-blur-sm'
                 : 'bg-white/95 backdrop-blur-sm'
                 }`}>
                 {/* Header with gradient */}
-                <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 md:p-8 text-white">
+                {/* <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 md:p-8 text-white">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -70,12 +56,22 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                             <span className="font-semibold">{jobTitle || "the position"}</span>
                         </p>
                     </motion.div>
-                </div>
+                </div> */}
+                <CardHeader>
 
+                    <CardTitle className="text-blue-100 text-2xl md:text-3xl font-bold mb-2 md:mb-4 text-center">
+                        Hi! 👋 Nice to see you here
+                    </CardTitle>
+                    <p className="text-blue-100 text-center text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+                        {/* Here are few instructions to help you continue with the interview:
+                        <br /> */}
+                        Please follow these instructions to ensure a fair and smooth interview experience:
+                    </p>
+                </CardHeader>
                 <CardContent className="p-4 md:p-8 flex-1 flex flex-col justify-between">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                         {/* Role Information */}
-                        <motion.div
+                        {/* <motion.div
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.6, delay: 0.2 }}
@@ -105,28 +101,28 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                     </p>
                                 </div>
                             </div>
-                        </motion.div>
+                        </motion.div> */}
 
-                        {/* Interview Guidelines & What to Expect */}
-                        <div className="col-span-2 flex flex-col gap-6">
-                            {/* Proctoring Guidelines */}
+
+                        {/* Do's and Don'ts */}
+                        <div className="col-span-3 flex flex-col gap-6">
+                            {/* Combined Do's and Don'ts */}
                             <motion.div
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.6, delay: 0.3 }}
                                 className={`p-4 md:p-6 rounded-xl border transition-all duration-1000 ease-in-out ${isDarkTheme
-                                    ? 'bg-gradient-to-br from-red-900/20 to-orange-900/20 border-red-700/50'
-                                    : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200'
+                                    ? 'bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-indigo-700/50'
+                                    : 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200'
                                     }`}
                             >
-                                <h3 className={`font-semibold text-base md:text-lg mb-2 md:mb-4 flex items-center gap-2 transition-colors duration-1000 ${isDarkTheme ? 'text-red-300' : 'text-red-900'
+                                <h3 className={`font-semibold text-base md:text-lg mb-2 md:mb-4 flex items-center gap-2 transition-colors duration-1000 ${isDarkTheme ? 'text-indigo-300' : 'text-indigo-900'
                                     }`}>
-                                    <Eye className="w-5 h-5" />
-                                    Proctoring Guidelines
+                                    Do's and Don'ts
                                 </h3>
-                                <p className={`mb-2 md:mb-4 text-sm md:text-base leading-relaxed transition-colors duration-1000 ${isDarkTheme ? 'text-red-200' : 'text-red-800'
+                                <p className={`mb-2 md:mb-4 text-sm md:text-base leading-relaxed transition-colors duration-1000 ${isDarkTheme ? 'text-indigo-200' : 'text-indigo-800'
                                     }`}>
-                                    This interview is monitored to ensure fair assessment. Please follow these guidelines:
+                                    Please follow these instructions to ensure a fair and smooth interview experience:
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {/* Do's */}
@@ -156,6 +152,41 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                                 <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
                                                 <span className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-green-200' : 'text-green-700'
                                                     }`}>Maintain stable internet</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-green-200' : 'text-green-700'
+                                                    }`}>Keep answers around 1–2 minutes</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-green-200' : 'text-green-700'
+                                                    }`}>Be clear and practical</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-green-200' : 'text-green-700'
+                                                    }`}>Pause and think before answering</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-green-200' : 'text-green-700'
+                                                    }`}>Use good lighting and a clear background</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-green-200' : 'text-green-700'
+                                                    }`}>Minimize unnecessary movements</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-green-200' : 'text-green-700'
+                                                    }`}>Complete in one continuous flow</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-green-200' : 'text-green-700'
+                                                    }`}>Prefer Chrome on desktop/laptop</span>
                                             </div>
                                         </div>
                                     </div>
@@ -192,7 +223,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                 </div>
                             </motion.div>
 
-                            <motion.div
+                            {/* <motion.div
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.6, delay: 0.4 }}
@@ -268,9 +299,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                             }`}>Use Chrome on desktop/laptop for best experience</span>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </motion.div> */}
 
-                            <motion.div
+                            {/* <motion.div
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.6, delay: 0.5 }}
@@ -306,9 +337,32 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                             }`}>Approximately 5-10 minutes total</span>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </motion.div> */}
                         </div>
                     </div>
+
+                    <div className="mt-8">
+                        {/* Screen + System Audio Permission Instructions (Accordion) */}
+                        <Accordion type="single" collapsible>
+                            <AccordionItem value="system-audio">
+                                <AccordionTrigger
+                                    className={`sm:p-4 text-white ${isDarkTheme ? 'text-indigo-200 bg-gray-700 hover:bg-gray-500 hover:text-white' : 'text-indigo-200 bg-gray-700 hover:bg-gray-500 hover:text-white'}`}
+                                >
+                                    Allow screen sharing with system audio (click to expand)
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <SystemAudioInstructions
+                                        variant="static"
+                                        isDarkTheme={isDarkTheme}
+                                        showImages={true}
+                                        compact={false}
+                                    />
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </div>
+
+                    <p className="w-fit mx-auto font-semibold bg-amber-50/70 text-amber-800 p-1 rounded-md mt-2">Wishing you a great time!</p>
 
                     {/* Start Button */}
                     <motion.div
@@ -317,6 +371,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                         transition={{ duration: 0.6, delay: 0.7 }}
                         className="flex justify-center mt-8"
                     >
+
                         <Button
                             onClick={onStart}
                             disabled={loading}
@@ -329,7 +384,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                 </div>
                             ) : (
                                 <>
-                                    <span>Start Camera Check</span>
+                                    <span>Start Permissions Check</span>
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </>
                             )}

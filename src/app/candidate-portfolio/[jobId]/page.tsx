@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getJobCandidates, Candidate, CandidatesResponse, callForInterview, markFinalShortlist } from '@/lib/adminService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,10 +30,16 @@ import {
     FaArrowLeft,
     FaList,
     FaExclamationCircle,
-    FaCross
+    FaCross,
+    FaPlus,
+    FaEdit,
+    FaRegEdit,
+    FaUserEdit
 } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
 import Image from 'next/image';
+import { Edit, Edit2, Edit3 } from 'lucide-react';
+import ScooterHeader from '@/components/ScooterHeader';
 
 interface PageProps {
     params: Promise<{ jobId: string }>;
@@ -41,6 +47,7 @@ interface PageProps {
 
 export default function CandidatePortfolioPage({ params }: PageProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const resolvedParams = use(params);
     const jobId = resolvedParams.jobId;
 
@@ -63,6 +70,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     const [shortlistReason, setShortlistReason] = useState('');
     const [removeReason, setRemoveReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showNotesDialog, setShowNotesDialog] = useState(false);
+    const [notes, setNotes] = useState<Array<{ id: string; category: string; text: string; author: string }>>([]);
+    const [showPostShortlistDialog, setShowPostShortlistDialog] = useState(false);
+
+    const addEmptyNote = () => {
+        setNotes(prev => [...prev, { id: crypto.randomUUID(), category: '', text: '', author: '' }]);
+    };
 
     // Candidate highlights data
     const candidateHighlights = {
@@ -211,6 +225,121 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             ],
             overall_assessment: "Right mindset and attitude, but lacks communication clarity and sales structure."
         }
+        ,
+        // Newly added candidates
+        "68c12e1d55934dd430b52cec": {
+            name: "Sai Sowmya",
+            role: "Healthcare Education Advisor",
+            experience: "~2 years overall; Academic Advisor at Aakash; internship at Entri (cold calling, pre-sales)",
+            strengths: [
+                "Exceeded 100+ enrollments in 3 months at Aakash",
+                "Strong lead conversion with student/parent counseling",
+                "Cold calling experience and follow-up discipline",
+                "Effective rapport-building and objection handling"
+            ],
+            potential_red_flags: [
+                "Multiple short tenures/internships (< 1 year)",
+                "Mixed evaluation on structured communication"
+            ],
+            short_summary: "Sai Sowmya has relevant experience in student counseling and lead conversion, exceeding enrollment targets at Aakash Educational Services. Prior internship experience includes cold calling and pre-sales at Entri. While she shows strong sales performance, the short tenure pattern suggests assessing long-term stability.",
+            // main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/sai_sowmya_aster_20250923T084439_master.m3u8",
+            main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Sai Sowmya Edited Video_master.m3u8",
+            // main_video_url: "https://drive.google.com/file/d/1uLiLbcyukTGPFeICvlwNsobS_RC5hSgz/view?usp=sharing",
+            magic_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Sai Sowmya Magic Clips_master.m3u8",
+            why_they_match: [
+                "Direct alignment to education sales and enrollment workflows",
+                "Demonstrated persistence and parent engagement",
+                "Comfort with outbound calling and funnel follow-through"
+            ],
+            development_required: [
+                "Tighter verbal structure and clarity",
+                "Deeper discovery and tailored recommendations"
+            ],
+            overall_assessment: "Job Fit: HIGH — proven enrollment execution; communication structure can improve"
+        },
+        "68bd69349031ec916f9d3196": {
+            name: "GAURISHANKAR MALI",
+            role: "",
+            experience: "< 2 years relevant; technical training/projects (Python, SQL, Django)",
+            strengths: [
+                "Hands-on technical projects (ML, web apps)",
+                "Organized routines and team collaboration"
+            ],
+            potential_red_flags: [
+                "No direct sales experience",
+                "Short-term roles/trainings; unclear sales exposure"
+            ],
+            short_summary: "Recent Computer Engineering graduate with technical project work (Python, SQL, Django). Strong learning trajectory but lacks direct sales exposure; shortlisted for further review.",
+            // main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/GAURISHANKAR MALI_aster_20250924T061829_master.m3u8",
+            main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/GAURISHANKAR MALI Edited Video_master.m3u8",
+            // main_video_url: "https://drive.google.com/file/d/1klU6Kp4R6F4ZNrSmEMZAw63ZpWjNx5Gw/view?usp=sharing",
+            magic_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/GAURISHANKAR MALI Magic Clips_master.m3u8",
+            why_they_match: [
+                "Analytical mindset and project discipline",
+                "Growth orientation and teamwork"
+            ],
+            development_required: [
+                "Foundational sales exposure (discovery, objection handling)",
+                "Communication structure and clarity"
+            ],
+            overall_assessment: "Job Fit: LOW — strong technical profile; sales fundamentals to build"
+        },
+        "68bd6cf69031ec916f9d3197": {
+            name: "SINAGAVARAPU SATISH REDDY",
+            role: "Healthcare Education Advisor",
+            experience: "~4 years sales across Byju's, Edustoke, Infinity Learn, Aakash",
+            strengths: [
+                "Highest revenue maker (AP & Telangana) at Byju's; 1.5Cr+ from 200+ sales units",
+                "Awards: Extra Miler (Edustoke), monthly target achievements (Infinity Learn)",
+                "Objection handling and closing under deadlines"
+            ],
+            potential_red_flags: [
+                "Frequent role changes; short tenures"
+            ],
+            short_summary: "Progressive edtech sales career with notable revenue achievements and awards. Strong closing mindset; tenure stability should be assessed.",
+            // main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/SINAGAVARAPU SATISH REDDY_aster_20250924T061140_master.m3u8",
+            main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Sinagavarapu Satish Reddy Edited Video_master.m3u8",
+            // main_video_url: "https://drive.google.com/file/d/15VIi9LQyEt2bnkhQWooEbL0VmnWgBFOd/view?usp=sharing",
+            magic_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/SINAGAVARAPU SATISH REDDY Magic Clips_master.m3u8",
+            why_they_match: [
+                "Demonstrated revenue ownership and persistence",
+                "Relevant edtech enrollment and parent-facing experience"
+            ],
+            development_required: [
+                "Structured discovery and clearer communication",
+                "Consistency and role stability"
+            ],
+            overall_assessment: "Job Fit: HIGH — strong sales outcomes; benefits from structured communication"
+        },
+
+        "68c7b00f02f4518b905d7475": {
+            name: "Madhan Sanjay P",
+            role: "Healthcare Education Advisor",
+            experience: "6 years sales; Upgrad (BDE), Simplilearn (Sr. Inside Sales), SysGlobal IT (Product Associate/Analyst Intern), DT Foods (BDM)",
+            strengths: [
+                "Generated $200K+ revenue; achieved 130% targets (Simplilearn)",
+                "Managed 10+ course portfolio; ~25 lakhs revenue (Upgrad)",
+                "B2B and B2C exposure; consistent target attainment"
+            ],
+            potential_red_flags: [
+                "Brief employment gaps (2019–2021)",
+                "Communication clarity varies (per eval)"
+            ],
+            short_summary: "6 years of sales with quantifiable achievements across edtech and IT. Consistently meets/exceeds targets; versatile across B2B/B2C contexts.",
+            // main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Madhan sanjay P_asterr_20250924T063334_master.m3u8",
+            main_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Madhan Sanjay P Edited Video_master.m3u8",
+            // main_video_url: "https://drive.google.com/file/d/1Vp4E8YeIVJFxlclEapOvXsfG6xxHM2mp/view?usp=sharing",
+            magic_video_url: "https://scootervideoconsumption.blob.core.windows.net/scooter-processed-videos/Sanjay Madhan Magic Clips_master.m3u8",
+            why_they_match: [
+                "Quantified revenue delivery and target overachievement",
+                "Relevant edtech inside sales and counseling experience"
+            ],
+            development_required: [
+                "Sharper verbal structure and concise delivery",
+                "Systematic strategy under repeated objections"
+            ],
+            overall_assessment: "Job Fit: HIGH — strong quota performance; polish communication structure"
+        }
     };
 
     // Helper function to get candidate highlights
@@ -218,17 +347,28 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         return candidateHighlights[profileId as keyof typeof candidateHighlights];
     };
 
-    // Helper function to get candidate order for sorting
-    const getCandidateOrder = (profileId: string): number => {
+    // Mark new vs reviewed and custom order for new candidates
+    const NEW_IDS_ORDERED = [
+        "68c7b00f02f4518b905d7475", // Madhan Sanjay P
+        "68bd6cf69031ec916f9d3197", // SINAGAVARAPU SATISH REDDY
+        "68bd69349031ec916f9d3196", // GAURISHANKAR MALI
+        "68c12e1d55934dd430b52cec", // SAI SOWMYA
+    ];
+
+    const isNewCandidate = (profileId?: string) => profileId ? NEW_IDS_ORDERED.includes(profileId) : false;
+
+    // Custom comparator: new candidates first in specified order, then others (reviewed) by original map order
+    const getBaseOrder = (profileId: string): number => {
         const order = Object.keys(candidateHighlights).indexOf(profileId);
-        return order === -1 ? 999 : order; // Put unknown candidates at the end
+        return order === -1 ? 999 : order;
     };
 
-    // Sort candidates according to predefined order
     const sortedCandidates = candidates ? [...candidates].sort((a, b) => {
-        const orderA = getCandidateOrder(a.profile_id);
-        const orderB = getCandidateOrder(b.profile_id);
-        return orderA - orderB;
+        const aNewIdx = isNewCandidate(a.profile_id) ? NEW_IDS_ORDERED.indexOf(a.profile_id) : Infinity;
+        const bNewIdx = isNewCandidate(b.profile_id) ? NEW_IDS_ORDERED.indexOf(b.profile_id) : Infinity;
+        if (aNewIdx !== bNewIdx) return aNewIdx - bNewIdx;
+        // both new or both reviewed → fallback to base order
+        return getBaseOrder(a.profile_id) - getBaseOrder(b.profile_id);
     }) : [];
 
     useEffect(() => {
@@ -264,6 +404,18 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         }
     };
 
+    // Preselect candidate if profileId exists in query params
+    useEffect(() => {
+        const profileId = searchParams ? searchParams.get('profileId') : null;
+        if (!profileId) return;
+        if (!candidates || candidates.length === 0) return;
+        const candidate = candidates.find(c => c.profile_id === profileId);
+        if (candidate) {
+            setSelectedCandidate(candidate);
+            setShowCandidateList(false);
+        }
+    }, [candidates, searchParams]);
+
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
     };
@@ -277,6 +429,26 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         setTimeout(() => {
             setIsAnimating(false);
         }, 500);
+    };
+
+    // Share report handler
+    const handleShareReport = async () => {
+        if (!selectedCandidate) return;
+        const shareUrl = `${window.location.origin}/candidate-portfolio/${jobId}?profileId=${selectedCandidate.profile_id}`;
+        try {
+            const nav: any = navigator as any;
+            if (nav && typeof nav.share === 'function') {
+                await nav.share({ title: 'Candidate Report', url: shareUrl });
+                return;
+            }
+        } catch (_) { }
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Share link copied to clipboard');
+        } catch (_) {
+            // Fallback: open in new tab where user can copy
+            window.open(shareUrl, '_blank');
+        }
     };
 
     const handleShowListContainer = () => {
@@ -341,6 +513,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
             await fetchCandidates();
             setShowShortlistDialog(false);
             setShortlistReason('');
+            setShowPostShortlistDialog(true);
         } catch (error) {
             console.error('Error shortlisting candidate:', error);
             // You might want to show a toast notification here
@@ -423,6 +596,32 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         return `${years} years ${months} months`;
     };
 
+    // Average tenure helper in years and months
+    const getAverageTenure = (candidate: Candidate): string => {
+        const avg = candidate?.career_overview?.average_tenure_per_role || 0;
+        const years = Math.floor(avg);
+        const months = Math.round((avg - years) * 12);
+        return `${years} years ${months} months`;
+    };
+
+    // Extract numeric CTC value from number | { value: number }
+    const getCtcValue = (ctc: number | { value: number } | undefined | null): number | null => {
+        if (ctc == null) return null;
+        if (typeof ctc === 'number') return ctc;
+        if (typeof (ctc as any).value === 'number') return (ctc as any).value;
+        return null;
+    };
+
+    // Budget status relative to defined budget (7 LPA)
+    const getBudgetStatus = (candidate: Candidate): string => {
+        const BASE = 9.5; // LPA
+        const expected = getCtcValue(candidate?.basic_information?.expected_ctc);
+        if (expected == null) return 'N/A';
+        if (expected <= BASE) return 'Under Budget';
+        if (expected > BASE * 1.5) return 'Over Budget';
+        return 'Negotiable Budget';
+    };
+
     const parseJobFitAssessment = (text: string) => {
         const result: any = {};
 
@@ -502,15 +701,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         <div className="min-h-screen bg-bg-main relative overflow-hidden">
             {/* Logo */}
             <div className="flex justify-between bg-bg-main px-8 py-4 border-b-2 border-gray-200 sm:mx-4">
-                <div className="flex items-center gap-3">
-                    <Image
-                        src="/assets/images/scooterLogo.png"
+                {/* <Image
+                        src="/assets/images/newScooterLogo.png"
                         alt="Scooter Logo"
                         width={32}
                         height={32}
-                    />
-                    <h1 className="text-3xl font-thin text-text-primary">scooter</h1>
-                </div>
+                    /> */}
+                <ScooterHeader containerClassName="border-none px-0 py-0" logoClassName='h-6' />
                 {jobDetails?.title && (
                     <div className="hidden md:block text-center">
                         <h1 className="text-lg sm:text-xl font-bold text-text-primary">
@@ -561,7 +758,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                     {selectedCandidate && (
                         <div className="h-full flex flex-col w-full">
                             {/* Header */}
-                            <div className="bg-bg-main border-b-2 border-gray-200 px-4 sm:px-8 py-4 sm:py-6">
+                            <div className="bg-bg-main border-b-2 border-gray-200 px-4 sm:px-8 py-4 sm:py-6 pb-32 mb-16 relative">
                                 {jobDetails?.title && (
                                     <div className="md:hidden text-center border-b-2 pb-4 mb-4 border-gray-400">
                                         <h1 className="text-xl sm:text-xl font-bold text-text-primary">
@@ -569,7 +766,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                         </h1>
                                     </div>
                                 )}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start lg:items-center">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start lg:items-center sm:mb-8">
                                     {/* Left: Identity */}
                                     <div className="text-left">
                                         <h2 className="text-xl sm:text-2xl font-bold text-text-primary mb-1">
@@ -636,10 +833,18 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Center Quick Notes button */}
+                                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-[65%] flex flex-col items-center">
+                                    <Button variant="primary" onClick={() => setShowNotesDialog(true)} className="rounded-full w-12 h-12 p-2 sm:p-0 flex flex-col items-center justify-center gap-16">
+                                        <Edit3 className='w-5 h-5 text-text-secondary' color='white' fill='white' />
+                                    </Button>
+                                    <p className="mt-2 text-xs sm:text-sm text-text-primary">Quick Notes</p>
+                                </div>
                             </div>
 
                             {/* Main Content */}
-                            <div className="flex-1  p-4 sm:p-6">
+                            <div className="flex-1  p-4 sm:p-6 pt-16 sm:pt-auto sm:mt-auto">
                                 <div className="max-w-8xl mx-auto">
                                     {/* Top Section */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
@@ -838,15 +1043,21 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             <div className="bg-bg-main rounded-none p-4 sm:p-6 shadow-sm">
                                                 {(() => {
                                                     const candidateData = selectedCandidate?.profile_id ? getCandidateHighlights(selectedCandidate.profile_id) : null;
-                                                    const videoUrl = candidateData?.main_video_url || selectedCandidate.interview_status?.video_interview_url;
+                                                    const videoUrl = candidateData?.main_video_url || selectedCandidate.interview_status?.processed_video_interview_url || selectedCandidate.interview_status?.video_interview_url;
                                                     const interviewEvents = selectedCandidate?.video_proctoring_details?.interview_events || [];
 
                                                     return videoUrl ? (
                                                         <VideoPlayerWithTimeline
                                                             videoUrl={videoUrl}
+                                                            fallbackUrl={selectedCandidate.interview_status?.processed_video_interview_url ? selectedCandidate.interview_status?.video_interview_url : null}
                                                             interviewEvents={interviewEvents}
+                                                            questionEvaluations={selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations?.map((q: any) => ({
+                                                                question_number: q?.question_number,
+                                                                question: q?.question,
+                                                            })) || []}
                                                             className="w-full h-64 sm:h-80 rounded-none"
                                                             controls={true}
+                                                            poster='/assets/images/scooterLogo.png'
                                                         />
                                                     ) : (
                                                         <div className="w-full h-48 sm:h-64 bg-gray-200 rounded-none flex items-center justify-center">
@@ -907,8 +1118,11 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     <Accordion type="multiple" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                                         {/* Experience Summary */}
                                         <AccordionItem value="experience" className="bg-bg-main border-purple-200 rounded-none">
+                                            <div className="px-4 pt-3">
+                                                <h4 className="font-bold text-text-primary mb-1">Experience</h4>
+                                            </div>
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 hover:bg-element-2 data-[state=open]:bg-element-2 rounded-none transition-colors">
-                                                <h4 className="font-bold text-text-primary">Experience</h4>
+                                                <span className="font-semibold text-text-primary">{getExperienceYears(selectedCandidate)}</span>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-4 pb-4">
                                                 <div className="space-y-3">
@@ -917,7 +1131,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                         <div className="space-y-2 text-sm text-text-primary">
                                                             <div>Total Experience: {getExperienceYears(selectedCandidate)}</div>
                                                             <div>Sales Experience: {selectedCandidate.career_overview?.years_sales_experience || 0} years</div>
-                                                            <div>Average Tenure: {selectedCandidate.career_overview?.average_tenure_per_role || 0} years per role</div>
+                                                            <div>Average Tenure: {getAverageTenure(selectedCandidate)} per role</div>
                                                             {selectedCandidate.career_overview?.employment_gaps?.has_gaps && (
                                                                 <div className="text-orange-600">Employment Gaps: {selectedCandidate.career_overview.employment_gaps.duration}</div>
                                                             )}
@@ -948,8 +1162,11 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
                                         {/* Budget Information */}
                                         <AccordionItem value="budget" className="bg-bg-main border-purple-200 rounded-none">
+                                            <div className="px-4 pt-3">
+                                                <h4 className="font-bold text-text-primary mb-1">Budget Analysis</h4>
+                                            </div>
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 hover:bg-element-2 data-[state=open]:bg-element-2 rounded-none transition-colors">
-                                                <h4 className="font-bold text-text-primary">Budget Analysis</h4>
+                                                <span className="font-semibold text-text-primary">{getBudgetStatus(selectedCandidate)}</span>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-4 pb-4">
                                                 <div className="space-y-3">
@@ -988,8 +1205,11 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
                                         {/* Notice Period */}
                                         <AccordionItem value="notice-period" className="bg-bg-main border-purple-200 rounded-none">
+                                            <div className="px-4 pt-3">
+                                                <h4 className="font-bold text-text-primary mb-1">Availability</h4>
+                                            </div>
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 hover:bg-element-2 data-[state=open]:bg-element-2 rounded-none transition-colors">
-                                                <h4 className="font-bold text-text-primary">Notice Period</h4>
+                                                <span className="font-semibold text-text-primary">{selectedCandidate.basic_information?.notice_period || 'Not specified'}</span>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-4 pb-4">
                                                 <div className="space-y-3">
@@ -1018,38 +1238,31 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             </AccordionContent>
                                         </AccordionItem>
 
-                                        {/* Additional Info */}
-                                        <AccordionItem value="additional-info" className="bg-bg-main border-purple-200 rounded-none">
+                                        {/* Average Tenure (replaces Additional Info) */}
+                                        <AccordionItem value="average-tenure" className="bg-bg-main border-purple-200 rounded-none">
+                                            <div className="px-4 pt-3">
+                                                <h4 className="font-bold text-text-primary mb-1">Average Tenure</h4>
+                                            </div>
                                             <AccordionTrigger className="px-4 py-3 hover:no-underline bg-element-3 hover:bg-element-2 data-[state=open]:bg-element-2 rounded-none transition-colors">
-                                                <h4 className="font-bold text-text-primary">Additional Info</h4>
+                                                <span className="font-semibold text-text-primary">{getAverageTenure(selectedCandidate)}</span>
                                             </AccordionTrigger>
                                             <AccordionContent className="px-4 pb-4">
                                                 <div className="space-y-3">
                                                     <div className="bg-bg-main p-3 rounded-none">
-                                                        <h5 className="font-medium text-text-primary mb-2">Resume</h5>
+                                                        <h5 className="font-medium text-text-primary mb-2">Details</h5>
                                                         <div className="space-y-2 text-sm text-text-primary">
-                                                            <div className="flex items-center justify-center">
-                                                                <Button
-                                                                    variant="outline"
-                                                                    className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-6 py-2 rounded-full flex items-center gap-2"
-                                                                    onClick={() => {
-                                                                        if (selectedCandidate.interview_status?.resume_url) {
-                                                                            window.open(selectedCandidate.interview_status.resume_url, '_blank');
-                                                                        }
-                                                                    }}
-                                                                    disabled={!selectedCandidate.interview_status?.resume_url}
-                                                                >
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                    </svg>
-                                                                    Download Resume
-                                                                </Button>
-                                                            </div>
-                                                            {!selectedCandidate.interview_status?.resume_url && (
-                                                                <p className="text-xs text-text-secondary text-center mt-2">
-                                                                    Resume not available
-                                                                </p>
+                                                            {/* <div>Average tenure per role: {getAverageTenure(selectedCandidate)}</div> */}
+                                                            {selectedCandidate.career_overview?.employment_gaps?.has_gaps && (
+                                                                <div className="text-orange-600">Employment Gaps: {selectedCandidate.career_overview.employment_gaps.duration}</div>
                                                             )}
+                                                            <div className="space-y-2 text-sm text-text-primary">
+                                                                <div>Total Experience: {getExperienceYears(selectedCandidate)}</div>
+                                                                <div>Sales Experience: {selectedCandidate.career_overview?.years_sales_experience || 0} years</div>
+                                                                <div>Average Tenure: {getAverageTenure(selectedCandidate)} per role</div>
+                                                                {selectedCandidate.career_overview?.employment_gaps?.has_gaps && (
+                                                                    <div className="text-orange-600">Employment Gaps: {selectedCandidate.career_overview.employment_gaps.duration}</div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1073,10 +1286,34 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
                                         <Button
                                             onClick={handleRemoveClick}
-                                            variant="outline"
-                                            className="bg-cta-primary hover:bg-cta-primary-text hover:text-cta-primary hover:border-cta-outline hover:border-2 text-white px-6 sm:px-8 py-3 rounded-full"
+                                            variant="primary"
+                                            className=""
                                         >
                                             Remove
+                                        </Button>
+                                    </div>
+
+                                    {/* Download & Share Buttons */}
+                                    <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                                        <Button
+                                            variant="secondary"
+                                            className='w-48'
+                                            onClick={() => {
+                                                if (selectedCandidate?.interview_status?.resume_url) {
+                                                    window.open(selectedCandidate.interview_status.resume_url, '_blank');
+                                                }
+                                            }}
+                                            disabled={!selectedCandidate?.interview_status?.resume_url}
+                                        >
+                                            Download Resume
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            className='w-48'
+                                            onClick={handleShareReport}
+                                            disabled={!selectedCandidate}
+                                        >
+                                            Share Report
                                         </Button>
                                     </div>
                                 </div>
@@ -1184,6 +1421,17 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                         <p className={`${showCandidateList ? 'text-xs sm:text-sm' : 'text-xs'} text-text-primary ${showCandidateList ? 'mb-3' : 'mb-2'}`}>
                                                             {candidate.basic_information?.current_location}
                                                         </p>
+                                                        <div className="flex items-center gap-2 justify-center">
+                                                            {isNewCandidate(candidate.profile_id) ? (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                                                    New
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                                                    Reviewed
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 {/* 
@@ -1248,8 +1496,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                 <VideoPlayerWithTimeline
                                     videoUrl={selectedVideoUrl}
                                     interviewEvents={selectedCandidate?.video_proctoring_details?.interview_events || []}
+                                    questionEvaluations={selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations?.map((q: any) => ({
+                                        question_number: q?.question_number,
+                                        question: q?.question,
+                                    })) || []}
                                     className="w-full h-64 sm:h-80 lg:h-96 rounded-lg"
                                     controls={true}
+                                    poster='/assets/images/scooterLogo.png'
                                 />
                             ) : (
                                 <div className="w-full h-64 sm:h-80 lg:h-96 bg-gray-200 rounded-lg flex items-center justify-center">
@@ -1290,14 +1543,14 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
             {/* Shortlist Dialog */}
             <Dialog open={showShortlistDialog} onOpenChange={setShowShortlistDialog}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Shortlist Candidate</DialogTitle>
-                        <DialogDescription>
+                <DialogContent className="sm:max-w-md bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className='text-center'>Shortlist Candidate</DialogTitle>
+                        <DialogDescription className='text-center'>
                             Add a reason for shortlisting this candidate (optional)
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-4 text-center">
                         <div>
                             <label htmlFor="shortlist-reason" className="block text-sm font-medium text-gray-700 mb-2">
                                 Reason for Shortlisting
@@ -1311,18 +1564,18 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             />
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex justify-around items-center">
                         <Button
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => setShowShortlistDialog(false)}
                             disabled={isSubmitting}
                         >
                             Cancel
                         </Button>
                         <Button
+                            variant="primary"
                             onClick={handleShortlistSubmit}
                             disabled={isSubmitting}
-                            className="bg-cta-primary hover:bg-cta-primary-text text-white"
                         >
                             {isSubmitting ? 'Shortlisting...' : 'Shortlist'}
                         </Button>
@@ -1330,16 +1583,65 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                 </DialogContent>
             </Dialog>
 
+            {/* Post-Shortlist Dialog */}
+            <Dialog open={showPostShortlistDialog} onOpenChange={setShowPostShortlistDialog}>
+                <DialogContent className="sm:max-w-md bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className='text-center'>What would you like to do next?</DialogTitle>
+                        <DialogDescription className='text-center'>Choose an action for this candidate</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 text-center">
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <Button
+                                variant="secondary"
+                                onClick={() => {
+                                    if (selectedCandidate?.basic_information?.phone_number) {
+                                        window.location.href = `tel:${selectedCandidate.basic_information.phone_number}`;
+                                    }
+                                }}
+                                className="flex-1"
+                            >
+                                Talk Now
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={() => {
+                                    if (!selectedCandidate) return;
+                                    const role = encodeURIComponent(jobDetails?.title || "");
+                                    const name = encodeURIComponent(selectedCandidate.basic_information?.full_name || "");
+                                    const location = encodeURIComponent(selectedCandidate.basic_information?.current_location || "");
+                                    const exp = encodeURIComponent(getExperienceYears(selectedCandidate));
+                                    const expectedVal = getCtcValue(selectedCandidate.basic_information?.expected_ctc);
+                                    const expected = expectedVal != null ? encodeURIComponent(String(expectedVal)) : "";
+                                    const relocation = selectedCandidate.basic_information?.open_to_relocation ? 1 : 0;
+                                    const url = `/schedule-interview?jobId=${jobId}&profileId=${selectedCandidate.profile_id}&role=${role}&name=${name}&location=${location}&exp=${exp}&expected=${expected}&relocation=${relocation}`;
+                                    setShowPostShortlistDialog(false);
+                                    router.push(url);
+                                }}
+                                className="flex-1"
+                            >
+                                Schedule Interview
+                            </Button>
+                        </div>
+                        <div>
+                            <Button variant="secondary" onClick={() => setShowPostShortlistDialog(false)}>
+                                Continue Browsing
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             {/* Remove Dialog */}
             <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Remove Candidate</DialogTitle>
-                        <DialogDescription>
+                <DialogContent className="sm:max-w-md bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className='text-center'>Remove Candidate</DialogTitle>
+                        <DialogDescription className='text-center'>
                             Please provide a reason for removing this candidate from consideration
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-4 text-center">
                         <div>
                             <label htmlFor="remove-reason" className="block text-sm font-medium text-gray-700 mb-2">
                                 Reason for Removal <span className="text-red-500">*</span>
@@ -1357,21 +1659,65 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                             )}
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex justify-around">
                         <Button
-                            variant="outline"
+                            variant="secondary"
                             onClick={() => setShowRemoveDialog(false)}
                             disabled={isSubmitting}
                         >
                             Cancel
                         </Button>
                         <Button
+                            variant="primary"
                             onClick={handleRemoveSubmit}
                             disabled={isSubmitting || !removeReason.trim()}
-                            className="bg-red-600 hover:bg-red-700 text-white"
                         >
                             {isSubmitting ? 'Removing...' : 'Remove'}
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Quick Notes Dialog */}
+            <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
+                <DialogContent className="sm:max-w-2xl bg-bg-secondary-4">
+                    <DialogHeader className="text-center">
+                        <DialogTitle className='text-center'>Quick Notes</DialogTitle>
+                        <DialogDescription className='text-center'>Add brief notes for this candidate</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-8 px-2">
+                        {notes.map((note) => (
+                            <div key={note.id} className="space-y-2">
+                                <div className="text-sm text-text-primary">Author : {note.author || (selectedCandidate?.basic_information?.full_name ? selectedCandidate.basic_information.full_name : 'You')}</div>
+                                <div className="bg-white/80 border rounded-md p-3">
+                                    <div className="text-sm text-text-primary italic mb-2">
+                                        <span className="font-semibold">Category</span> :
+                                    </div>
+                                    <Textarea
+                                        placeholder="Category : Write your quick note here..."
+                                        value={note.text}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setNotes(prev => prev.map(n => n.id === note.id ? { ...n, text: val } : n));
+                                        }}
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        {notes.length === 0 && (
+                            <div className="text-center text-sm text-text-primary">No notes yet</div>
+                        )}
+                        <div className="flex flex-col items-center gap-2">
+                            <Button variant="primary" className="rounded-full w-12 h-12 border-2 border-white px-2 sm:px-2" onClick={addEmptyNote}>
+                                <FaPlus className='w-4 h-4 text-text-secondary' />
+                            </Button>
+                            <div className="text-sm text-text-primary">Add More</div>
+                        </div>
+                    </div>
+                    <DialogFooter className="flex justify-around items-center">
+                        <Button variant="secondary" onClick={() => setShowNotesDialog(false)}>Close</Button>
+                        <Button variant="primary" onClick={() => setShowNotesDialog(false)}>Save</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
