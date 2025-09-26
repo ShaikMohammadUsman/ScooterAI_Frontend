@@ -73,30 +73,35 @@ export function GeneralInterviewControls({
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    <Button
-                                        onClick={onMicToggle}
-                                        disabled={disabled}
-                                        className={`w-16 h-16 rounded-full shadow-lg transition-all duration-200 ${isListening
-                                            ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
-                                            : "bg-blue-600 hover:bg-blue-700 text-white"
-                                            }`}
-                                    >
-                                        <FaMicrophone className="w-6 h-6" />
+                                    <div className="relative">
                                         {isListening && (
-                                            <motion.div
-                                                className="absolute inset-0 rounded-full bg-red-400"
-                                                animate={{
-                                                    scale: [1, 1.2, 1],
-                                                    opacity: [0.5, 0, 0.5]
-                                                }}
-                                                transition={{
-                                                    duration: 1.5,
-                                                    repeat: Infinity,
-                                                    ease: "easeInOut"
-                                                }}
-                                            />
+                                            <span className="absolute -inset-3 rounded-full bg-red-500/30 animate-ping" />
                                         )}
-                                    </Button>
+                                        <Button
+                                            onClick={onMicToggle}
+                                            disabled={disabled}
+                                            className={`relative w-16 h-16 rounded-full shadow-lg transition-all duration-200 ${isListening
+                                                ? "bg-red-500 hover:bg-red-600 text-white"
+                                                : "bg-blue-600 hover:bg-blue-700 text-white"
+                                                }`}
+                                        >
+                                            <FaMicrophone className="w-6 h-6" />
+                                            {isListening && (
+                                                <motion.div
+                                                    className="pointer-events-none absolute inset-0 rounded-full bg-red-400/40"
+                                                    animate={{
+                                                        scale: [1, 1.15, 1],
+                                                        opacity: [0.5, 0.15, 0.5]
+                                                    }}
+                                                    transition={{
+                                                        duration: 1.4,
+                                                        repeat: Infinity,
+                                                        ease: "easeInOut"
+                                                    }}
+                                                />
+                                            )}
+                                        </Button>
+                                    </div>
                                 </motion.div>
                             </TooltipTrigger>
                             <TooltipContent>
