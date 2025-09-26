@@ -960,7 +960,7 @@ function CommunicationInterview() {
             // Speak the question
             if (res.question) {
                 // Track question narration start
-                handleQuestionNarrationStart(0, res.question);
+                handleQuestionNarrationStart(currentQuestionIndex, res.question);
 
                 const duration = await textInAudioOut(
                     res.question,
@@ -981,7 +981,7 @@ function CommunicationInterview() {
                 setSpeechDuration(duration);
 
                 // Track question narration end
-                handleQuestionNarrationEnd(0);
+                handleQuestionNarrationEnd(currentQuestionIndex);
             }
 
             setMicEnabled(true);
