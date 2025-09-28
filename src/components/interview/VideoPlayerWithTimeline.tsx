@@ -150,10 +150,43 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
             if (Hls.isSupported()) {
                 const hls = new Hls();
 
+                // Add timeout for HLS loading
+                const hlsTimeout = setTimeout(() => {
+                    console.log('HLS loading timeout, attempting fallback');
+                    hls.destroy();
+                    if (fallbackUrl && lastTriedUrlRef.current !== fallbackUrl) {
+                        console.log('Attempting fallback to:', fallbackUrl);
+                        lastTriedUrlRef.current = fallbackUrl;
+                        setHasError(true);
+                        setIsUsingFallback(true);
+                        setErrorMessage('Processed video loading timeout, using original...');
+                        video.src = fallbackUrl;
+                        video.load();
+                    }
+                }, 10000); // 10 second timeout
+
                 // Add error handling for HLS
                 hls.on(Hls.Events.ERROR, (event, data) => {
                     console.error('HLS error:', data);
+                    clearTimeout(hlsTimeout); // Clear timeout on error
+
                     if (data.fatal) {
+                        // Check if it's a 404 error (manifest doesn't exist)
+                        if (data.response && data.response.code === 404) {
+                            console.log('HLS manifest not found (404), attempting fallback immediately');
+                            hls.destroy();
+                            if (fallbackUrl && lastTriedUrlRef.current !== fallbackUrl) {
+                                console.log('Attempting fallback to:', fallbackUrl);
+                                lastTriedUrlRef.current = fallbackUrl;
+                                setHasError(true);
+                                setIsUsingFallback(true);
+                                setErrorMessage('Raw Video.....');
+                                video.src = fallbackUrl;
+                                video.load();
+                            }
+                            return;
+                        }
+
                         switch (data.type) {
                             case Hls.ErrorTypes.NETWORK_ERROR:
                                 console.log('Fatal network error encountered, trying to recover...');
@@ -170,6 +203,9 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                 if (fallbackUrl && lastTriedUrlRef.current !== fallbackUrl) {
                                     console.log('Attempting fallback to:', fallbackUrl);
                                     lastTriedUrlRef.current = fallbackUrl;
+                                    setHasError(true);
+                                    setIsUsingFallback(true);
+                                    setErrorMessage('Using fallback video...');
                                     video.src = fallbackUrl;
                                     video.load();
                                 }
@@ -178,10 +214,16 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                     }
                 });
 
+                // Clear timeout when HLS loads successfully
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    clearTimeout(hlsTimeout);
+                });
+
                 hls.loadSource(videoUrl);
                 hls.attachMedia(video);
 
                 return () => {
+                    clearTimeout(hlsTimeout);
                     hls.destroy();
                     video.removeEventListener('loadedmetadata', handleLoadedMetadata);
                     video.removeEventListener('timeupdate', handleTimeUpdate);
