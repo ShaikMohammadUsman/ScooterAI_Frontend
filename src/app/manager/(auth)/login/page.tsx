@@ -5,17 +5,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { hiringManagerLogin, isAccessTokenValid } from "@/lib/managerService";
+import { useRouter } from "next/navigation";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (isAccessTokenValid()) {
+            router.replace("/manager/dashboard");
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
+        setError(null);
         try {
-            // TODO: wire up API
+            const res = await hiringManagerLogin({ email: email.trim(), password });
+            if (res?.status) {
+                router.push("/manager/jobs");
+                return;
+            }
+            setError(res?.message || "Login failed");
         } finally {
             setSubmitting(false);
         }
@@ -28,13 +46,37 @@ export default function LoginPage() {
                 <p className="text-sm text-gray-500">Real salespeople. Real results. Really fast.</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                    <div className="text-red-600 text-sm">{error}</div>
+                )}
                 <div>
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" className="mt-2" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" required />
                 </div>
                 <div>
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" className="mt-2" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                    <div className="relative mt-2">
+                        <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            className="pr-10"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                        />
+                        <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? (
+                                <FaEyeSlash className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                            ) : (
+                                <FaEye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                            )}
+                        </button>
+                    </div>
                 </div>
                 <div className="flex justify-center">
                     <Button type="submit" disabled={submitting} className="w-fit" variant="primary">

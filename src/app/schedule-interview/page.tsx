@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import ScooterHeader from "@/components/ScooterHeader";
 import DateCalendar from "@/components/schedule/DateCalendar";
 import SlotsPicker from "@/components/schedule/SlotsPicker";
+import { scheduleInterview } from "@/lib/managerService";
+import { toast } from "@/hooks/use-toast";
 
 const buildSlots = (startHour: number, endHour: number) => {
     const slots: string[] = [];
@@ -32,6 +34,8 @@ export default function ScheduleInterviewPage() {
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const slots = useMemo(() => buildSlots(9, 18), []); // 9:00 to 17:30
 
@@ -48,12 +52,51 @@ export default function ScheduleInterviewPage() {
         return `${y}-${m}-${day}`;
     };
 
-    const handleSubmit = () => {
-        // TODO: integrate with backend
-        //need to be converted in the iso formatting string for backend
-        const dateStr = formatLocalDate(selectedDate);
-        console.log({ jobId, profileId, selectedDate: dateStr, selectedSlots });
-        setShowConfirm(true);
+    const handleSubmit = async () => {
+        if (selectedSlots.length === 0) {
+            setError("Please select at least one time slot");
+            return;
+        }
+
+        setSubmitting(true);
+        setError(null);
+
+        try {
+            const dateStr = formatLocalDate(selectedDate);
+
+            // Convert slots to the required format (e.g., "10:00" -> "10:00-10:30")
+            const formattedSlots = selectedSlots.map(slot => {
+                const [hours, minutes] = slot.split(':');
+                const startTime = `${hours}:${minutes}`;
+                const endMinutes = minutes === '00' ? '30' : '00';
+                const endHours = minutes === '30' ? String(parseInt(hours) + 1).padStart(2, '0') : hours;
+                return `${startTime}-${endHours}:${endMinutes}`;
+            });
+
+            const response = await scheduleInterview({
+                applicantName: name,
+                interviewerName: "Interviewer", // TODO: Get from user context or form
+                jobId,
+                profileId,
+                selectedDate: dateStr,
+                selectedSlots: formattedSlots
+            });
+
+            if (response.status) {
+                toast({
+                    title: "Success!",
+                    description: response.message || "Interview scheduled successfully",
+                });
+                setShowConfirm(true);
+            } else {
+                setError(response.message || "Failed to schedule interview. Please try again.");
+            }
+        } catch (err: any) {
+            console.error("Schedule interview error:", err);
+            setError(err.response?.data?.message || "Failed to schedule interview. Please try again.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     // Calendar helpers
@@ -165,9 +208,15 @@ export default function ScheduleInterviewPage() {
                     </div>
                 </div>
 
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md max-w-6xl mx-auto">
+                        <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                )}
+
                 <div className="pb-6 flex justify-center">
-                    <Button variant="primary" onClick={handleSubmit} disabled={selectedSlots.length === 0}>
-                        Submit Availability
+                    <Button variant="primary" onClick={handleSubmit} disabled={selectedSlots.length === 0 || submitting}>
+                        {submitting ? "Scheduling..." : "Submit Availability"}
                     </Button>
                 </div>
             </div>

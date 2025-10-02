@@ -9,7 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 
-import { getJobCandidates, Candidate, CandidatesResponse, updateApplicationStatus, markFinalShortlist, resetVideoInterview, downloadContactsCsv } from '@/lib/adminService';
+import { Candidate, updateApplicationStatus, markFinalShortlist, resetVideoInterview, downloadContactsCsv } from '@/lib/adminService';
+import { getMyJobCandidates, MyJobCandidatesResponse } from '@/lib/managerService';
 import ReactMarkdown from 'react-markdown';
 import { toast } from "@/hooks/use-toast";
 import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit, FaClock, FaPlay, FaPause, FaStop, FaEye, FaEyeSlash, FaMousePointer, FaKeyboard, FaMobile, FaDesktop, FaEnvelope } from 'react-icons/fa';
@@ -42,7 +43,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [loading, setLoading] = useState(true);
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-    const [jobDetails, setJobDetails] = useState<CandidatesResponse['job_details'] | null>(null);
+    const [jobDetails, setJobDetails] = useState<MyJobCandidatesResponse['job_details'] | null>(null);
     const resolvedParams = use(params);
     const jobId = resolvedParams.id;
     const [filters, setFilters] = useState<FilterState>({
@@ -77,7 +78,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(20); // Default page size
-    const [pagination, setPagination] = useState<CandidatesResponse['pagination'] | null>(null);
+    const [pagination, setPagination] = useState<MyJobCandidatesResponse['pagination'] | null>(null);
     const [pageLoading, setPageLoading] = useState(false);
 
     // Active tab for primary status buckets
@@ -198,16 +199,18 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
             const smartPageSize = getSmartPageSize();
 
-            const response = await getJobCandidates(
+            const response = await getMyJobCandidates(
                 jobId,
                 currentPage,
                 smartPageSize,
-                applicationStatus,
-                videoAttendedParam, // video_attended
-                shortlistedParam, // shortlisted
-                undefined, // call_for_interview
-                audioAttendedParam, // audio_attended
-                videoInterviewSentParam, // video_interview_sent
+                {
+                    application_status: applicationStatus,
+                    video_attended: videoAttendedParam,
+                    shortlisted: shortlistedParam,
+                    call_for_interview: undefined,
+                    audio_attended: audioAttendedParam,
+                    video_interview_sent: videoInterviewSentParam,
+                }
             );
             setCandidates(response.candidates);
             setJobDetails(response.job_details);
@@ -265,16 +268,18 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     break;
             }
 
-            const response = await getJobCandidates(
+            const response = await getMyJobCandidates(
                 jobId,
                 nextPage,
                 pageSize,
-                nextApplicationStatus,
-                nextVideoAttended,
-                nextShortlisted,
-                undefined,
-                nextAudioAttended,
-                nextVideoInterviewSent,
+                {
+                    application_status: nextApplicationStatus,
+                    video_attended: nextVideoAttended,
+                    shortlisted: nextShortlisted,
+                    call_for_interview: undefined,
+                    audio_attended: nextAudioAttended,
+                    video_interview_sent: nextVideoInterviewSent,
+                }
             );
 
             // Append new candidates to existing ones

@@ -1,23 +1,67 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { hiringManagerSignup, isAccessTokenValid } from "@/lib/managerService";
+import { useRouter } from "next/navigation";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function SignupPage() {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [passwordFocused, setPasswordFocused] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+
+    const passwordRules = useMemo(() => ({
+        hasUpper: /[A-Z]/.test(password),
+        hasLower: /[a-z]/.test(password),
+        hasNumber: /[0-9]/.test(password),
+        hasSpecial: /[^A-Za-z0-9]/.test(password),
+        minLen: password.length >= 8
+    }), [password]);
+
+    const isPasswordValid = passwordRules.hasUpper && passwordRules.hasLower && passwordRules.hasNumber && passwordRules.hasSpecial && passwordRules.minLen;
+
+    useEffect(() => {
+        if (isAccessTokenValid()) {
+            router.replace("/manager/dashboard");
+        }
+    }, []);
     const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
+        setError(null);
         try {
-            // TODO: wire up API
+            if (!isPasswordValid) {
+                setError("Please satisfy all password requirements.");
+                return;
+            }
+            if (password !== confirmPassword) {
+                setError("Passwords do not match.");
+                return;
+            }
+            const res = await hiringManagerSignup({
+                first_name: firstName.trim(),
+                last_name: lastName.trim(),
+                email: email.trim(),
+                password
+            });
+            if (res?.status) {
+                router.push("/manager/jobs");
+                return;
+            }
+            setError(res?.message || "Signup failed");
         } finally {
             setSubmitting(false);
         }
@@ -30,6 +74,9 @@ export default function SignupPage() {
                 <p className="text-sm text-gray-500">Real salespeople. Real results. Really fast.</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                    <div className="text-red-600 text-sm">{error}</div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <Label htmlFor="firstName">First name</Label>
@@ -46,7 +93,56 @@ export default function SignupPage() {
                 </div>
                 <div>
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" className="mt-2" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                    <Input id="password" type="password" className="mt-2" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setPasswordFocused(true)} onBlur={() => setPasswordFocused(false)} placeholder="••••••••" required />
+                    {passwordFocused && (
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                            <div className={`flex items-center gap-2 ${passwordRules.hasUpper ? 'text-green-600' : 'text-gray-500'}`}>
+                                <span className={`h-3 w-3 rounded-full border ${passwordRules.hasUpper ? 'bg-green-600 border-green-600' : 'border-gray-400'}`} />
+                                At least one uppercase letter
+                            </div>
+                            <div className={`flex items-center gap-2 ${passwordRules.hasLower ? 'text-green-600' : 'text-gray-500'}`}>
+                                <span className={`h-3 w-3 rounded-full border ${passwordRules.hasLower ? 'bg-green-600 border-green-600' : 'border-gray-400'}`} />
+                                At least one lowercase letter
+                            </div>
+                            <div className={`flex items-center gap-2 ${passwordRules.hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
+                                <span className={`h-3 w-3 rounded-full border ${passwordRules.hasNumber ? 'bg-green-600 border-green-600' : 'border-gray-400'}`} />
+                                At least one number
+                            </div>
+                            <div className={`flex items-center gap-2 ${passwordRules.hasSpecial ? 'text-green-600' : 'text-gray-500'}`}>
+                                <span className={`h-3 w-3 rounded-full border ${passwordRules.hasSpecial ? 'bg-green-600 border-green-600' : 'border-gray-400'}`} />
+                                At least one special character
+                            </div>
+                            <div className={`flex items-center gap-2 ${passwordRules.minLen ? 'text-green-600' : 'text-gray-500'}`}>
+                                <span className={`h-3 w-3 rounded-full border ${passwordRules.minLen ? 'bg-green-600 border-green-600' : 'border-gray-400'}`} />
+                                Minimum 8 characters
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <div>
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <div className="relative mt-2">
+                        <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            className="pr-10"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                        />
+                        <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                            {showConfirmPassword ? (
+                                <FaEyeSlash className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                            ) : (
+                                <FaEye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                            )}
+                        </button>
+                    </div>
                 </div>
                 <div className="flex justify-center">
                     <Button type="submit" disabled={submitting} className="w-fit mx-auto" variant="primary">

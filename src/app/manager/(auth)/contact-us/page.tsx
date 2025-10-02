@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { contactUs } from "@/lib/managerService";
+import { toast } from "@/hooks/use-toast";
 
 export default function ContactUsPage() {
     const [name, setName] = useState("");
@@ -13,12 +15,39 @@ export default function ContactUsPage() {
     const [email, setEmail] = useState("");
     const [query, setQuery] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
+        setError(null);
+
         try {
-            // TODO: wire up API
+            const response = await contactUs({
+                name,
+                designation,
+                companyName: company,
+                companyEmail: email,
+                query: query || "No specific query provided"
+            });
+
+            if (response.status) {
+                toast({
+                    title: "Success!",
+                    description: response.message,
+                });
+                // Reset form
+                setName("");
+                setCompany("");
+                setDesignation("");
+                setEmail("");
+                setQuery("");
+            } else {
+                setError(response.message || "Failed to submit your query. Please try again.");
+            }
+        } catch (err: any) {
+            console.error("Contact us error:", err);
+            setError(err.response?.data?.message || "Failed to submit your query. Please try again.");
         } finally {
             setSubmitting(false);
         }
@@ -30,6 +59,13 @@ export default function ContactUsPage() {
                 <h2 className="text-xl font-semibold">Get Unstuck in 15 Minutes</h2>
                 <p className="text-sm text-gray-500">Quick chat, big impact on your next hire</p>
             </div>
+
+            {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{error}</p>
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
