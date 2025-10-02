@@ -62,6 +62,7 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
     const [currentTime, setCurrentTime] = useState(0);
     const [showTimeline, setShowTimeline] = useState(false);
     const [hoveredMarker, setHoveredMarker] = useState<number | null>(null);
+    const [hasAutoJumped, setHasAutoJumped] = useState<Set<number>>(new Set()); // Track which questions we've auto-jumped
 
     const isDrive = isDriveUrl(normalizeVideoUrl);
 
@@ -88,13 +89,105 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         return set;
     }, [interviewEvents]);
 
-    // Calculate timeline markers from interview events
+    // Pre-calculate retake timestamps for smart jumping
+    const retakeTimestamps = React.useMemo(() => {
+        const retakeMap = new Map<number, number>(); // questionIndex -> retake timestamp
+        if (!interviewEvents.length) return retakeMap;
+
+        // Find the first question narration start as the reference point
+        const firstQuestionEvent = interviewEvents.find(ev => ev.event === 'question_narration_started');
+        const videoStartTs = firstQuestionEvent ? new Date(firstQuestionEvent.timestamp).getTime() : new Date(interviewEvents[0]?.timestamp).getTime();
+
+        for (const ev of interviewEvents) {
+            if (ev.event === 'answer_retake_started' && typeof ev.details?.questionIndex === 'number') {
+                const eventTime = new Date(ev.timestamp).getTime();
+                const relativeTime = (eventTime - videoStartTs) / 1000; // Convert to seconds
+                retakeMap.set(ev.details.questionIndex, relativeTime);
+            }
+        }
+        return retakeMap;
+    }, [interviewEvents]);
+
+    // Pre-calculate first attempt timestamps for comparison
+    const firstAttemptTimestamps = React.useMemo(() => {
+        const attemptMap = new Map<number, number>(); // questionIndex -> first attempt timestamp
+        if (!interviewEvents.length) return attemptMap;
+
+        // Find the first question narration start as the reference point
+        const firstQuestionEvent = interviewEvents.find(ev => ev.event === 'question_narration_started');
+        const videoStartTs = firstQuestionEvent ? new Date(firstQuestionEvent.timestamp).getTime() : new Date(interviewEvents[0]?.timestamp).getTime();
+
+        // Track which questions we've seen the first attempt for
+        const seenQuestions = new Set<number>();
+
+        for (const ev of interviewEvents) {
+            if (ev.event === 'user_response_started' && typeof ev.details?.questionIndex === 'number') {
+                const questionIndex = ev.details.questionIndex;
+
+                // Only store the FIRST user_response_started for each question
+                if (!seenQuestions.has(questionIndex)) {
+                    const eventTime = new Date(ev.timestamp).getTime();
+                    const relativeTime = (eventTime - videoStartTs) / 1000; // Convert to seconds
+                    attemptMap.set(questionIndex, relativeTime);
+                    seenQuestions.add(questionIndex);
+                }
+            }
+        }
+        return attemptMap;
+    }, [interviewEvents]);
+
+    // Auto-jump logic: automatically jump to retake when reaching first attempt
+    useEffect(() => {
+        if (isDrive || !videoRef.current) return; // Skip for Drive previews
+
+        const video = videoRef.current;
+
+        // Debug logging
+        if (currentTime > 0 && Math.floor(currentTime) % 5 === 0) { // Log every 5 seconds
+            console.log(`Current time: ${currentTime.toFixed(2)}s`);
+            console.log('First attempt timestamps:', Array.from(firstAttemptTimestamps.entries()));
+            console.log('Retake timestamps:', Array.from(retakeTimestamps.entries()));
+            console.log('Auto-jumped questions:', Array.from(hasAutoJumped));
+        }
+
+        // Check if we're at a first attempt timestamp that has a retake
+        for (const [questionIndex, firstAttemptTime] of firstAttemptTimestamps.entries()) {
+            // Check if this question has a retake and we haven't auto-jumped yet
+            if (retakeTimestamps.has(questionIndex) && !hasAutoJumped.has(questionIndex)) {
+                const retakeTime = retakeTimestamps.get(questionIndex)!;
+
+                // Check if current time is within 1 second of the first attempt start
+                if (Math.abs(currentTime - firstAttemptTime) <= 1.0) {
+                    console.log(`🚀 Auto-jumping from first attempt (${firstAttemptTime}s) to retake (${retakeTime}s) for question ${questionIndex + 1}`);
+                    console.log(`Current time: ${currentTime.toFixed(2)}s, First attempt: ${firstAttemptTime.toFixed(2)}s, Retake: ${retakeTime.toFixed(2)}s`);
+
+                    // Jump to retake timestamp
+                    video.currentTime = retakeTime;
+
+                    // Mark this question as auto-jumped to prevent loops
+                    setHasAutoJumped(prev => new Set(prev).add(questionIndex));
+
+                    break; // Only handle one jump at a time
+                }
+            }
+        }
+    }, [currentTime, firstAttemptTimestamps, retakeTimestamps, hasAutoJumped, isDrive]);
+
+    // Calculate timeline markers from interview events with smart jump priority
     const timelineMarkers = React.useMemo(() => {
         if (!interviewEvents.length || !computedDuration) return [];
 
         // Find the first question narration start as the reference point
         const firstQuestionEvent = interviewEvents.find(ev => ev.event === 'question_narration_started');
         const startTime = firstQuestionEvent ? new Date(firstQuestionEvent.timestamp).getTime() : new Date(interviewEvents[0]?.timestamp).getTime();
+
+        // Create a map to track which questions have retakes
+        const questionsWithRetakes = new Set<number>();
+        for (const ev of interviewEvents) {
+            if (ev.event === 'answer_retake_started' && typeof ev.details?.questionIndex === 'number') {
+                questionsWithRetakes.add(ev.details.questionIndex);
+            }
+        }
 
         return interviewEvents
             .filter(event =>
@@ -108,15 +201,23 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                 const relativeTime = (eventTime - startTime) / 1000; // Convert to seconds
                 const percentage = (relativeTime / computedDuration) * 100;
                 const isRetake = event.event === 'answer_retake_started' || retakeStartMs.has(eventTime);
+                const questionIndex = event.details?.questionIndex;
+
+                // Determine if this is the primary jump target for this question
+                const isPrimaryJumpTarget = isRetake ||
+                    (event.event === 'user_response_started' &&
+                        typeof questionIndex === 'number' &&
+                        !questionsWithRetakes.has(questionIndex));
 
                 return {
                     id: index,
                     time: relativeTime,
                     percentage: Math.max(0, Math.min(100, percentage)),
                     event: isRetake ? 'user_response_retake_started' : event.event,
-                    questionIndex: event.details?.questionIndex,
+                    questionIndex: questionIndex,
                     question: event.details?.question,
                     responseLength: event.details?.responseLength,
+                    isPrimaryJumpTarget,
                 };
             })
             .filter(marker => marker.percentage >= 0 && marker.percentage <= 100);
@@ -293,13 +394,38 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         setIsUsingFallback(false);
         setErrorMessage(null);
         lastTriedUrlRef.current = null;
+        setHasAutoJumped(new Set()); // Reset auto-jump tracking for new video
     }, [videoUrl]);
 
-    const handleTimelineClick = (time: number) => {
+    // Smart jump logic: jump to retake answer if available, otherwise first attempt
+    const getSmartJumpTime = (questionIndex: number): number | null => {
+        // First check if there's a retake timestamp for this question
+        if (retakeTimestamps.has(questionIndex)) {
+            return retakeTimestamps.get(questionIndex)!;
+        }
+        // If no retake, check for first attempt timestamp
+        if (firstAttemptTimestamps.has(questionIndex)) {
+            return firstAttemptTimestamps.get(questionIndex)!;
+        }
+        return null;
+    };
+
+    const handleTimelineClick = (time: number, questionIndex?: number) => {
         if (isDrive) {
             // Seeking not supported for Drive preview; ignore clicks
             return;
         }
+
+        // If questionIndex is provided, use smart jump logic
+        if (typeof questionIndex === 'number') {
+            const smartTime = getSmartJumpTime(questionIndex);
+            if (smartTime !== null && videoRef.current) {
+                videoRef.current.currentTime = smartTime;
+                return;
+            }
+        }
+
+        // Fallback to direct time jump
         if (videoRef.current) {
             videoRef.current.currentTime = time;
         }
@@ -347,12 +473,21 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
         // For native video, use currentTime for precise timing
         const visible = isDrive || (!isNaN(currentTime) && currentTime >= segment.start && currentTime <= segment.end);
         if (!visible) return null;
+
         const base = segment.question || (typeof segment.questionIndex === 'number' ? `Question ${segment.questionIndex + 1}` : 'Question');
-        const text = segment.hasRetake ? `[Retake] ${base}` : base;
+        const hasRetake = segment.hasRetake || (typeof segment.questionIndex === 'number' && retakeTimestamps.has(segment.questionIndex));
+        const text = hasRetake ? `[Retake Available] ${base}` : base;
+
         return (
             <div className="absolute inset-x-0 top-2 mx-auto max-w-3xl z-20">
-                <div className="px-3 py-2 bg-black/60 text-white text-xs sm:text-sm md:text-base rounded shadow">
+                <div className={`px-3 py-2 text-white text-xs sm:text-sm md:text-base rounded shadow ${hasRetake ? 'bg-orange-600/80' : 'bg-black/60'
+                    }`}>
                     {text}
+                    {hasRetake && (
+                        <div className="text-xs mt-1 text-yellow-200">
+                            Click timeline to jump to retake answer
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -430,12 +565,12 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                 percentageWidth: pWidth,
                 questionIndex: qi,
                 question: entry.question || qe?.question,
-                hasRetake: retakeQuestions.has(qi),
+                hasRetake: retakeQuestions.has(qi) || retakeTimestamps.has(qi),
             });
         });
 
         return result;
-    }, [interviewEvents, computedDuration, duration, questionEvaluations]);
+    }, [interviewEvents, computedDuration, duration, questionEvaluations, retakeTimestamps]);
 
     // Build retake segments from retake start/end events
     const retakeSegments = React.useMemo(() => {
@@ -547,6 +682,16 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                 </div>
             )}
 
+            {/* Auto-jump indicator */}
+            {/* {hasAutoJumped.size > 0 && (
+                <div className="absolute top-2 right-2 p-2 bg-green-100 text-green-800 border border-green-200 rounded text-xs z-30">
+                    <div className="flex items-center gap-1">
+                        <span>⚡</span>
+                        <span>Auto-jumped {hasAutoJumped.size} retake{hasAutoJumped.size > 1 ? 's' : ''}</span>
+                    </div>
+                </div>
+            )} */}
+
             {/* Timeline Controls */}
             {interviewEvents.length > 0 && (
                 <div className="mt-2">
@@ -598,9 +743,12 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                 {timelineMarkers.map((marker) => (
                                     <div
                                         key={marker.id}
-                                        className={`absolute top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full cursor-pointer transition-all hover:scale-125 ${getMarkerColor(marker.event)}`}
+                                        className={`absolute top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full cursor-pointer transition-all hover:scale-125 ${marker.isPrimaryJumpTarget
+                                            ? 'ring-2 ring-white shadow-lg'
+                                            : ''
+                                            } ${getMarkerColor(marker.event)}`}
                                         style={{ left: `${marker.percentage}%` }}
-                                        onClick={() => handleTimelineClick(marker.time)}
+                                        onClick={() => handleTimelineClick(marker.time, marker.questionIndex)}
                                         onMouseEnter={() => setHoveredMarker(marker.id)}
                                         onMouseLeave={() => setHoveredMarker(null)}
                                     >
@@ -608,6 +756,11 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                         {hoveredMarker === marker.id && (
                                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-pre-line z-10">
                                                 {getMarkerTooltip(marker)}
+                                                {marker.isPrimaryJumpTarget && (
+                                                    <div className="text-yellow-300 mt-1">
+                                                        ⭐ Primary Jump Target
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -615,7 +768,7 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                             </div>
 
                             {/* Timeline Legend */}
-                            <div className="flex items-center gap-4 mt-2 text-xs">
+                            <div className="flex items-center gap-4 mt-2 text-xs flex-wrap">
                                 <div className="flex items-center gap-1">
                                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                     <span>Question Start</span>
@@ -623,6 +776,10 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                 <div className="flex items-center gap-1">
                                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                     <span>Answer Start</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                    <span>Retake Start</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -636,6 +793,10 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                     <div className="w-3 h-2 bg-orange-300 border border-orange-500"></div>
                                     <span>Retake Window</span>
                                 </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-orange-500 rounded-full ring-1 ring-yellow-400"></div>
+                                    <span>⭐ Primary Jump Target</span>
+                                </div>
                             </div>
 
                             {/* Event List */}
@@ -644,12 +805,14 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                     {timelineMarkers.map((marker, index) => (
                                         <div
                                             key={marker.id}
-                                            className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded cursor-pointer text-xs"
-                                            onClick={() => handleTimelineClick(marker.time)}
+                                            className={`flex items-center gap-2 p-1 hover:bg-gray-100 rounded cursor-pointer text-xs ${marker.isPrimaryJumpTarget ? 'bg-yellow-50 border border-yellow-200' : ''
+                                                }`}
+                                            onClick={() => handleTimelineClick(marker.time, marker.questionIndex)}
                                         >
-                                            <div className={`w-2 h-2 rounded-full ${getMarkerColor(marker.event)}`}></div>
+                                            <div className={`w-2 h-2 rounded-full ${getMarkerColor(marker.event)} ${marker.isPrimaryJumpTarget ? 'ring-1 ring-yellow-400' : ''
+                                                }`}></div>
                                             <span className="text-gray-600">{formatTime(marker.time)}</span>
-                                            <span className="text-gray-800">
+                                            <span className="text-gray-800 flex items-center gap-1">
                                                 {marker.event === 'question_narration_started' &&
                                                     (typeof marker.questionIndex === 'number'
                                                         ? `Q${marker.questionIndex + 1} Started`
@@ -657,6 +820,9 @@ const VideoPlayerWithTimeline: React.FC<VideoPlayerWithTimelineProps> = ({
                                                 {marker.event === 'user_response_started' && 'Answer Started'}
                                                 {marker.event === 'user_response_retake_started' && 'Answer Retake Started'}
                                                 {marker.event === 'user_response_ended' && `Answer Ended (${marker.responseLength} chars)`}
+                                                {marker.isPrimaryJumpTarget && (
+                                                    <span className="text-yellow-600 text-xs">⭐</span>
+                                                )}
                                             </span>
                                         </div>
                                     ))}
