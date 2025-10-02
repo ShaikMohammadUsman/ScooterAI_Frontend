@@ -60,6 +60,10 @@
     --color-tint-2: #FC8861;
     --color-tint-3: #C9BFFF;
     --color-tint-4: #BADD26;
+
+    /* gradient colors */
+    --color-grad-1: #FC8861;
+    --color-grad-2: #FFCC00;
 }
 
 @theme inline {
