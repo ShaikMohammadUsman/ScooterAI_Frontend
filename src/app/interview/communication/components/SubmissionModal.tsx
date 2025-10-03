@@ -175,7 +175,7 @@ export function SubmissionModal({
                                         initial={{ width: 0 }}
                                         animate={{ width: `${uploadProgress}%` }}
                                         transition={{ duration: 0.5, ease: "easeOut" }}
-                                        className="h-full bg-blue-600 rounded-full"
+                                        className="h-full bg-gradient-to-r from-grad-1 to-grad-2 rounded-full"
                                     />
 
                                     {/* Moving Scooter Icon */}
