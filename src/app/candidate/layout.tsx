@@ -1,31 +1,63 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import ScooterHeader from "@/components/ScooterHeader";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import { clearCandidateAuth } from "@/lib/candidateService";
+import { clearCandidateAuth, isCandidateAccessTokenValid } from "@/lib/candidateService";
 import { useRouter } from "next/navigation";
 
 export default function CandidateLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    useEffect(() => {
+        // Check authentication status on mount and when it changes
+        const checkAuth = () => {
+            setIsAuthenticated(isCandidateAccessTokenValid());
+        };
+
+        checkAuth();
+
+        // Listen for storage changes (e.g., when user logs in/out in another tab)
+        const handleStorageChange = () => {
+            checkAuth();
+        };
+
+        // Listen for custom auth change events (e.g., when user logs in/out in same tab)
+        const handleAuthChange = (event: CustomEvent) => {
+            setIsAuthenticated(event.detail.authenticated);
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('candidateAuthChanged', handleAuthChange as EventListener);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('candidateAuthChanged', handleAuthChange as EventListener);
+        };
+    }, []);
+
     const nav = (
         <nav className="flex items-center gap-2">
             {/* <Link href="/candidate/dashboard"><Button variant="ghost" className="px-3">Dashboard</Button></Link>
             <Link href="/candidate/applications"><Button variant="ghost" className="px-3">Applications</Button></Link>
             <Link href="/candidate/profile"><Button variant="ghost" className="px-3">Profile</Button></Link> */}
-            <Button
-                variant="ghost"
-                className="px-3 text-red-600 hover:text-red-700"
-                onClick={() => {
-                    clearCandidateAuth();
-                    router.replace("/candidate/login");
-                }}
-                title="Logout"
-            >
-                <LogOut className="h-4 w-4" />
-            </Button>
+            {isAuthenticated && (
+                <Button
+                    variant="ghost"
+                    className="px-3 text-red-600 hover:text-red-700"
+                    onClick={() => {
+                        clearCandidateAuth();
+                        setIsAuthenticated(false); // Update state immediately
+                        router.replace("/candidate/login");
+                    }}
+                    title="Logout"
+                >
+                    <LogOut className="h-4 w-4" />
+                </Button>
+            )}
         </nav>
     );
 

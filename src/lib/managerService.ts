@@ -262,9 +262,17 @@ export function getStoredManagerAuth(): HiringManagerAuthResponse | null {
 function setStoredManagerAuth(payload: HiringManagerAuthResponse | null): void {
     if (!payload) {
         localStorage.removeItem(MANAGER_AUTH_STORAGE_KEY);
+        // Dispatch custom event for auth state change
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('managerAuthChanged', { detail: { authenticated: false } }));
+        }
         return;
     }
     localStorage.setItem(MANAGER_AUTH_STORAGE_KEY, JSON.stringify(payload));
+    // Dispatch custom event for auth state change
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('managerAuthChanged', { detail: { authenticated: true } }));
+    }
 }
 
 export function getAccessToken(): string {
@@ -298,6 +306,18 @@ export function isAccessTokenValid(): boolean {
 const managerApi = axios.create({ baseURL: BASE_URL });
 
 managerApi.interceptors.request.use((config) => {
+    // Check if we have a valid token before making any request
+    if (!isAccessTokenValid()) {
+        // Clear any stored auth data
+        clearManagerAuth();
+        // Redirect to login page
+        if (typeof window !== 'undefined') {
+            window.location.href = '/manager/login';
+        }
+        // Reject the request
+        return Promise.reject(new Error('No valid authentication token found. Redirecting to login.'));
+    }
+
     const token = getAccessToken();
     if (token) {
         config.headers = config.headers || {};
@@ -361,6 +381,10 @@ managerApi.interceptors.response.use(
                 processQueue(refreshErr, null);
                 // clear stored auth on failure
                 clearManagerAuth();
+                // Redirect to login page when refresh fails
+                if (typeof window !== 'undefined') {
+                    window.location.href = '/manager/login';
+                }
                 return Promise.reject(refreshErr);
             } finally {
                 isRefreshing = false;
