@@ -2,7 +2,7 @@ import useResponsiveBarCount from "@/hooks/useBarCounts";
 import { useMemo } from "react";
 
 interface WavyAnimationProps {
-    showAnimation: boolean;
+    showAnimation?: boolean;
 }
 
 export default function WavyAnimation({ showAnimation = true }: WavyAnimationProps) {
