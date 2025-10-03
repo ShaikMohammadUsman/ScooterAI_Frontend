@@ -96,7 +96,7 @@ export default function ExperienceSkills({ form, onBack, onNext, submitting }: P
                                         <SelectValue placeholder="Select work location" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="in_person">In-Person</SelectItem>
+                                        <SelectItem value="inPerson">In-Person</SelectItem>
                                         <SelectItem value="hybrid">Hybrid</SelectItem>
                                         <SelectItem value="remote">Remote</SelectItem>
                                     </SelectContent>

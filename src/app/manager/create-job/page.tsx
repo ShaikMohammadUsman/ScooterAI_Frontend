@@ -29,7 +29,7 @@ const schema = z.object({
     // Step 2 - All required except mustHaveSkills and timezone
     yearsOfExperience: z.string().min(1, "Years of experience is required"),
     mustHaveSkills: z.array(z.string()).optional().default([]),
-    workLocationType: z.enum(["in_person", "hybrid", "remote"], { required_error: "Select a work location type" }),
+    workLocationType: z.enum(["inPerson", "hybrid", "remote"], { required_error: "Select a work location type" }),
     location: z.string().min(1, "Location is required"),
     timezone: z.string().optional().default("IST"),
 
