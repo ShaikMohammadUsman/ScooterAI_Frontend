@@ -3,26 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     FaMicrophone,
-    FaVideo,
-    FaDesktop,
-    FaUsers,
-    FaEllipsisV,
-    FaSignOutAlt,
-    FaStickyNote,
-    FaComments,
-    FaSignal
+    FaStopCircle
 } from 'react-icons/fa';
-import {
-    MdOutlineScreenShare,
-    MdOutlineMoreVert,
-    MdOutlineChat,
-    MdOutlineNotes,
-    MdOutlineSignalCellular4Bar
-} from 'react-icons/md';
-import {
-    HiOutlineSparkles,
-    HiOutlineDocument
-} from 'react-icons/hi';
+
 
 interface InterviewControlsProps {
     isListening: boolean;
@@ -59,11 +42,11 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
 }) => {
     return (
         <TooltipProvider>
-            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-                <div className="flex items-center gap-3 px-6 py-3 bg-gray-900/95 backdrop-blur-sm rounded-full border border-gray-700 shadow-2xl">
+            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 sm:mb-8">
+                <div className="flex items-center gap-6 sm:gap-10 px-6 py-3  rounded-full">
 
                     {/* Chat Button */}
-                    <Tooltip>
+                    {/* <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 variant="ghost"
@@ -78,114 +61,112 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                         <TooltipContent>
                             <p>Toggle chat panel</p>
                         </TooltipContent>
+                    </Tooltip> */}
+                    {/* Retake Answer Button - Always visible, disabled until active */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 text-white shadow-md shadow-cta-primary ${recognizedText && !isListening && retakeCount === 0
+                                    ? 'bg-cta-primary hover:bg-cta-secondary hover:text-cta-primary border-cta-outline'
+                                    : 'bg-gray-600 border-gray-600 opacity-50 cursor-not-allowed'
+                                    }`}
+                                onClick={onRetakeAnswer}
+                                disabled={disabled || !(recognizedText && !isListening && retakeCount === 0)}
+                            >
+                                <svg className="w-5 h-5 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Retake answer</p>
+                        </TooltipContent>
                     </Tooltip>
-                    {/* Microphone Button - Only show when not listening and no recognized text */}
-                    {!isListening && !recognizedText && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="relative">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="w-14 h-14 rounded-full border-2 bg-gray-800 hover:bg-gray-700 border-gray-600 text-white"
-                                        onClick={onMicToggle}
-                                        disabled={disabled}
-                                    >
-                                        <FaMicrophone className="w-6 h-6" />
-                                    </Button>
-                                    {/* User's turn to speak tooltip - shows when micEnabled but not listening */}
-                                    {micEnabled && !isListening && !recognizedText && (
-                                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20">
-                                            <div className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
-                                                🎤 Click to start speaking
-                                            </div>
-                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-600"></div>
-                                        </div>
+
+                    {/* Microphone Button - Always visible, changes state based on listening */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="relative">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`relative w-14 h-14 sm:w-20 sm:h-20 rounded-full border-2 text-white shadow-lg shadow-cta-primary ${isListening
+                                        ? 'bg-muted hover:bg-muted text-cta-secondary-text'
+                                        : 'bg-cta-outline hover:bg-cta-secondary hover:text-cta-primary border-cta-outline'
+                                        }`}
+                                    onClick={onMicToggle}
+                                    disabled={disabled || !!(recognizedText && !isListening && retakeCount === 0)}
+                                >
+                                    {
+                                        isListening ? (
+                                            <FaStopCircle className="w-6 h-6 sm:w-12 sm:h-12" />
+                                        ) : (
+                                            <FaMicrophone className="w-6 h-6 sm:w-12 sm:h-12" />
+                                        )
+                                    }
+
+                                    {/* Ripple effect when listening */}
+                                    {isListening && (
+                                        <>
+                                            <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-grad-1 animate-ping opacity-75"></div>
+                                            <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-grad-2 animate-ping opacity-50" style={{ animationDelay: '0.5s' }}></div>
+                                        </>
                                     )}
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Start recording</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
+                                </Button>
 
-                    {/* Stop Recording Button - Show when listening */}
-                    {isListening && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="relative overflow-visible">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="w-14 h-14 rounded-full border-2 bg-red-600 hover:bg-red-700 border-red-500 text-white animate-pulse relative z-10"
-                                        onClick={onMicToggle}
-                                        disabled={disabled}
-                                    >
-                                        <FaMicrophone className="w-6 h-6" />
-                                    </Button>
-                                    {/* Ripple effect */}
-                                    <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-red-400 animate-ping opacity-75"></div>
-                                    <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-red-300 animate-ping opacity-50" style={{ animationDelay: '0.5s' }}></div>
 
-                                    {/* Stop listening tooltip - shows when user is currently listening */}
-                                    <div className="absolute -top-20 left-1/2 min-w-36 transform -translate-x-1/2 z-20">
-                                        <div className="bg-orange-500 text-white text-center px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
-                                            🛑 Click to stop recording and submit
+
+
+                                {/* User's turn to speak tooltip - shows when micEnabled but not listening */}
+                                {micEnabled && !isListening && !recognizedText && (
+                                    <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20 w-fit">
+                                        <div className="min-w-56 max-w-80 bg-muted text-cta-secondary-text px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
+                                            Press the START RECORDING button to record you answer
                                         </div>
-                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-orange-500"></div>
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-muted-foreground"></div>
                                     </div>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Stop recording</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
+                                )}
 
-                    {/* Submit Answer Button - Show when there's recognized text and not listening */}
-                    {recognizedText && !isListening && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="w-14 h-14 rounded-full border-2 bg-green-600 hover:bg-green-700 border-green-500 text-white"
-                                    onClick={onSubmitAnswer}
-                                    disabled={disabled}
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Submit answer</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
+                                {/* Stop listening tooltip - shows when user is currently listening */}
+                                {isListening && (
+                                    <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20 w-fit">
+                                        <div className="min-w-56 max-w-80 bg-muted text-cta-secondary-text text-center px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
+                                            Once you are done with your answer, click the STOP RECORDING button to stop the recording.
+                                        </div>
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-muted-foreground"></div>
+                                    </div>
+                                )}
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{isListening ? 'Stop recording' : 'Start recording'}</p>
+                        </TooltipContent>
+                    </Tooltip>
 
-                    {/* Retake Answer Button - Show when user has recorded an answer and can retake */}
-                    {recognizedText && !isListening && retakeCount === 0 && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="w-14 h-14 rounded-full border-2 bg-yellow-400 hover:bg-yellow-500 border-yellow-400 text-white"
-                                    onClick={onRetakeAnswer}
-                                    disabled={disabled}
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Retake answer</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
+                    {/* Submit Answer Button - Always visible, disabled until active */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 text-white shadow-md shadow-cta-primary ${recognizedText && !isListening
+                                    ? 'bg-cta-primary hover:bg-cta-secondary hover:text-cta-primary border-cta-outline'
+                                    : 'bg-gray-600 border-gray-600 opacity-50 cursor-not-allowed'
+                                    }`}
+                                onClick={onSubmitAnswer}
+                                disabled={disabled || !(recognizedText && !isListening)}
+                            >
+                                <svg className="w-5 h-5 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Submit answer</p>
+                        </TooltipContent>
+                    </Tooltip>
 
                     {/* Camera Button */}
                     {/* <Tooltip>
@@ -217,7 +198,7 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
 
 
                     {/* Leave Button */}
-                    <Tooltip>
+                    {/* <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 variant="destructive"
@@ -238,7 +219,7 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                         <TooltipContent>
                             <p>{isLeaving ? "Saving progress..." : "Leave interview"}</p>
                         </TooltipContent>
-                    </Tooltip>
+                    </Tooltip> */}
                 </div>
             </div>
         </TooltipProvider>

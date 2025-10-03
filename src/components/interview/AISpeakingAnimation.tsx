@@ -81,7 +81,8 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
                             exit={{ opacity: 0 }}
                             className="flex justify-center"
                         >
-                            <div className="h-10 w-10 mb-2 bg-gray-500 rounded-full border border-l-0 animate-spin"></div>
+                            <p className='text-bg-secondary-4 bg-muted-foreground p-2 rounded-lg'>Processing...</p>
+                            {/* <div className="h-10 w-10 mb-2 bg-gray-500 rounded-full border border-l-0 animate-spin"></div> */}
                         </motion.div>
                     )}
                 </motion.div>

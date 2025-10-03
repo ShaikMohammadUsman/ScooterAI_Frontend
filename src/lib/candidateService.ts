@@ -222,6 +222,7 @@ export interface VideoInterviewResponse {
     session_id: string;
     question: string;
     step: string;
+    message?: string;
 }
 
 // Auth helpers
@@ -422,6 +423,52 @@ export async function evaluateAudioInterview(data: EvaluateAudioInterviewRequest
 
 export async function videoInterview(data: VideoInterviewRequest): Promise<VideoInterviewResponse> {
     const res = await candidateApi.post(`/video-interview/`, data);
+    return res.data;
+}
+
+// New video interview endpoints
+export async function startVideoInterview(applicationId: string): Promise<VideoInterviewResponse> {
+    const formData = new FormData();
+    formData.append('application_id', applicationId);
+    formData.append('flag', 'start');
+    
+    const res = await candidateApi.post(`/video-interview/`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return res.data;
+}
+
+export async function continueVideoInterview(sessionId: string, userAnswer: string): Promise<VideoInterviewResponse> {
+    const formData = new FormData();
+    formData.append('session_id', sessionId);
+    formData.append('user_answer', userAnswer);
+    
+    const res = await candidateApi.post(`/video-interview/`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return res.data;
+}
+
+// Video Proctoring Logs
+export interface UpdateVideoProctoringLogsRequest {
+    user_id: string;
+    video_url: string;
+    video_proctoring_logs: Record<string, any>;
+}
+
+export interface UpdateVideoProctoringLogsResponse {
+    status: boolean;
+    message: string;
+}
+
+export async function updateVideoProctoringLogs(
+    data: UpdateVideoProctoringLogsRequest
+): Promise<UpdateVideoProctoringLogsResponse> {
+    const res = await candidateApi.post(`/update-video-proctoring-logs/`, data);
     return res.data;
 }
 

@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserVideo } from './components/UserVideo';
-import { startConversationalInterview, continueConversationalInterview, videoInterviewLogin, updateVideoProctoringLogs } from '@/lib/interviewService';
+import { startVideoInterview, continueVideoInterview, updateVideoProctoringLogs } from '@/lib/candidateService';
 import { textInAudioOut } from '@/lib/voiceBot';
 import { AzureChunkedUploader, createChunkedUploader } from '@/lib/azureChunkedUploader';
 
@@ -42,8 +42,6 @@ import BrowserWarningModal from "@/components/interview/BrowserWarningModal";
 // Azure Speech Services configuration
 const SPEECH_KEY = process.env.NEXT_PUBLIC_AZURE_API_KEY;
 const SPEECH_REGION = process.env.NEXT_PUBLIC_AZURE_REGION;
-// Dev/preview flag to bypass verification without removing functionality
-const BYPASS_VIDEO_VERIFICATION = process?.env?.NEXT_PUBLIC_BYPASS_VIDEO_VERIFICATION === 'true';
 
 // Utility function to get the best supported video format
 const getBestSupportedVideoFormat = () => {
@@ -197,13 +195,9 @@ function CommunicationInterview() {
     };
 
 
-    // Verification states
-    const [showVerification, setShowVerification] = useState(false);
+    // Application ID from query params
+    const [applicationId, setApplicationId] = useState<string | null>(null);
     const [showUnauthorized, setShowUnauthorized] = useState(false);
-    const [verificationCode, setVerificationCode] = useState("");
-    const [email, setEmail] = useState("");
-    const [isVerifying, setIsVerifying] = useState(false);
-    const [verificationError, setVerificationError] = useState<string | null>(null);
     const [verifiedUser, setVerifiedUser] = useState<{ user_id: string; full_name: string; resume_status: boolean; reset_count: number } | null>(null);
     const [jobTitle, setJobTitle] = useState<string | null>(null);
     const [jobDescription, setJobDescription] = useState<string | null>(null);
@@ -241,28 +235,20 @@ function CommunicationInterview() {
     // const { isVideoOn, toggleVideo } = useMediaStream();
     const [showVideo, setShowVideo] = useState(true);
 
-    // Check for verification parameter on mount (with optional bypass)
+    // Check for application_id parameter on mount
     useEffect(() => {
-        // If bypass flag is enabled, set a dummy verified user and skip verification UI
-        if (BYPASS_VIDEO_VERIFICATION) {
-            const userId = localStorage.getItem('scooterUserId');
-            setVerifiedUser({ user_id: userId || '', full_name: 'Developer', resume_status: true, reset_count: 0 });
-            setShowVerification(false);
-            setShowUnauthorized(false);
-            // Trigger dark theme transition for consistency
-            setTimeout(() => setIsDarkTheme(true), 100);
-            return;
-        }
+        const appId = searchParams.get('application_id');
 
-        const verifyCode = searchParams.get('verify');
-
-        if (!verifyCode) {
-            setShowUnauthorized(true);
-        } else if (!/^[A-Za-z0-9]{5}$/.test(verifyCode)) {
+        if (!appId) {
             setShowUnauthorized(true);
         } else {
-            setVerificationCode(verifyCode);
-            setShowVerification(true);
+            // Set application ID and verified user, skip verification UI
+            setApplicationId(appId);
+            const userId = localStorage.getItem('scooterUserId');
+            setVerifiedUser({ user_id: userId || '', full_name: 'Candidate', resume_status: true, reset_count: 0 });
+            setShowUnauthorized(false);
+            // Trigger dark theme transition for consistency
+            setTimeout(() => setIsDarkTheme(false), 100);
         }
     }, [searchParams]);
 
@@ -318,63 +304,6 @@ function CommunicationInterview() {
         // Track silently without showing a toast to avoid UI interruptions
     };
 
-    // Handle verification
-    const handleVerification = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!email.trim() || !verificationCode.trim()) {
-            setVerificationError("Please enter both email and verification code");
-            return;
-        }
-
-        setIsVerifying(true);
-        setVerificationError(null);
-
-        try {
-            const response = await videoInterviewLogin({
-                email: email.trim(),
-                code: verificationCode.trim()
-            });
-
-            if (response.status) {
-                setVerifiedUser({
-                    user_id: response.user_id!,
-                    full_name: response.full_name!,
-                    resume_status: response.resume_status || false,
-                    reset_count: response.reset_count || 0
-                });
-                setJobTitle(response.job_title || null);
-                setJobDescription(response.job_description || null);
-                setShowVerification(false);
-
-                // Trigger dark theme transition after successful verification
-                setTimeout(() => {
-                    setIsDarkTheme(true);
-                }, 500); // Small delay for smooth transition
-
-                // Check if resume needs to be updated
-                if (!response.resume_status) {
-                    setShowResumeUploadModal(true);
-                    toast({
-                        title: "Resume Update Required",
-                        description: "Please upload your latest resume to continue with the interview.",
-                        variant: "warning"
-                    });
-                } else {
-                    toast({
-                        title: "Verification successful!",
-                        description: `Welcome, ${response.full_name}! You can now proceed with the interview.`,
-                        variant: "success"
-                    });
-                }
-            } else {
-                setVerificationError(response.message);
-            }
-        } catch (err: any) {
-            setVerificationError(err.message || "Verification failed");
-        } finally {
-            setIsVerifying(false);
-        }
-    };
 
     // Start interview with camera check
     const handleStart = async (skipPermissionCheck = false) => {
@@ -931,11 +860,13 @@ function CommunicationInterview() {
             // Start video recording
             await startRecording();
 
-            const res = await startConversationalInterview({
-                role: "communication",
-                user_id: userId,
-                flag: "start"
-            });
+            if (!applicationId) {
+                setError("Application ID not found");
+                setLoading(false);
+                return;
+            }
+
+            const res = await startVideoInterview(applicationId);
 
             setSessionId(res.session_id);
             if (res.question) {
@@ -1143,10 +1074,7 @@ function CommunicationInterview() {
                 setUploadProgress(0);
             }
 
-            const res = await continueConversationalInterview({
-                session_id: sessionId,
-                user_answer: textToSend
-            });
+            const res = await continueVideoInterview(sessionId, textToSend);
 
             // If server signals overall completion now, proceed to processing and upload flow
             if (res.step === "completed") {
@@ -1220,7 +1148,7 @@ function CommunicationInterview() {
                 // Add completion message to chat
                 setMessages((prev) => [...prev, {
                     own: false,
-                    text: res.message || "Thank you for completing the interview. Your responses have been recorded.",
+                    text: (res as any).message || "Thank you for completing the interview. Your responses have been recorded.",
                     icon: <FaUserTie className="text-primary w-6 h-6" />
                 }]);
 
@@ -1442,7 +1370,7 @@ function CommunicationInterview() {
             addInterviewEvent('final_submission_started', { timestamp: new Date() });
 
             const proctoringLogs = {
-                email: email || localStorage.getItem('userEmail') || "unknown@example.com",
+                email: localStorage.getItem('userEmail') || "",
                 "screen time": duration.toString(),
                 flags: proctoringData?.violations || [],
                 tab_switches: proctoringData?.tabSwitchCount || 0,
@@ -1457,11 +1385,13 @@ function CommunicationInterview() {
                 submission_timestamp: new Date().toISOString()
             };
 
-            await updateVideoProctoringLogs({
-                user_id: userId,
-                video_url: videoUrl,
-                video_proctoring_logs: proctoringLogs
-            });
+            if (applicationId) {
+                await updateVideoProctoringLogs({
+                    user_id: applicationId,
+                    video_url: videoUrl,
+                    video_proctoring_logs: proctoringLogs
+                });
+            }
 
             addInterviewEvent('proctoring_logs_uploaded', { timestamp: new Date() });
             console.log("Video proctoring logs uploaded successfully");
@@ -1564,27 +1494,11 @@ function CommunicationInterview() {
     };
 
     return (
-        <div className={`h-screen flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme ? 'bg-gray-900' : 'bg-background'
+        <div className={`h-screen flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme ? 'bg-gray-900' : 'bg-bg-main'
             }`}>
             {/* Header */}
             <div className="flex items-center gap-4 px-6 py-4 sticky top-0 z-10">
-                <div className="w-12 h-12">
-                    <img
-                        src="/assets/images/scooterLogo.png"
-                        alt="Scooter AI"
-                        className="w-full h-full object-contain"
-                    />
-                </div>
-                <div className="flex-1">
-                    <div className={`font-bold text-lg tracking-tight transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'
-                        }`}>
-                        Sales Skills Assessment
-                    </div>
-                    <div className={`text-xs transition-colors duration-1000 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                        Video Assessment Simulation
-                    </div>
-                </div>
+
                 {isProcessingFinalResponse && (
                     <div className={`flex items-center gap-2 px-3 py-1 rounded-full border transition-all duration-1000 ${isDarkTheme
                         ? 'bg-blue-900/50 border-blue-500/30'
@@ -1634,132 +1548,6 @@ function CommunicationInterview() {
                 </div>
             )}
 
-            {/* Verification Screen */}
-            {showVerification && !verifiedUser && (
-                <div className="flex-1 flex flex-col lg:flex-row bg-gradient-to-br from-white via-slate-50 to-white">
-                    {/* Instructions Section */}
-                    <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
-                        <div className="max-w-lg mx-auto lg:mx-0">
-                            <div className="mb-8">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-6">
-                                    <FaShieldAlt className="w-8 h-8 text-blue-600" />
-                                </div>
-                                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-                                    Verify Your Interview Access
-                                </h1>
-                                <p className="text-lg text-gray-600 leading-relaxed">
-                                    Please verify your identity to access your scheduled communication skills interview.
-                                </p>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                                    <div className="flex-shrink-0 mt-1">
-                                        <FaEnvelope className="w-5 h-5 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-blue-900 mb-1">Email Verification</h3>
-                                        <p className="text-sm text-blue-700">
-                                            Enter the email address you used when scheduling this interview.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start gap-4 p-4 bg-green-50 rounded-xl border border-green-200">
-                                    <div className="flex-shrink-0 mt-1">
-                                        <FaKey className="w-5 h-5 text-green-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-green-900 mb-1">Verification Code</h3>
-                                        <p className="text-sm text-green-700">
-                                            Your 5-digit verification code has been pre-filled. This ensures secure access to your interview.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
-                                    <h3 className="font-semibold text-amber-900 mb-2">What to Expect</h3>
-                                    <ul className="text-sm text-amber-700 space-y-1">
-                                        <li>• 2-3 short communication questions</li>
-                                        <li>• Video recording for evaluation</li>
-                                        <li>• Takes approximately 5-10 minutes</li>
-                                        {/* <li>• You can re-record if needed</li> */}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Verification Form */}
-                    <div className="lg:w-1/2 p-8 lg:p-12 flex items-center justify-center">
-                        <Card className="w-full max-w-md shadow-xl border-0 bg-white/95 backdrop-blur-sm">
-                            <CardHeader className="text-center pb-6">
-                                <CardTitle className="text-2xl font-bold text-gray-900">
-                                    Enter Your Details
-                                </CardTitle>
-                                <p className="text-gray-600">
-                                    Verify your identity to proceed with the interview
-                                </p>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={handleVerification} className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                                            Email Address
-                                        </Label>
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="your.email@example.com"
-                                            className="h-12 text-base"
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="code" className="text-sm font-medium text-gray-700">
-                                            Verification Code
-                                        </Label>
-                                        <Input
-                                            id="code"
-                                            type="text"
-                                            value={verificationCode}
-                                            onChange={(e) => setVerificationCode(e.target.value)}
-                                            placeholder="XXXXX"
-                                            className="h-12 text-base font-mono text-center tracking-widest"
-                                            maxLength={5}
-                                            required
-                                        />
-                                    </div>
-
-                                    {verificationError && (
-                                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                                            <p className="text-sm text-red-700">{verificationError}</p>
-                                        </div>
-                                    )}
-
-                                    <Button
-                                        type="submit"
-                                        disabled={isVerifying}
-                                        className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90"
-                                    >
-                                        {isVerifying ? (
-                                            <div className="flex items-center gap-2">
-                                                <LoadingDots bg="white" />
-                                                <span>Verifying...</span>
-                                            </div>
-                                        ) : (
-                                            "Verify & Continue"
-                                        )}
-                                    </Button>
-                                </form>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            )}
 
             {/* Main Interview Content - Only show if verified and resume is up to date */}
             {verifiedUser && verifiedUser.resume_status && !showCompletionScreen && (
@@ -1996,7 +1784,9 @@ function CommunicationInterview() {
                                                 // Proceed with the interview (skip permission check since already granted)
                                                 handleStart(true);
                                             }}
-                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                            variant="primary"
+                                            // size="sm"
+                                            className="w-full sm:w-auto"
                                         >
                                             Continue to Interview
                                         </Button>
@@ -2004,18 +1794,21 @@ function CommunicationInterview() {
                                         <Button
                                             onClick={checkAllPermissions}
                                             disabled={loading}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                            variant="primary"
+                                            // size="sm"
+                                            className="w-full sm:w-auto"
                                         >
                                             {loading ? <LoadingDots bg="white" /> : 'Retry Permission Check'}
                                         </Button>
                                     )}
                                     <Button
-                                        variant="outline"
+                                        variant="secondary"
                                         onClick={() => {
                                             setShowPermissionChecker(false);
                                             setShowWelcomeScreen(true);
                                         }}
-                                        className="border-gray-300 dark:border-gray-600"
+                                        // size="sm"
+                                        className="w-full sm:w-auto"
                                     >
                                         Back to Welcome
                                     </Button>
@@ -2024,11 +1817,18 @@ function CommunicationInterview() {
                         </div>
                     ) : (
                         <>
-                            {/* Main Content - AI Speaking Animation and User Video */}
+                            {/* Main Content - User Video and AI Speaking Animation */}
                             <div className={`flex-1 overflow-hidden transition-all duration-1000 ease-in-out pb-24 ${isDarkTheme
                                 ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
-                                : 'bg-gradient-to-br from-white via-slate-50 to-white'
+                                : 'bg-gradient-to-b from-bg-main  to-bg-secondary-4'
                                 }`}>
+                                {/* User Video - Centered above AI animation */}
+                                {started && (
+                                    <div className="flex justify-center pb-6 pt-4">
+                                        <UserVideo showVideo={showVideo} />
+                                    </div>
+                                )}
+
                                 {/* AI Speaking Animation */}
                                 <div className="flex-1">
                                     <AISpeakingAnimation
@@ -2040,21 +1840,7 @@ function CommunicationInterview() {
                                         interviewType='video'
                                     />
                                 </div>
-
-                                {/* User Video - Positioned below AI animation on smaller screens */}
-                                {started && (
-                                    <div className="md:hidden flex justify-center pb-4">
-                                        <UserVideo showVideo={showVideo} />
-                                    </div>
-                                )}
                             </div>
-
-                            {/* Floating Video Component - Only show on larger screens */}
-                            {started && (
-                                <div className="hidden md:block">
-                                    <UserVideo showVideo={showVideo} />
-                                </div>
-                            )}
 
                             {/* Interview Controls - Only show when interview is active */}
                             {started && sessionId && !showCompletionScreen && (
@@ -2076,9 +1862,9 @@ function CommunicationInterview() {
                                 />
                             )}
 
-                            {/* Question Palette - Only show when interview is active */}
-                            {started && sessionId && !showCompletionScreen && (
-                                <QuestionPalette messages={messages} />
+                            {/* Question Palette - Show when there are messages */}
+                            {messages.length > 0 && (
+                                <QuestionPalette messages={messages} currentQuestionIndex={currentQuestionIndex} />
                             )}
 
                             {/* Chat Panel - Only show when interview is active */}
@@ -2092,9 +1878,9 @@ function CommunicationInterview() {
 
                             {/* Legacy Controls - Only show for pre-interview stages */}
                             {(!started || !sessionId) && (
-                                <div className={`border-t p-6 shadow-inner rounded-t-2xl transition-all duration-1000 ease-in-out ${isDarkTheme
-                                    ? 'border-gray-700 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800/90'
-                                    : 'border-gray-200 bg-gradient-to-r from-white via-gray-50 to-white/90'
+                                <div className={`p-6 shadow-inner transition-all duration-1000 ease-in-out ${isDarkTheme
+                                    ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800/90'
+                                    : 'bg-gradient-to-t from-bg-main  to-bg-secondary-4'
                                     }`}>
                                     {systemAudioHint && (
                                         <div className={`mb-4 p-4 rounded-lg border ${isDarkTheme
@@ -2113,7 +1899,7 @@ function CommunicationInterview() {
                                     )}
                                     {!started ? (
                                         <div className="flex justify-center">
-                                            <Button onClick={() => handleStart()} className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
+                                            <Button onClick={() => handleStart()} variant="primary" className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md">
                                                 Start Camera Check
                                             </Button>
                                         </div>
@@ -2121,7 +1907,8 @@ function CommunicationInterview() {
                                         <div className="flex flex-col items-center gap-6 w-full">
                                             <Button
                                                 onClick={startActualInterview}
-                                                className="w-full max-w-xs text-lg py-6 rounded-xl shadow-md"
+                                                variant="primary"
+                                                className="w-full max-w-xs text-lg py-6 shadow-md"
                                                 disabled={loading || isProcessingResponse}
                                             >
                                                 {isProcessingResponse ? (
@@ -2199,18 +1986,18 @@ function CommunicationInterview() {
             {showCompletionScreen && (
                 <div className={`flex-1 flex items-center justify-center transition-all duration-1000 ease-in-out ${isDarkTheme
                     ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
-                    : 'bg-gradient-to-br from-white via-slate-50 to-white'
+                    : 'bg-gradient-to-br from-bg-main to-bg-secondary-4'
                     }`}>
-                    <Card className={`w-full max-w-2xl shadow-2xl border-0 backdrop-blur-sm transition-all duration-1000 ${isDarkTheme
+                    <Card className={`w-full max-w-2xl border-0  transition-all duration-1000 ${isDarkTheme
                         ? 'bg-gray-800/95 border-gray-700'
-                        : 'bg-white/95 border-gray-200'
+                        : 'bg-bg-main border-gray-200'
                         }`}>
                         <CardHeader className="text-center pb-6">
                             <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ duration: 0.5, type: "spring" }}
-                                className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 border transition-all duration-1000 ${isDarkTheme
+                                className={`mx-auto inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 border transition-all duration-1000 ${isDarkTheme
                                     ? 'bg-green-900/50 border-green-500/30'
                                     : 'bg-green-100 border-green-200'
                                     }`}
@@ -2318,17 +2105,15 @@ function CommunicationInterview() {
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <Button
                                         onClick={() => router.push('/')}
-                                        className="w-full sm:w-auto h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                                        variant="primary"
+                                        className="w-full sm:w-auto h-12 text-base font-semibold"
                                     >
                                         Go to Home
                                     </Button>
                                     <Button
                                         onClick={() => router.push('/home/careers')}
-                                        variant="outline"
-                                        className={`w-full sm:w-auto h-12 text-base font-semibold transition-all duration-1000 ${isDarkTheme
-                                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                                            }`}
+                                        variant="secondary"
+                                        className={`w-full sm:w-auto h-12 text-base font-semibold transition-all duration-500`}
                                     >
                                         Explore Jobs
                                     </Button>
