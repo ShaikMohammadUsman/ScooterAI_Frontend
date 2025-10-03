@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import dayjs from 'dayjs';
 
 export interface WorkExperience {
     id?: string;
@@ -7,7 +8,20 @@ export interface WorkExperience {
     position: string;
     duration: string;
     description: string;
+    start_date?: string;
+    end_date?: string;
+    duration_months?: number;
+    is_current?: boolean;
 }
+
+// Helper to calculate duration in months
+const calculateDurationMonths = (start: string, end: string, isCurrent: boolean = false) => {
+    if (!start) return 0;
+    const startDate = dayjs(start);
+    const endDate = isCurrent ? dayjs() : dayjs(end);
+    if (!endDate.isValid()) return 0;
+    return Math.max(0, endDate.diff(startDate, 'month'));
+};
 
 export interface SalesProfile {
     achievements: string[];
@@ -86,12 +100,29 @@ export const useCandidateProfileStore = create<CandidateProfileStore>()(
                 const salesCtx = data.sales_context || data.salesContext || {};
                 const roleExposure = data.role_process_exposure || data.roleProcessExposure || {};
 
-                const companyHistory = (career.company_history || career.companyHistory || []).map((c: any) => ({
-                    company: c.company_name || c.companyName || '',
-                    position: c.position || '',
-                    duration: '',
-                    description: ''
-                }));
+                const companyHistory = (career.company_history || career.companyHistory || []).map((c: any) => {
+                    const startDate = c.start_date || '';
+                    const endDate = c.end_date || '';
+                    const isCurrent = c.is_current || false;
+                    const providedDuration = c.duration_months;
+                    
+                    // For current positions, always calculate duration from frontend to get up-to-date duration
+                    // For past positions, use provided duration or calculate if not available
+                    const calculatedDuration = isCurrent 
+                        ? calculateDurationMonths(startDate, endDate, isCurrent)
+                        : (providedDuration || calculateDurationMonths(startDate, endDate, isCurrent));
+                    
+                    return {
+                        company: c.company_name || c.companyName || '',
+                        position: c.position || '',
+                        duration: c.duration || '',
+                        description: '',
+                        start_date: startDate,
+                        end_date: endDate,
+                        duration_months: calculatedDuration,
+                        is_current: isCurrent
+                    };
+                });
 
                 const parsedProfile: CandidateProfile = {
                     contact_details: {

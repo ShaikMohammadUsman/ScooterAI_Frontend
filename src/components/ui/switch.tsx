@@ -33,7 +33,7 @@ const Switch = React.forwardRef<
       switchVariants({ size }),
       // Track styling
       "transition-colors border-transparent",
-      "data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-500 data-[state=checked]:to-purple-500 data-[state=checked]:border-blue-500",
+      "data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-white data-[state=checked]:to-tint-5 data-[state=checked]:border-tint-5",
       "data-[state=unchecked]:bg-slate-200 data-[state=unchecked]:border-slate-300",
       className
     )}
@@ -51,7 +51,7 @@ const Switch = React.forwardRef<
             ? "h-5 w-5 data-[state=checked]:translate-x-6 data-[state=unchecked]:translate-x-0"
             : "h-4 w-4 data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0",
         // Thumb color
-        "data-[state=checked]:bg-white data-[state=checked]:border-blue-400",
+        "data-[state=checked]:bg-tint-2 data-[state=checked]:border-tint-2",
         "data-[state=unchecked]:bg-slate-100 data-[state=unchecked]:border-slate-300"
       )}
     />

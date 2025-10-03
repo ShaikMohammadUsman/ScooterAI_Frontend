@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Mic } from "lucide-react";
+import { Check, CheckCircle, Mic } from "lucide-react";
 import { useCandidateProfileStore, WorkExperience, SalesProfile, SalaryExpectations, ContactDetails } from "@/store/candidateProfile";
 import { useRouter, useSearchParams } from "next/navigation";
 import WorkHistoryForm from "@/components/resume/WorkHistoryForm";
@@ -103,10 +103,10 @@ export default function CandidateProfileFlow() {
             company_history: profile?.work_experience?.map(exp => ({
                 company_name: exp.company,
                 position: exp.position,
-                start_date: "", // You'll need to parse duration
-                end_date: "",
-                duration_months: 0,
-                is_current: false,
+                start_date: exp.start_date || "",
+                end_date: exp.end_date || "",
+                duration_months: exp.duration_months || 0,
+                is_current: exp.is_current || false,
             })) || [],
         },
         sales_context: {
@@ -322,8 +322,8 @@ export default function CandidateProfileFlow() {
                                     <div className="flex justify-between items-center">
                                         <span className="font-medium text-sm">{section.title}</span>
                                         {(isCompleted) && (
-                                            <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                                                <CheckCircle className="w-3 h-3 text-gray-800" />
+                                            <div className="w-6 h-6 rounded-full flex items-center justify-center">
+                                                <Check className="w-6 h-6 text-[#F9F9F5]" />
                                             </div>
                                         )}
                                     </div>
@@ -406,7 +406,7 @@ export default function CandidateProfileFlow() {
                 <div className="w-full h-full">
                     <div className="grid grid-cols-4 w-full h-full">
                         {/* Left Panel */}
-                        <div className="col-span-1 flex flex-col justify-center bg-white rounded-lg p-4">
+                        <div className="col-span-1 flex flex-col pt-[50%] bg-white rounded-lg p-4">
                             <div className="space-y-2">
                                 {sections.map((section) => {
                                     const state = sectionStates[section.id as keyof typeof sectionStates];
@@ -425,8 +425,8 @@ export default function CandidateProfileFlow() {
                                             <div className="flex justify-between items-center">
                                                 <span className="font-medium text-sm">{section.title}</span>
                                                 {(isCompleted || isActive) && (
-                                                    <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                                                        <CheckCircle className="w-3 h-3 text-gray-800" />
+                                                    <div className="w-6 h-6 rounded-full flex items-center justify-center">
+                                                        <Check className="w-6 h-6 text-[#F9F9F5]" />
                                                     </div>
                                                 )}
                                             </div>

@@ -87,6 +87,14 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
         return formatter.format(value);
     };
 
+    // Format currency for tooltip display (with commas)
+    const formatCurrencyTooltip = (value: number) => {
+        if (currencyType === "INR") {
+            return `₹${value.toLocaleString('en-IN')}`;
+        }
+        return formatCurrency(value);
+    };
+
     // Motivational quotes based on salary choices
     const getMotivationalQuote = (type: 'current' | 'expected', value: number) => {
         const quotes = {
@@ -146,7 +154,7 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
 
     return (
         <div className="flex items-center justify-center p-2">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full max-w-4xl relative overflow-hidden">
+            <div className="bg-bg-main rounded-xl border border-gray-100 p-6 w-full max-w-4xl relative overflow-hidden">
                 {/* Subtle background icon */}
                 <Banknote className="absolute right-6 top-6 w-24 h-24 text-blue-50 opacity-30 pointer-events-none z-0" />
 
@@ -158,11 +166,11 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
                 {/* Personalized Header */}
                 <div className="text-center mb-6 relative z-10">
                     <div className="flex items-center justify-center gap-2 mb-3">
-                        <Target className="w-6 h-6 text-blue-500" />
+                        {/* <Target className="w-6 h-6 text-blue-500" /> */}
                         <h2 className="text-2xl font-bold text-gray-800">
-                            Let's talk numbers, {firstName}! 💰
+                            Let's talk numbers, {firstName}!
                         </h2>
-                        <Trophy className="w-6 h-6 text-yellow-500" />
+                        {/* <Trophy className="w-6 h-6 text-yellow-500" /> */}
                     </div>
                     <p className="text-gray-600 text-sm">
                         Set your salary expectations to match with the right opportunities
@@ -171,9 +179,9 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
 
                 <div className="grid grid-cols-1 gap-6 relative z-10">
                     {/* Quota and Currency Selection */}
-                    <div className="flex gap-4 mb-4">
+                    <div className="flex justify-center items-center gap-4 mb-4">
                         <FormControl>
-                            <FormLabel className="flex items-center gap-1"><Calendar className="w-4 h-4 text-blue-400" />Salary Quota</FormLabel>
+                            <FormLabel className="flex items-center justify-center gap-1">Salary Quota</FormLabel>
                             <Select value={cadence} onValueChange={handleCadenceChange}>
                                 <SelectTrigger className="w-28">
                                     <SelectValue placeholder="Annual" />
@@ -185,7 +193,7 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
                             </Select>
                         </FormControl>
                         <FormControl>
-                            <FormLabel className="flex items-center gap-1"><Banknote className="w-4 h-4 text-green-500" />Currency</FormLabel>
+                            <FormLabel className="flex items-center justify-center gap-1">Currency</FormLabel>
                             <Select value={currencyType} onValueChange={handleCurrencyChange}>
                                 <SelectTrigger className="w-28">
                                     <SelectValue placeholder="₹ (INR)" />
@@ -206,7 +214,6 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <FormLabel className="flex items-center gap-1">
-                                    <Banknote className="w-4 h-4 text-green-500" />
                                     Current CTC (Base Salary)
                                     <span className="text-red-500">*</span>
                                 </FormLabel>
@@ -222,21 +229,45 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
                                 </TooltipProvider>
                             </div>
 
-                            {/* Slider */}
-                            <div className="px-2">
-                                <Slider
-                                    value={[currentValue]}
-                                    onValueChange={handleCurrentSalaryChange}
-                                    min={salaryRange.min}
-                                    max={salaryRange.max}
-                                    step={salaryRange.step}
-                                    className="w-full"
-                                />
+                            {/* Slider with range indicators and tooltip */}
+                            <div className="relative px-2">
+                                {/* Range indicators */}
+                                <div className="flex justify-between text-xs text-gray-500 mb-2">
+                                    <span>{formatCurrencyTooltip(salaryRange.min)}</span>
+                                    <span>{formatCurrencyTooltip(salaryRange.max)}</span>
+                                </div>
+
+                                {/* Custom slider container */}
+                                <div className="relative">
+                                    <Slider
+                                        value={[currentValue]}
+                                        onValueChange={handleCurrentSalaryChange}
+                                        min={salaryRange.min}
+                                        max={salaryRange.max}
+                                        step={salaryRange.step}
+                                        className="w-full"
+                                        trackColor="#FFBFA9"
+                                        rangeColor="#FC8861"
+                                        thumbColor="#FC8861"
+                                        thumbBorderColor="#fb923c"
+                                    />
+
+                                    {/* Tooltip on slider handle */}
+                                    <div
+                                        className="absolute top-[-40px] transform -translate-x-1/2 pointer-events-none"
+                                        style={{ left: `${((currentValue - salaryRange.min) / (salaryRange.max - salaryRange.min)) * 100}%` }}
+                                    >
+                                        <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                                            {formatCurrencyTooltip(currentValue)}
+                                        </div>
+                                        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600 mx-auto"></div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Display value */}
                             <div className="text-center">
-                                <div className="text-2xl font-bold text-green-600">
+                                <div className="text-2xl font-bold text-orange-600">
                                     {currentValue === 0 ? "Fresher (₹0)" : formatCurrency(currentValue)}
                                 </div>
                                 <div className="text-sm text-gray-500">
@@ -246,10 +277,10 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
 
                             {/* Motivational quote */}
                             {currentQuote && (
-                                <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                                <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200">
                                     <div className="flex items-center justify-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-green-500" />
-                                        <span className="text-sm font-medium text-green-700">
+                                        <Sparkles className="w-4 h-4 text-orange-500" />
+                                        <span className="text-sm font-medium text-orange-700">
                                             {currentQuote}
                                         </span>
                                     </div>
@@ -261,7 +292,6 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <FormLabel className="flex items-center gap-1">
-                                    <Banknote className="w-4 h-4 text-green-500" />
                                     Expected CTC (OTE)
                                     <span className="text-red-500">*</span>
                                 </FormLabel>
@@ -277,21 +307,45 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
                                 </TooltipProvider>
                             </div>
 
-                            {/* Slider */}
-                            <div className="px-2">
-                                <Slider
-                                    value={[expectedValue]}
-                                    onValueChange={handleExpectedSalaryChange}
-                                    min={Math.max(salaryRange.min, currentValue)}
-                                    max={salaryRange.max}
-                                    step={salaryRange.step}
-                                    className="w-full"
-                                />
+                            {/* Slider with range indicators and tooltip */}
+                            <div className="relative px-2">
+                                {/* Range indicators */}
+                                <div className="flex justify-between text-xs text-gray-500 mb-2">
+                                    <span>{formatCurrencyTooltip(Math.max(salaryRange.min, currentValue))}</span>
+                                    <span>{formatCurrencyTooltip(salaryRange.max)}</span>
+                                </div>
+
+                                {/* Custom slider container */}
+                                <div className="relative">
+                                    <Slider
+                                        value={[expectedValue]}
+                                        onValueChange={handleExpectedSalaryChange}
+                                        min={Math.max(salaryRange.min, currentValue)}
+                                        max={salaryRange.max}
+                                        step={salaryRange.step}
+                                        className="w-full"
+                                        trackColor="#E8FF89"
+                                        rangeColor="#BADD26"
+                                        thumbColor="#BADD26"
+                                        thumbBorderColor="#84cc16"
+                                    />
+
+                                    {/* Tooltip on slider handle */}
+                                    <div
+                                        className="absolute top-[-40px] transform -translate-x-1/2 pointer-events-none"
+                                        style={{ left: `${((expectedValue - Math.max(salaryRange.min, currentValue)) / (salaryRange.max - Math.max(salaryRange.min, currentValue))) * 100}%` }}
+                                    >
+                                        <div className="bg-gray-600 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                                            {formatCurrencyTooltip(expectedValue)}
+                                        </div>
+                                        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600 mx-auto"></div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Display value */}
                             <div className="text-center">
-                                <div className="text-2xl font-bold text-blue-600">
+                                <div className="text-2xl font-bold text-lime-600">
                                     {formatCurrency(expectedValue)}
                                 </div>
                                 <div className="text-sm text-gray-500">
@@ -301,10 +355,10 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
 
                             {/* Motivational quote */}
                             {expectedQuote && (
-                                <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <div className="text-center p-3 bg-lime-50 rounded-lg border border-lime-200">
                                     <div className="flex items-center justify-center gap-2">
-                                        <TrendingUpIcon className="w-4 h-4 text-blue-500" />
-                                        <span className="text-sm font-medium text-blue-700">
+                                        <TrendingUpIcon className="w-4 h-4 text-lime-500" />
+                                        <span className="text-sm font-medium text-lime-700">
                                             {expectedQuote}
                                         </span>
                                     </div>
@@ -314,10 +368,10 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
 
                         {/* Increment Display */}
                         {expectedValue > currentValue && currentValue > 0 && (
-                            <div className="text-center p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+                            <div className="text-center p-4 bg-gradient-to-r from-orange-50 to-lime-50 rounded-lg border border-orange-200">
                                 <div className="flex items-center justify-center gap-2 mb-2">
-                                    <TrendingUp className="w-5 h-5 text-green-600" />
-                                    <span className="font-semibold text-green-700">
+                                    <TrendingUp className="w-5 h-5 text-orange-600" />
+                                    <span className="font-semibold text-orange-700">
                                         You're aiming for a {((expectedValue - currentValue) / currentValue * 100).toFixed(1)}% increase!
                                     </span>
                                 </div>

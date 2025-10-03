@@ -102,7 +102,7 @@ export default function WorkHistoryForm({
 
     return (
         <div className="flex items-center justify-center p-2">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-6 w-full max-w-3xl">
+            <div className="rounded-xl p-6 space-y-6 w-full max-w-3xl">
                 <ErrorMessage message={workError} />
 
                 <p className="text-muted-foreground text-sm mb-2">We parsed this from your resume — feel free to tweak or add details.</p>

@@ -46,7 +46,7 @@ export default function ContactDetailsForm({ profile, onFieldChange, parsedUserN
     };
 
     return (
-        <div className="space-y-6 rounded-lg p-6 shadow-sm max-w-3xl mx-auto">
+        <div className="space-y-6 rounded-lg p-6 max-w-3xl mx-auto">
             <div className="space-y-4">
                 {/* Full Name */}
                 <Controller
