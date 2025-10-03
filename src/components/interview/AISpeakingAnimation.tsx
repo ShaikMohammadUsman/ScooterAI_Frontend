@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LoadingDots } from '@/components/ui/loadingDots';
+import WavyAnimation from '@/components/manager/createJob/WavyAnimation';
 
 interface AISpeakingAnimationProps {
     isSpeaking: boolean;
@@ -40,56 +40,6 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
     return (
         <div className="flex-1 flex items-center justify-center p-3 sm:p-8">
             <div className="max-w-2xl w-full text-center">
-                {/* Main Animation Container */}
-                <AnimatePresence mode="wait">
-                    {showSpeakingAnimation ? (
-                        <motion.div
-                            key="speaking"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="space-y-6"
-                        >
-                            {/* Active Speaking Animation - Using GIF */}
-                            <div className="flex justify-center">
-                                <img
-                                    src="/assets/images/circularWavyAnimation.gif"
-                                    alt="AI Speaking Animation"
-                                    className="w-70 h-70 object-contain"
-                                />
-                            </div>
-
-                            {/* Processing Animation */}
-                            {isProcessing && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="flex justify-center"
-                                >
-                                    <div className="h-10 w-10 mb-2 bg-gray-500 rounded-full border border-l-0 animate-spin"></div>
-                                </motion.div>
-                            )}
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="idle"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="space-y-6 my-16"
-                        >
-                            {/* Idle State - Using PNG */}
-                            <div className="flex justify-center">
-                                <img
-                                    src="/assets/images/circularWavyImage.png"
-                                    alt="AI Idle State"
-                                    className="w-40 h-40 object-contain"
-                                />
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
 
                 {/* Current Question Display - Separate from main animation */}
                 <div className={`${interviewType === 'video' ? 'hidden md:block' : 'block'} w-fit mx-auto justify-center items-center mt-6`}>
@@ -102,12 +52,39 @@ const AISpeakingAnimation: React.FC<AISpeakingAnimationProps> = ({
                                 : 'bg-gray-100 border border-gray-200'
                                 }`}
                         >
-                            <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-200' : 'text-gray-800'}`}>
+                            {/* <p className={`text-lg text-gray-950 leading-relaxed ${isDarkTheme ? 'text-gray-200' : 'text-gray-800'}`}> */}
+                            <p className={`text-lg text-gray-950 leading-relaxed`}>
                                 {currentQuestion}
                             </p>
                         </motion.div>
                     )}
                 </div>
+
+                {/* Main Animation Container */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="space-y-6"
+                >
+                    {/* Wavy Animation - Handles both speaking and idle states */}
+                    <div className="flex justify-center">
+                        <div className="w-full max-w-64 h-auto min-h-40 flex items-center justify-center">
+                            <WavyAnimation showAnimation={showSpeakingAnimation} />
+                        </div>
+                    </div>
+
+                    {/* Processing Animation */}
+                    {isProcessing && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex justify-center"
+                        >
+                            <div className="h-10 w-10 mb-2 bg-gray-500 rounded-full border border-l-0 animate-spin"></div>
+                        </motion.div>
+                    )}
+                </motion.div>
             </div>
         </div>
     );

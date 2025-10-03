@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingDots } from "@/components/ui/loadingDots";
 import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio, updateAudioProctoringLogs, SupportedLanguageCode, SUPPORTED_LANGUAGES } from "@/lib/interviewService";
+import { candidateAudioInterview, evaluateAudioInterview } from "@/lib/candidateService";
 import { textInAudioOut, resetSynthesizer } from "@/lib/voiceBot";
 import { InterviewAudioRecorder } from "@/lib/audioRecorder";
 
@@ -32,22 +33,27 @@ const SPEECH_REGION = process.env.NEXT_PUBLIC_AZURE_REGION;
 export default function VoiceInterviewPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const applicationId = searchParams?.get('application_id');
     const [started, setStarted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [questions, setQuestions] = useState<string[]>([]);
     const questionsRef = useRef<string[]>([]);
     const [currentQ, setCurrentQ] = useState(0);
+    const [currentQuestionFromAPI, setCurrentQuestionFromAPI] = useState<string>('');
+    const [isInterviewComplete, setIsInterviewComplete] = useState(false);
     const [qaPairs, setQaPairs] = useState<QAPair[]>([]);
-    const [messages, setMessages] = useState<{ own: boolean; text: string; icon: React.ReactNode; status?: 'completed' | 'retaken' }[]>([]);
+    // const [messages, setMessages] = useState<{ own: boolean; text: string; icon: React.ReactNode; status?: 'completed' | 'retaken' }[]>([]);
+    const [messages, setMessages] = useState<{ own: boolean; text: string; icon: React.ReactNode; status?: 'completed' }[]>([]);
     const [micEnabled, setMicEnabled] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const [recognizedText, setRecognizedText] = useState("");
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
-    const [retakeCount, setRetakeCount] = useState<number[]>([]);
+    // const [retakeCount, setRetakeCount] = useState<number[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
     const recognizerRef = useRef<any>(null);
+    const recognizedTextRef = useRef<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
     const [passed, setPassed] = useState(false);
@@ -249,37 +255,23 @@ export default function VoiceInterviewPage() {
         // Reset synthesizer to ensure clean initialization with new language
         await resetSynthesizer();
 
-        const profile_id = localStorage.getItem('scooterUserId');
-        if (!profile_id) {
-            setError("No profile ID found");
+        if (!applicationId) {
+            setError("No application ID found");
             setLoading(false);
             return;
         }
-        // console.log("profile_id", profile_id);
-        // console.log("searchParams", searchParams?.get('role'));
+
         try {
-            const res = await generateInterviewQuestions({
-                posting_title: searchParams?.get('role') as string || "",
-                profile_id: profile_id,
-                language: language
+            // Start candidate audio interview
+            const res = await candidateAudioInterview({
+                application_id: applicationId
             });
 
-
-            if (!res.questions || res.questions.length === 0) {
-                if (!res.status) {
-                    setError(res.message || "Failed to generate interview questions");
-                    toast({
-                        title: "Alert",
-                        description: res.message || "Failed to generate interview questions",
-                        variant: "destructive",
-                    });
-                    return;
-                }
-
-                setError("No questions were generated");
+            if (!res.status) {
+                setError(res.message || "Failed to start interview");
                 toast({
-                    title: "Error",
-                    description: "No questions were generated",
+                    title: "Alert",
+                    description: res.message || "Failed to start interview",
                     variant: "destructive",
                 });
                 return;
@@ -294,7 +286,7 @@ export default function VoiceInterviewPage() {
             setQaPairs([]);
             setMessages([]);
             setShowResults(false);
-            setRetakeCount(new Array(res.questions.length).fill(0));
+            setIsInterviewComplete(false);
 
             // Ensure microphone permission first
             const micOk = await checkMicPermission();
@@ -303,9 +295,10 @@ export default function VoiceInterviewPage() {
                 return;
             }
 
-            // Set questions
-            setQuestions(res.questions);
-            questionsRef.current = res.questions;
+            // Set the first question from API
+            setCurrentQuestionFromAPI(res.question || '');
+            setQuestions([res.question || '']); // For compatibility with existing UI
+            questionsRef.current = [res.question || ''];
 
             // Activate proctoring when starting the interview (user gesture)
             setProctoringActive(true);
@@ -316,12 +309,12 @@ export default function VoiceInterviewPage() {
 
             // Trigger dark theme transition after successful question generation
             setTimeout(() => {
-                setIsDarkTheme(true);
+                setIsDarkTheme(false);
             }, 500); // Small delay for smooth transition
 
             // Start the interview
             setStarted(true);
-            await askQuestion(0, language as SupportedLanguageCode);
+            await askQuestion(0, language as SupportedLanguageCode, res.question || '');
         } catch (err: any) {
             console.error("Error starting interview:", err);
             setError(err.message || "Failed to start interview");
@@ -333,9 +326,10 @@ export default function VoiceInterviewPage() {
     };
 
     // Ask question with TTS
-    const askQuestion = async (index: number, language?: SupportedLanguageCode) => {
-        const currentQuestions = questionsRef.current;
-        if (!currentQuestions || currentQuestions.length === 0 || index >= currentQuestions.length) {
+    const askQuestion = async (index: number, language?: SupportedLanguageCode, questionText?: string) => {
+        // Use the passed question text or fall back to currentQuestionFromAPI
+        const question = questionText || currentQuestionFromAPI;
+        if (!question) {
             return;
         }
 
@@ -346,7 +340,6 @@ export default function VoiceInterviewPage() {
         setMicEnabled(false);
         setLoading(true);
         setIsSpeaking(true);
-        const question = currentQuestions[index];
 
         // Track question narration start
         handleQuestionNarrationStart(index, question);
@@ -427,6 +420,7 @@ export default function VoiceInterviewPage() {
         // Start listening
         setIsListening(true);
         setRecognizedText("");
+        recognizedTextRef.current = "";
         setRecognizing(true);
         // Remove loading state when starting recording
         setLoading(false);
@@ -460,14 +454,17 @@ export default function VoiceInterviewPage() {
                 if (e.result.reason === speechsdk.ResultReason.RecognizedSpeech) {
                     const answer = e.result.text;
                     // Append new text to existing response
-                    setRecognizedText(prev => prev ? `${prev} ${answer}` : answer);
+                    setRecognizedText(prev => {
+                        const newText = prev ? `${prev} ${answer}` : answer;
+                        recognizedTextRef.current = newText;
+                        return newText;
+                    });
                 }
             };
 
             recognizer.canceled = (s, e) => {
                 setIsListening(false);
                 setLoading(false);
-                // Don't set canRetake here - it should only be enabled after submitting
                 if (e.reason === speechsdk.CancellationReason.Error) {
                     setError(`Speech recognition error: ${e.errorDetails}`);
                 }
@@ -479,6 +476,13 @@ export default function VoiceInterviewPage() {
             recognizer.sessionStopped = (s, e) => {
                 // Set recognizing to false when the session is completely stopped
                 setRecognizing(false);
+
+                // Auto-submit the answer if there's recognized text
+                setTimeout(() => {
+                    if (recognizedTextRef.current.trim()) {
+                        submitAnswer();
+                    }
+                }, 100); // Small delay to ensure state is updated
             };
 
             await recognizer.startContinuousRecognitionAsync();
@@ -493,13 +497,13 @@ export default function VoiceInterviewPage() {
 
     // Submit answer
     const submitAnswer = async () => {
-        if (!recognizedText.trim()) return;
+        const currentRecognizedText = recognizedTextRef.current || recognizedText;
+        if (!currentRecognizedText.trim() || !applicationId) return;
 
-        const isLastQuestion = currentQ === questionsRef.current.length - 1;
         setIsSubmitting(true);
 
         // Track answer end
-        handleAnswerEnd(currentQ, recognizedText);
+        handleAnswerEnd(currentQ, currentRecognizedText);
 
         // Stop audio recording for user response
         if (audioRecorderRef.current) {
@@ -508,26 +512,31 @@ export default function VoiceInterviewPage() {
 
         // Create the new QA pair
         const newQAPair = {
-            question: questionsRef.current[currentQ],
-            answer: recognizedText
+            question: currentQuestionFromAPI || '',
+            answer: currentRecognizedText
         };
 
         // Update messages
         setMessages((prev) => {
             const newMessages = [...prev];
-            // Find the last AI question (non-own message) and mark it as completed
-            for (let i = newMessages.length - 1; i >= 0; i--) {
+            // Find and mark the current question as completed
+            let questionCount = 0;
+            for (let i = 0; i < newMessages.length; i++) {
                 if (!newMessages[i].own) {
-                    newMessages[i].status = 'completed';
-                    break;
+                    if (questionCount === currentQ) {
+                        newMessages[i].status = 'completed';
+                        break;
+                    }
+                    questionCount++;
                 }
             }
             // Add the user's answer
             newMessages.push({
                 own: true,
-                text: recognizedText,
+                text: currentRecognizedText,
                 icon: <FaUser className="text-secondary w-6 h-6" />,
-                status: retakeCount[currentQ] > 0 ? 'retaken' : 'completed'
+                // status: retakeCount[currentQ] > 0 ? 'retaken' : 'completed'
+                status: 'completed'
             });
             return newMessages;
         });
@@ -541,11 +550,9 @@ export default function VoiceInterviewPage() {
             });
         });
 
-        // console.log(qaPairs);
-
         setRecognizedText("");
+        recognizedTextRef.current = "";
         setIsListening(false);
-        // Don't reset canRetake here - let it be reset when moving to next question
         if (recognizerRef.current) {
             recognizerRef.current.stopContinuousRecognitionAsync();
         }
@@ -553,35 +560,66 @@ export default function VoiceInterviewPage() {
         // Show submission success briefly
         setSubmissionSuccess(true);
 
-        // Move to next question immediately after submission
-        if (!isLastQuestion) {
-            const nextQ = currentQ + 1;
-            setCurrentQ(nextQ);
-            // The loading state will be shown during askQuestion
-            askQuestion(nextQ, selectedLanguage);
-        } else {
-            // For last question, proceed to evaluation and audio upload
+        try {
+            // Submit answer to candidate audio interview API
+            const res = await candidateAudioInterview({
+                application_id: applicationId,
+                answer: currentRecognizedText.trim()
+            });
+
+            if (res.status) {
+                // Check if interview is complete
+                if (res.done) {
+                    // Interview is complete, proceed to evaluation
+                    setSubmissionSuccess(false);
+                    setIsSubmitting(false);
+                    setIsInterviewComplete(true);
+                    const currentQAPairs = [...qaPairs, newQAPair];
+                    await evaluateInterviewResults(currentQAPairs);
+                } else {
+                    // Get next question
+                    setCurrentQuestionFromAPI(res.question || '');
+                    setQuestions([res.question || '']); // For compatibility
+                    questionsRef.current = [res.question || ''];
+
+                    // Move to next question
+                    const nextQ = currentQ + 1;
+                    setSubmissionSuccess(false);
+                    setIsSubmitting(false);
+
+                    // Ask the next question (this will add the question to messages)
+                    await askQuestion(nextQ, selectedLanguage, res.question || '');
+
+                    // Update currentQ after the question is added
+                    setCurrentQ(nextQ);
+                }
+            } else {
+                setError(res.message || 'Failed to submit answer');
+                setSubmissionSuccess(false);
+                setIsSubmitting(false);
+            }
+        } catch (err: any) {
+            console.error("Error submitting answer:", err);
+            setError(err?.response?.data?.message || err?.message || 'Failed to submit answer');
             setSubmissionSuccess(false);
             setIsSubmitting(false);
-            // Get the latest qaPairs before evaluation
-            const currentQAPairs = [...qaPairs, newQAPair];
-            await evaluateInterviewResults(currentQAPairs);
         }
     };
 
-    // Retake answer
-    const retakeAnswer = () => {
-        // Allow only one retake per question
-        if (retakeCount[currentQ] >= 1) return;
 
-        setRetakeCount(prev => {
-            const newCount = [...prev];
-            newCount[currentQ] = 1;
-            return newCount;
-        });
+    // // Retake answer
+    // const retakeAnswer = () => {
+    //     // Allow only one retake per question
+    //     if (retakeCount[currentQ] >= 1) return;
 
-        setRecognizedText("");
-    };
+    //     setRetakeCount(prev => {
+    //         const newCount = [...prev];
+    //         newCount[currentQ] = 1;
+    //         return newCount;
+    //     });
+
+    //     setRecognizedText("");
+    // };
 
     // Handle leave confirmation
     const handleLeaveConfirmation = () => {
@@ -621,9 +659,8 @@ export default function VoiceInterviewPage() {
 
     // Evaluate interview results and upload audio
     const evaluateInterviewResults = async (qaPairsToEvaluate: QAPair[] = qaPairs) => {
-        const profile_id = localStorage.getItem('scooterUserId');
-        if (!profile_id) {
-            setError("No profile ID found");
+        if (!applicationId) {
+            setError("No application ID found");
             return;
         }
 
@@ -637,20 +674,22 @@ export default function VoiceInterviewPage() {
             setSubmissionStep('processing');
             await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing
 
-            // Upload audio file
+            // Upload audio file (keep existing functionality)
             setSubmissionStep('uploading');
-            await uploadAudioFile(profile_id);
+            const profile_id = localStorage.getItem('scooterUserId');
+            if (profile_id) {
+                await uploadAudioFile(profile_id);
+                // Upload audio proctoring logs
+                await uploadAudioProctoringLogs(profile_id);
+            }
 
-            // Upload audio proctoring logs
-            await uploadAudioProctoringLogs(profile_id);
-
-            // Evaluate interview results
+            // Evaluate interview results using candidate API
             setSubmissionStep('evaluating');
             addInterviewEvent('evaluation_started', { timestamp: new Date() });
 
-            const evaluationResult = await evaluateInterview({
+            const evaluationResult = await evaluateAudioInterview({
+                application_id: applicationId,
                 qa_pairs: qaPairsToEvaluate,
-                user_id: profile_id,
             });
 
             addInterviewEvent('evaluation_completed', {
@@ -769,9 +808,9 @@ export default function VoiceInterviewPage() {
     };
 
     return (
-        <div className={`h-screen flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme ? 'bg-gray-900' : 'bg-background'}`}>
+        <div className={`relative h-screen flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme ? 'bg-gray-900' : 'bg-background'}`}>
             {/* Proctoring System */}
-            {
+            {/* {
                 proctoringActive && (
                     <ProctoringSystem
                         isActive={proctoringActive}
@@ -779,7 +818,7 @@ export default function VoiceInterviewPage() {
                         ref={proctoringRef}
                     />
                 )
-            }
+            } */}
 
 
             {/* Submission Modal */}
@@ -879,7 +918,7 @@ export default function VoiceInterviewPage() {
             </AnimatePresence>
 
             {/* Header */}
-            <div className="flex items-center gap-4 px-6 py-4 sticky top-0 z-10">
+            {/* <div className="flex items-center gap-4 px-6 py-4 sticky top-0 z-10">
                 <div className="w-12 h-12">
                     <img
                         src="/assets/images/scooterLogo.png"
@@ -895,7 +934,7 @@ export default function VoiceInterviewPage() {
                         Audio Assessment Simulation
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* Main Content */}
             {showResults ? (
@@ -903,8 +942,8 @@ export default function VoiceInterviewPage() {
                     onStart={() => {
                         router.push("/");
                     }}
-                    title="Thank you for completing the interview!"
-                    description="We will reach out to you soon."
+                    title="Kudos!"
+                    description="You've successfully completed your voice assessment."
                     buttonText="Continue to home"
                 />
             ) : (
@@ -956,9 +995,12 @@ export default function VoiceInterviewPage() {
                                             const ok = await checkMicPermission();
                                             if (ok) { await handleStart(); }
                                         }}
-                                        title="Ready to Say Hello?"
-                                        description="Click the button below to share a little about yourself"
-                                        buttonText="Let's Go"
+                                        showIcons={true}
+                                        showScheduleLink={true}
+                                        title="Let companies hear what makes you great."
+                                        description="Start by sharing a little about yourself"
+                                        buttonText="I'm ready!"
+                                        applicationId={applicationId || ""}
                                     />
                                 )}
                             </div>
@@ -967,7 +1009,7 @@ export default function VoiceInterviewPage() {
                                 <AISpeakingAnimation
                                     isSpeaking={isSpeaking}
                                     isProcessing={loading}
-                                    currentQuestion={questionsRef.current[currentQ] || ""}
+                                    currentQuestion={currentQuestionFromAPI || ""}
                                     isDarkTheme={isDarkTheme}
                                     speechDuration={speechDuration}
                                 />
@@ -976,15 +1018,16 @@ export default function VoiceInterviewPage() {
                     </div>
 
                     {/* Chat Panel */}
-                    <ChatPanel
+                    {/* <ChatPanel
                         isOpen={showChat}
                         onToggle={() => setShowChat(!showChat)}
                         messages={messages}
-                    />
+                    /> */}
 
                     {/* Question Palette */}
                     <GeneralQuestionPalette
                         messages={messages}
+                        currentQuestionIndex={currentQ}
                     />
 
                     {/* Interview Controls */}
@@ -992,12 +1035,12 @@ export default function VoiceInterviewPage() {
                         <GeneralInterviewControls
                             isListening={isListening}
                             recognizedText={recognizedText}
-                            retakeCount={retakeCount[currentQ] || 0}
+                            // retakeCount={retakeCount[currentQ] || 0}
                             onMicToggle={handleMic}
                             onLeave={handleLeaveConfirmation}
                             onChatToggle={() => setShowChat(!showChat)}
                             onSubmitAnswer={submitAnswer}
-                            onRetakeAnswer={retakeAnswer}
+                            // onRetakeAnswer={retakeAnswer}
                             disabled={loading || isSpeaking || isSubmitting}
                             isDarkTheme={isDarkTheme}
                             isLeaving={isLeaving}

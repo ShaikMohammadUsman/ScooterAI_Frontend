@@ -11,9 +11,10 @@ interface Message {
 
 interface GeneralQuestionPaletteProps {
     messages: Message[];
+    currentQuestionIndex?: number;
 }
 
-export function GeneralQuestionPalette({ messages }: GeneralQuestionPaletteProps) {
+export function GeneralQuestionPalette({ messages, currentQuestionIndex = 0 }: GeneralQuestionPaletteProps) {
     // Filter to get only AI questions (non-own messages)
     const aiQuestions = messages.filter(msg => !msg.own);
 
@@ -22,52 +23,88 @@ export function GeneralQuestionPalette({ messages }: GeneralQuestionPaletteProps
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="hidden md:block fixed left-4 top-1/2 transform -translate-y-1/2 z-30"
-        >
-            <div className=" backdrop-blur-md rounded-2xl py-4 shadow-lg">
+        <>
+            {/* Desktop - Vertical on left side */}
+            <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="hidden md:block fixed left-4 top-1/2 transform -translate-y-1/2 z-30"
+            >
                 <div className="flex flex-col gap-3">
-                    {aiQuestions.map((question, index) => (
-                        <motion.div
-                            key={index}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-400 transition-colors"
-                        >
-                            {/* Question Number or Icon */}
-                            <div className="flex-shrink-0">
-                                {question.status === 'completed' ? (
-                                    <motion.div
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center"
-                                    >
-                                        <FaCheck className="w-4 h-4 text-green-600" />
-                                    </motion.div>
-                                ) : (
-                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                        {/* <FaQuestion className="w-4 h-4 text-blue-600" /> */}
-                                        <p className="text-sm font-bold">{index + 1}</p>
-                                    </div>
-                                )}
-                            </div>
+                    {aiQuestions.map((question, index) => {
+                        const isCurrent = index === currentQuestionIndex;
+                        const isCompleted = question.status === 'completed';
 
-                            {/* Question Info */}
-                            {/* <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-800">
-                                    Q{index + 1}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                    {question.status === 'completed' ? 'Answered' : 'Pending'}
-                                </div>
-                            </div> */}
-                        </motion.div>
-                    ))}
+                        return (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: index * 0.1 }}
+                                className={`
+                                    w-12 h-12 rounded-lg flex items-center justify-center text-sm font-semibold transition-all
+                                    ${isCurrent
+                                        ? 'text-white' // Gradient background applied via style
+                                        : isCompleted
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-element-3 text-gray-700'
+                                    }
+                                `}
+                                style={isCurrent ? {
+                                    background: 'linear-gradient(90deg, var(--color-grad-1), var(--color-grad-2))'
+                                } : {}}
+                            >
+                                {isCompleted ? (
+                                    <FaCheck className="w-5 h-5" />
+                                ) : (
+                                    `Q${index + 1}`
+                                )}
+                            </motion.div>
+                        );
+                    })}
                 </div>
-            </div>
-        </motion.div>
+            </motion.div>
+
+            {/* Mobile - Horizontal at top */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="md:hidden absolute top-4 left-1/2 transform -translate-x-1/2 z-30"
+            >
+                <div className="flex gap-2 backdrop-blur-md rounded-lg p-2">
+                    {aiQuestions.map((question, index) => {
+                        const isCurrent = index === currentQuestionIndex;
+                        const isCompleted = question.status === 'completed';
+
+                        return (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: index * 0.1 }}
+                                className={`
+                                    w-10 h-10 rounded-lg flex items-center justify-center text-xs font-semibold transition-all
+                                    ${isCurrent
+                                        ? 'text-white' // Gradient background applied via style
+                                        : isCompleted
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-element-3 text-gray-700'
+                                    }
+                                `}
+                                style={isCurrent ? {
+                                    background: 'linear-gradient(90deg, var(--color-grad-1), var(--color-grad-2))'
+                                } : {}}
+                            >
+                                {isCompleted ? (
+                                    <FaCheck className="w-4 h-4" />
+                                ) : (
+                                    `Q${index + 1}`
+                                )}
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            </motion.div>
+        </>
     );
 } 

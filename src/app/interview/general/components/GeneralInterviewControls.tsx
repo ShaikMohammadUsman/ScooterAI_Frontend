@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { FaMicrophone, FaSignOutAlt, FaComments, FaCheck, FaRedo } from "react-icons/fa";
+import { FaMicrophone, FaSignOutAlt, FaComments, FaCheck, FaStop, FaStopCircle } from "react-icons/fa";
 import { MdOutlineChat, MdOutlineNotes } from "react-icons/md";
 import { HiOutlineSparkles } from "react-icons/hi";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface GeneralInterviewControlsProps {
     isListening: boolean;
     recognizedText: string;
-    retakeCount: number;
+    // retakeCount: number;
     onMicToggle: () => void;
     onLeave: () => void;
     onChatToggle: () => void;
     onSubmitAnswer: () => void;
-    onRetakeAnswer: () => void;
+    // onRetakeAnswer: () => void;
     disabled: boolean;
     isDarkTheme?: boolean;
     isLeaving?: boolean;
@@ -23,12 +23,12 @@ interface GeneralInterviewControlsProps {
 export function GeneralInterviewControls({
     isListening,
     recognizedText,
-    retakeCount,
+    // retakeCount,
     onMicToggle,
     onLeave,
     onChatToggle,
     onSubmitAnswer,
-    onRetakeAnswer,
+    // onRetakeAnswer,
     disabled,
     isDarkTheme = false,
     isLeaving = false,
@@ -41,32 +41,11 @@ export function GeneralInterviewControls({
                 animate={{ y: 0, opacity: 1 }}
                 className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-10"
             >
-                <div className={`flex items-center gap-4 backdrop-blur-md rounded-full px-6 py-4 shadow-lg border transition-all duration-1000 ${isDarkTheme
-                    ? 'bg-gray-800/90 border-gray-600'
-                    : 'bg-white/90 border-gray-200'
-                    }`}>
-                    {/* Chat Toggle */}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                onClick={onChatToggle}
-                                variant="ghost"
-                                size="icon"
-                                className={`w-12 h-12 rounded-full transition-all duration-200 ${isDarkTheme
-                                    ? 'bg-gray-700 hover:bg-gray-600'
-                                    : 'bg-gray-100 hover:bg-gray-200'
-                                    }`}
-                            >
-                                <MdOutlineChat className={`w-5 h-5 transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`} />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Toggle chat panel</p>
-                        </TooltipContent>
-                    </Tooltip>
+                <div className={`flex items-center gap-4 backdrop-blur-md rounded-full px-6 py-4  transition-all duration-1000}`}>
 
-                    {/* Microphone Button - Hide when submit/retake buttons are shown */}
-                    {(!recognizedText || isListening) && (
+
+                    {/* Microphone Button */}
+                    <div className="flex flex-col items-center gap-4">
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <motion.div
@@ -75,17 +54,24 @@ export function GeneralInterviewControls({
                                 >
                                     <div className="relative">
                                         {isListening && (
-                                            <span className="absolute -inset-3 rounded-full bg-red-500/30 animate-ping" />
+                                            <span className="absolute -inset-3 rounded-full bg-green-500/30 animate-ping" />
                                         )}
                                         <Button
                                             onClick={onMicToggle}
                                             disabled={disabled}
-                                            className={`relative w-16 h-16 rounded-full shadow-lg transition-all duration-200 ${isListening
-                                                ? "bg-red-500 hover:bg-red-600 text-white"
-                                                : "bg-blue-600 hover:bg-blue-700 text-white"
+                                            // variant="primary"
+                                            className={`relative w-16 h-16 sm:w-28 sm:h-28 rounded-full transition-all duration-200 shadow-lg shadow-cta-primary ${isListening
+                                                ? "bg-muted hover:bg-muted-foreground text-cta-secondary-text"
+                                                : "bg-cta-primary text-cta-primary-text"
                                                 }`}
                                         >
-                                            <FaMicrophone className="w-6 h-6" />
+                                            {
+                                                isListening ? (
+                                                    <FaStopCircle className="w-6 h-6 sm:w-10 sm:h-10" />
+                                                ) : (
+                                                    <FaMicrophone className="w-6 h-6 sm:w-10 sm:h-10" />
+                                                )
+                                            }
                                             {isListening && (
                                                 <motion.div
                                                     className="pointer-events-none absolute inset-0 rounded-full bg-red-400/40"
@@ -108,34 +94,44 @@ export function GeneralInterviewControls({
                                 <p>{isListening ? "Stop recording" : "Start recording"}</p>
                             </TooltipContent>
                         </Tooltip>
-                    )}
+
+                        {/* Status Text */}
+                        <div className="text-center">
+                            <div className={`text-lg font-semibold ${isListening ? 'text-green-600' : 'text-gray-700'}`}>
+                                {isListening ? "We're Listening" : "Start Recording"}
+                            </div>
+                            <div className={`text-sm font-medium ${isListening ? 'text-green-600' : 'text-gray-500'}`}>
+                                MIC IS {isListening ? 'ON' : 'OFF'}
+                            </div>
+                        </div>
+                    </div>
 
                     {/* User's turn to speak tooltip - shows when micEnabled but not listening */}
                     {micEnabled && !isListening && !recognizedText && (
-                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20">
-                            <div className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
-                                🎤 Click to start speaking
+                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20 w-fit">
+                            <div className="min-w-56 max-w-80 bg-muted text-cta-secondary-text px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
+                                Press the START RECORDING button to record you answer
                             </div>
-                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-blue-600"></div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-muted-foreground"></div>
                         </div>
                     )}
 
                     {/* Stop listening tooltip - shows when user is currently listening */}
                     {isListening && (
-                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20">
-                            <div className="bg-orange-500 text-white text-center px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
-                                🛑 Click to stop recording and submit
+                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-20 w-fit">
+                            <div className="min-w-56 max-w-80 bg-muted text-cta-secondary-text text-center px-3 py-2 rounded-lg text-sm font-medium shadow-lg animate-pulse">
+                                Once you are done with your answer, click the STOP RECORDING button to stop the recording.
                             </div>
-                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-orange-500"></div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-muted-foreground"></div>
                         </div>
                     )}
 
-                    {/* Submit/Retake Buttons */}
-                    {recognizedText && !isListening && (
+                    {/* Submit Button */}
+                    {/* {recognizedText && !isListening && (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="flex gap-2"
+                        
                         >
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -151,29 +147,12 @@ export function GeneralInterviewControls({
                                     <p>Submit answer</p>
                                 </TooltipContent>
                             </Tooltip>
-
-                            {retakeCount === 0 && (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            onClick={onRetakeAnswer}
-                                            variant="outline"
-                                            disabled={disabled}
-                                            className="w-12 h-12 p-0 rounded-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-lg transition-all duration-200"
-                                        >
-                                            <FaRedo className="w-5 h-5" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Retake answer</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            )}
+                            
                         </motion.div>
-                    )}
+                    )} */}
 
                     {/* Leave Interview */}
-                    <Tooltip>
+                    {/* <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 onClick={onLeave}
@@ -191,7 +170,7 @@ export function GeneralInterviewControls({
                         <TooltipContent>
                             <p>{isLeaving ? "Saving progress..." : "Leave interview"}</p>
                         </TooltipContent>
-                    </Tooltip>
+                    </Tooltip> */}
                 </div>
             </motion.div>
         </TooltipProvider>

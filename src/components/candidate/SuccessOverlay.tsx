@@ -1,5 +1,6 @@
 import { useRef, useLayoutEffect, useState } from "react";
 import { CheckCircle, Mic } from "lucide-react";
+import { Button } from "../ui/button";
 
 function ConnectorLine({
     containerRef,
@@ -108,12 +109,13 @@ export default function SuccessOverlay({
 
                 {/* Button */}
                 <div className="mt-8">
-                    <button
+                    <Button
                         onClick={onProceed}
-                        className="px-6 py-2 rounded-full bg-cta-primary text-cta-primary-text"
+                        variant="primary"
+                        className="px-6 py-2 rounded-full bg-cta-primary text-cta-primary-text cursor-pointer"
                     >
                         Proceed
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

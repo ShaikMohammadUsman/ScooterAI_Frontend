@@ -11,7 +11,7 @@ import * as speechsdk from "microsoft-cognitiveservices-speech-sdk";
 import { Progress } from "@/components/ui/progress";
 import { Mic, X as IconX, ArrowUp } from "lucide-react";
 import Link from "next/link";
-import useResponsiveBarCount from "@/hooks/useBarCounts";
+import WavyAnimation from "./WavyAnimation";
 
 interface JDOnboardingModalProps {
     open: boolean;
@@ -20,31 +20,7 @@ interface JDOnboardingModalProps {
     onChooseManual: () => void;
 }
 
-const ListeningBars: React.FC = () => {
-    const barCount = useResponsiveBarCount();
-    const bars = useMemo(() => Array.from({ length: barCount }), [barCount]);
-    return (
-        <div className="h-10 px-3 rounded-full flex items-end justify-center gap-[3px]">
-            {bars.map((_, i) => (
-                <span
-                    key={i}
-                    className="w-[3px] rounded-sm"
-                    style={{
-                        height: `${8 + ((i * 37) % 24)}px`,
-                        background: `linear-gradient(180deg, var(--color-grad-1), var(--color-grad-2))`,
-                        animation: `sbars 1.2s ease-in-out ${i * 0.04}s infinite`
-                    }}
-                />
-            ))}
-            <style jsx>{`
-                @keyframes sbars {
-                    0%, 100% { transform: scaleY(0.4); opacity: 0.85; }
-                    50% { transform: scaleY(1.35); opacity: 1; }
-                }
-            `}</style>
-        </div>
-    );
-};
+
 
 
 export default function JDOnboardingModal({ open, onOpenChange, form, onChooseManual }: JDOnboardingModalProps) {
@@ -289,7 +265,7 @@ export default function JDOnboardingModal({ open, onOpenChange, form, onChooseMa
                                                     <Button variant="secondary" className="h-10 w-10 sm:h-12 sm:w-12 px-2 sm:px-2" onClick={cancelVoice} aria-label="Cancel recording">
                                                         <IconX className="h-6 w-6" />
                                                     </Button>
-                                                    <ListeningBars />
+                                                    <WavyAnimation />
                                                     <Button variant="primary" className="h-10 w-10 sm:h-12 sm:w-12 px-2 sm:px-2" onClick={submitVoice} aria-label="Submit">
                                                         <ArrowUp className="h-6 w-6" />
                                                     </Button>

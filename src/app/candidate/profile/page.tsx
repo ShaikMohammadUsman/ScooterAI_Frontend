@@ -71,6 +71,8 @@ export default function CandidateProfileFlow() {
     const searchParams = useSearchParams();
     const jobId = searchParams?.get('job_id') || '';
     const { profile, updateProfile, markerProfileComplete } = useCandidateProfileStore();
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [sectionStates, setSectionStates] = useState({
         work: 'active', // Orange gradient background 
         sales: 'pending',    // Light purple background
@@ -206,6 +208,7 @@ export default function CandidateProfileFlow() {
     };
 
     const [showSuccess, setShowSuccess] = useState(false);
+    const [applicationId, setApplicationId] = useState<string | null>(null);
 
     const handleNext = async () => {
         const currentIndex = sections.findIndex(s => s.id === currentSection);
@@ -229,19 +232,21 @@ export default function CandidateProfileFlow() {
                 const res = await updateCandidateData(payload);
                 if (res?.status) {
                     markerProfileComplete();
+                    setApplicationId(res.application_id);
                     setShowSuccess(true);
                 } else {
-                    console.error("Update failed:", res?.message);
+                    setSubmitError(res?.message || 'Failed to update candidate data');
                 }
-            } catch (e) {
-                console.error("Update error:", e);
+            } catch (e: any) {
+                const msg = e?.response?.data?.message || e?.message || 'Failed to update candidate data';
+                setSubmitError(msg);
+            } finally {
+                setSubmitting(false);
             }
         }
     };
 
     function buildUpdatePayload(profileIn: ResumeProfile) {
-        // const jobId = (typeof window !== 'undefined') ? (new URLSearchParams(window.location.search).get('job_id') || '') : '';
-        // const jobId = jobId;
         return {
             job_id: jobId,
             basic_information: {
@@ -380,13 +385,17 @@ export default function CandidateProfileFlow() {
                     )}
 
                     {/* Single Proceed Button */}
-                    <div className="flex justify-center pt-6">
+                    <div className="flex flex-col items-center pt-6 gap-2">
+                        {submitError && (
+                            <p className="text-red-600 text-sm">{submitError}</p>
+                        )}
                         <Button
                             variant="primary"
                             onClick={handleNext}
+                            disabled={submitting}
                             className="px-8"
                         >
-                            {currentSection === "contact" ? "Complete" : "Proceed"}
+                            {submitting ? 'Submitting…' : currentSection === "contact" ? "Complete" : "Proceed"}
                         </Button>
                     </div>
                 </div>
@@ -480,13 +489,17 @@ export default function CandidateProfileFlow() {
                                 )}
 
                                 {/* Single Proceed Button */}
-                                <div className="flex justify-center pt-6">
+                                <div className="flex flex-col items-center pt-6 gap-2">
+                                    {submitError && (
+                                        <p className="text-red-600 text-sm">{submitError}</p>
+                                    )}
                                     <Button
                                         variant="primary"
                                         onClick={handleNext}
+                                        disabled={submitting}
                                         className="px-8"
                                     >
-                                        {currentSection === "contact" ? "Complete" : "Proceed"}
+                                        {submitting ? 'Submitting…' : currentSection === "contact" ? "Complete" : "Proceed"}
                                     </Button>
                                 </div>
                             </div>
@@ -494,7 +507,16 @@ export default function CandidateProfileFlow() {
                     </div>
                 </div>
             </div>
-            <SuccessOverlay visible={showSuccess} onProceed={() => router.push("/candidate/dashboard")} />
+            <SuccessOverlay
+                visible={showSuccess}
+                onProceed={() => {
+                    if (applicationId) {
+                        router.push(`/interview/general?application_id=${encodeURIComponent(applicationId)}`);
+                    } else {
+                        router.push("/candidate/dashboard");
+                    }
+                }}
+            />
         </div>
     );
 }
