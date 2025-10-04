@@ -41,7 +41,6 @@ interface PageProps {
 export default function JobCandidatesPage({ params }: PageProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
     const [jobDetails, setJobDetails] = useState<MyJobCandidatesResponse['job_details'] | null>(null);
     const resolvedParams = use(params);
@@ -75,10 +74,30 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [showVideoPlayer, setShowVideoPlayer] = useState(false);
     const [showAudioPlayer, setShowAudioPlayer] = useState(false);
 
-    // Pagination state
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(20); // Default page size
-    const [pagination, setPagination] = useState<MyJobCandidatesResponse['pagination'] | null>(null);
+    // Separate pagination state for each section
+    const [paginationState, setPaginationState] = useState({
+        new: { currentPage: 1, pageSize: 20, pagination: null as MyJobCandidatesResponse['pagination'] | null },
+        seen: { currentPage: 1, pageSize: 20, pagination: null as MyJobCandidatesResponse['pagination'] | null },
+        shortlisted: { currentPage: 1, pageSize: 20, pagination: null as MyJobCandidatesResponse['pagination'] | null },
+        rejected: { currentPage: 1, pageSize: 20, pagination: null as MyJobCandidatesResponse['pagination'] | null }
+    });
+
+    // Separate candidates state for each section
+    const [candidatesBySection, setCandidatesBySection] = useState({
+        new: [] as Candidate[],
+        seen: [] as Candidate[],
+        shortlisted: [] as Candidate[],
+        rejected: [] as Candidate[]
+    });
+
+    // Loading states for each section
+    const [loadingBySection, setLoadingBySection] = useState({
+        new: false,
+        seen: false,
+        shortlisted: false,
+        rejected: false
+    });
+
     const [pageLoading, setPageLoading] = useState(false);
 
     // Active tab for primary status buckets
@@ -93,6 +112,10 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
     // Debounce search term
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+    // Current candidates and pagination based on active tab
+    const candidates = candidatesBySection[activeTab];
+    const currentPagination = paginationState[activeTab].pagination;
 
     // Smart page size calculation
     const getSmartPageSize = () => {
@@ -109,11 +132,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
         // Use larger page size for basic filters, smaller for advanced filters
         if (hasBasicFilters && !hasAdvancedFilters) {
-            return Math.max(pageSize, 50); // At least 50 for basic filters
+            return 50; // At least 50 for basic filters
         } else if (hasAdvancedFilters) {
-            return Math.min(pageSize, 20); // Max 20 for advanced filters
+            return 20; // Max 20 for advanced filters
         } else {
-            return pageSize; // Use user-selected page size
+            return 20; // Default page size
         }
     };
 
@@ -128,16 +151,29 @@ export default function JobCandidatesPage({ params }: PageProps) {
         };
     }, [searchTerm]);
 
+    // Initial fetch for all sections on mount
     useEffect(() => {
-        fetchCandidates();
-    }, [jobId, activeTab, currentPage, pageSize]);
+        if (jobId) {
+            fetchAllSections();
+        }
+    }, [jobId]);
+
+    // Fetch specific section when tab changes or pagination changes
+    useEffect(() => {
+        if (jobId && activeTab) {
+            fetchCandidatesForSection(activeTab);
+        }
+    }, [jobId, activeTab, paginationState[activeTab].currentPage, paginationState[activeTab].pageSize]);
 
     // Refetch on inline Seen filters change (only for Seen tab)
     useEffect(() => {
         if (activeTab !== 'seen') return;
         // Reset to first page when filters change
-        setCurrentPage(1);
-        fetchCandidates();
+        setPaginationState(prev => ({
+            ...prev,
+            seen: { ...prev.seen, currentPage: 1 }
+        }));
+        fetchCandidatesForSection('seen');
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.audioAttended, filters.videoAttended, filters.videoInterviewSent, activeTab]);
 
@@ -153,44 +189,153 @@ export default function JobCandidatesPage({ params }: PageProps) {
         return () => window.removeEventListener('openCandidateDetails', handler as any);
     }, [candidates]);
 
-    // Reset page when switching tabs
+    // Reset page when switching tabs (if needed)
     useEffect(() => {
-        setCurrentPage(1);
+        // Only reset if the current page is not 1
+        if (paginationState[activeTab].currentPage !== 1) {
+            setPaginationState(prev => ({
+                ...prev,
+                [activeTab]: { ...prev[activeTab], currentPage: 1 }
+            }));
+        }
     }, [activeTab]);
 
-    const fetchCandidates = async () => {
+    // Fetch all sections simultaneously on initial mount
+    const fetchAllSections = async () => {
+        setLoading(true);
         try {
-            setPageLoading(true);
+            const promises = [
+                fetchCandidatesForSection('new', false),
+                fetchCandidatesForSection('seen', false),
+                fetchCandidatesForSection('shortlisted', false),
+                fetchCandidatesForSection('rejected', false)
+            ];
 
-            // Map active tab to backend params only (minimalistic)
+            await Promise.all(promises);
+        } catch (error) {
+            console.error('Error fetching all sections:', error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch candidates",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch candidates for a specific section
+    const fetchCandidatesForSection = async (section: 'new' | 'seen' | 'shortlisted' | 'rejected', showLoading = true) => {
+        try {
+            if (showLoading) {
+                setLoadingBySection(prev => ({ ...prev, [section]: true }));
+            }
+
+            // Map section to backend params
             let applicationStatus: boolean | string | undefined;
             let audioAttendedParam: boolean | undefined;
             let videoAttendedParam: boolean | undefined;
             let videoInterviewSentParam: boolean | undefined;
             let shortlistedParam: boolean | undefined;
+            let seenParam: boolean | undefined;
+
+            switch (section) {
+                case 'new':
+                    // New applicants = candidates who attended video interview
+                    videoAttendedParam = true;
+                    break;
+                case 'seen':
+                    seenParam = true; // Use the new seen filter
+                    break;
+                case 'shortlisted':
+                    shortlistedParam = true;
+                    break;
+                case 'rejected':
+                    applicationStatus = 'rejected';
+                    break;
+            }
+
+            const currentPageState = paginationState[section];
+            const smartPageSize = getSmartPageSize();
+
+            const response = await getMyJobCandidates(
+                jobId,
+                currentPageState.currentPage,
+                smartPageSize,
+                {
+                    application_status: applicationStatus,
+                    video_attended: videoAttendedParam,
+                    shortlisted: shortlistedParam,
+                    call_for_interview: undefined,
+                    audio_attended: audioAttendedParam,
+                    video_interview_sent: videoInterviewSentParam,
+                    seen: seenParam,
+                }
+            );
+
+            // Update candidates and pagination for this section
+            setCandidatesBySection(prev => ({
+                ...prev,
+                [section]: response.candidates
+            }));
+
+            setPaginationState(prev => ({
+                ...prev,
+                [section]: {
+                    ...prev[section],
+                    pagination: response.pagination
+                }
+            }));
+
+            // Set job details from any response (they should be the same)
+            if (response.job_details) {
+                setJobDetails(response.job_details);
+            }
+
+        } catch (error) {
+            console.error(`Error fetching ${section} candidates:`, error);
+            toast({
+                title: "Error",
+                description: `Failed to fetch ${section} candidates`,
+                variant: "destructive"
+            });
+        } finally {
+            if (showLoading) {
+                setLoadingBySection(prev => ({ ...prev, [section]: false }));
+            }
+        }
+    };
+
+    // Legacy function for backward compatibility
+    const fetchCandidates = async () => {
+        await fetchCandidatesForSection(activeTab);
+    };
+
+    const loadMoreCandidates = async () => {
+        if (isLoadingMore) return;
+
+        setIsLoadingMore(true);
+        try {
+            const currentSectionState = paginationState[activeTab];
+            const nextPage = currentSectionState.currentPage + 1;
+
+            // Map section to backend params (same logic as fetchCandidatesForSection)
+            let applicationStatus: boolean | string | undefined;
+            let audioAttendedParam: boolean | undefined;
+            let videoAttendedParam: boolean | undefined;
+            let videoInterviewSentParam: boolean | undefined;
+            let shortlistedParam: boolean | undefined;
+            let seenParam: boolean | undefined;
 
             switch (activeTab) {
                 case 'new':
-                    audioAttendedParam = false; // profile created only
+                    videoAttendedParam = true;
                     break;
                 case 'seen':
-                    {
-                        const audioSelected = filters.audioAttended === true;
-                        const videoSelected = filters.videoAttended === true;
-                        const sentSelected = filters.videoInterviewSent === true;
-
-                        // If no explicit filter selected, default Seen to audio completed
-                        if (!audioSelected && !videoSelected && !sentSelected) {
-                            audioAttendedParam = true;
-                        } else {
-                            if (audioSelected) audioAttendedParam = true;
-                            if (videoSelected) videoAttendedParam = true;
-                            if (sentSelected) videoInterviewSentParam = true;
-                        }
-                    }
+                    seenParam = true;
                     break;
                 case 'shortlisted':
-                    shortlistedParam = true; // sent to hiring manager
+                    shortlistedParam = true;
                     break;
                 case 'rejected':
                     applicationStatus = 'rejected';
@@ -201,7 +346,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
             const response = await getMyJobCandidates(
                 jobId,
-                currentPage,
+                nextPage,
                 smartPageSize,
                 {
                     application_status: applicationStatus,
@@ -210,81 +355,25 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     call_for_interview: undefined,
                     audio_attended: audioAttendedParam,
                     video_interview_sent: videoInterviewSentParam,
-                }
-            );
-            setCandidates(response.candidates);
-            setJobDetails(response.job_details);
-            setPagination(response.pagination);
-        } catch (error) {
-            console.error('Error fetching candidates:', error);
-            toast({
-                title: "Error",
-                description: "Failed to fetch candidates",
-                variant: "destructive"
-            });
-        } finally {
-            setLoading(false);
-            setPageLoading(false);
-        }
-    };
-
-    const loadMoreCandidates = async () => {
-        if (isLoadingMore) return;
-
-        setIsLoadingMore(true);
-        try {
-            const nextPage = currentPage + 1;
-            // Mirror the same mapping as the main fetch based on activeTab
-            let nextApplicationStatus: boolean | string | undefined;
-            let nextAudioAttended: boolean | undefined;
-            let nextVideoAttended: boolean | undefined;
-            let nextVideoInterviewSent: boolean | undefined;
-            let nextShortlisted: boolean | undefined;
-
-            switch (activeTab) {
-                case 'new':
-                    nextAudioAttended = false;
-                    break;
-                case 'seen':
-                    {
-                        const audioSelected = filters.audioAttended === true;
-                        const videoSelected = filters.videoAttended === true;
-                        const sentSelected = filters.videoInterviewSent === true;
-
-                        if (!audioSelected && !videoSelected && !sentSelected) {
-                            nextAudioAttended = true;
-                        } else {
-                            if (audioSelected) nextAudioAttended = true;
-                            if (videoSelected) nextVideoAttended = true;
-                            if (sentSelected) nextVideoInterviewSent = true;
-                        }
-                    }
-                    break;
-                case 'shortlisted':
-                    nextShortlisted = true;
-                    break;
-                case 'rejected':
-                    nextApplicationStatus = 'rejected';
-                    break;
-            }
-
-            const response = await getMyJobCandidates(
-                jobId,
-                nextPage,
-                pageSize,
-                {
-                    application_status: nextApplicationStatus,
-                    video_attended: nextVideoAttended,
-                    shortlisted: nextShortlisted,
-                    call_for_interview: undefined,
-                    audio_attended: nextAudioAttended,
-                    video_interview_sent: nextVideoInterviewSent,
+                    seen: seenParam,
                 }
             );
 
-            // Append new candidates to existing ones
-            setCandidates(prev => [...prev, ...response.candidates]);
-            setCurrentPage(nextPage);
+            // Append new candidates to existing ones for this section
+            setCandidatesBySection(prev => ({
+                ...prev,
+                [activeTab]: [...prev[activeTab], ...response.candidates]
+            }));
+
+            // Update pagination state for this section
+            setPaginationState(prev => ({
+                ...prev,
+                [activeTab]: {
+                    ...prev[activeTab],
+                    currentPage: nextPage,
+                    pagination: response.pagination
+                }
+            }));
 
             toast({
                 title: "Success",
@@ -637,15 +726,18 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
 
     const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+        setPaginationState(prev => ({
+            ...prev,
+            [activeTab]: { ...prev[activeTab], currentPage: page }
+        }));
         setSelectedCandidate(null); // Close modal when changing pages
         setPageLoading(true); // Show loading for page change
     };
 
     const renderPaginationNumbers = () => {
-        if (!pagination) return null;
+        if (!currentPagination) return null;
 
-        const { current_page, total_pages } = pagination;
+        const { current_page, total_pages } = currentPagination;
         const pages = [];
 
         // Always show first page
@@ -1137,14 +1229,14 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     </div> */}
 
                     {/* Pagination */}
-                    {pagination && pagination.total_pages > 1 && (
+                    {currentPagination && currentPagination.total_pages > 1 && (
                         <div className="mt-6 sm:mt-8 flex justify-center px-4">
                             <Pagination>
                                 <PaginationContent className="flex flex-wrap justify-center gap-2">
                                     <PaginationItem>
                                         <PaginationPrevious
-                                            onClick={() => handlePageChange(currentPage - 1)}
-                                            className={!pagination.has_previous || pageLoading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                            onClick={() => handlePageChange(paginationState[activeTab].currentPage - 1)}
+                                            className={!currentPagination.has_previous || pageLoading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                                             disabled={pageLoading}
                                         />
                                     </PaginationItem>
@@ -1155,7 +1247,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                                 <PaginationEllipsis />
                                             ) : (
                                                 <PaginationLink
-                                                    isActive={page === currentPage}
+                                                    isActive={page === paginationState[activeTab].currentPage}
                                                     onClick={() => handlePageChange(page as number)}
                                                     className={pageLoading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                                                     disabled={pageLoading}
@@ -1168,8 +1260,8 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                                     <PaginationItem>
                                         <PaginationNext
-                                            onClick={() => handlePageChange(currentPage + 1)}
-                                            className={!pagination.has_next || pageLoading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                            onClick={() => handlePageChange(paginationState[activeTab].currentPage + 1)}
+                                            className={!currentPagination.has_next || pageLoading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                                             disabled={pageLoading}
                                         />
                                     </PaginationItem>
@@ -1179,7 +1271,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     )}
 
                     {/* Pagination Info */}
-                    {pagination && (
+                    {currentPagination && (
                         <div className="mt-4 text-center text-sm text-gray-600 px-4">
                             {pageLoading ? (
                                 <div className="flex items-center justify-center gap-2">
@@ -1188,9 +1280,9 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 </div>
                             ) : (
                                 <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
-                                    <span>Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, pagination.total_candidates)}</span>
+                                    <span>Showing {((paginationState[activeTab].currentPage - 1) * paginationState[activeTab].pageSize) + 1} to {Math.min(paginationState[activeTab].currentPage * paginationState[activeTab].pageSize, currentPagination.total_candidates)}</span>
                                     <span className="hidden sm:inline">of</span>
-                                    <span className="block sm:inline">{pagination.total_candidates} candidates</span>
+                                    <span className="block sm:inline">{currentPagination.total_candidates} candidates</span>
                                 </div>
                             )}
                         </div>

@@ -108,6 +108,142 @@ export interface MyJobRolesResponse {
     data: JobAggregate[];
 }
 
+export interface ManagerCandidate {
+    application_id: string;
+    profile_created_at: string;
+    name: string;
+    email: string;
+    phone: string;
+    professional_summary: string;
+    basic_information: {
+        full_name: string;
+        current_location: string;
+        open_to_relocation: boolean;
+        phone_number: string;
+        linkedin_url: string;
+        email: string;
+        specific_phone_number: string | null;
+        notice_period: string;
+        current_ctc: {
+            currencyType: string;
+            value: number;
+        };
+        expected_ctc: {
+            currencyType: string;
+            value: number;
+        };
+    };
+    career_overview: {
+        total_years_experience: number;
+        years_sales_experience: number;
+        average_tenure_per_role: number;
+        employment_gaps: {
+            has_gaps: boolean;
+            duration: string;
+        };
+        promotion_history: boolean;
+        company_history: Array<{
+            company_name: string;
+            position: string;
+            start_date: string;
+            end_date: string;
+            duration_months: number;
+            is_current: boolean;
+        }>;
+    };
+    role_process_exposure: {
+        sales_role_type: string;
+        position_level: string;
+        sales_stages_owned: string[];
+        average_deal_size: string;
+        sales_cycle_length: string;
+        own_quota: boolean;
+        quota_ownership: string[];
+        quota_attainment: string;
+    };
+    sales_context: {
+        sales_type: string;
+        sales_motion: string;
+        industries_sold_into: string[];
+        regions_sold_into: string[];
+        buyer_personas: string[];
+    };
+    tools_platforms: {
+        crm_tools: string[];
+        crm_used: string | null;
+        sales_tools: string[];
+    };
+    resume_url: string;
+    application_status: string;
+    final_shortlist: boolean;
+    call_for_interview: boolean;
+    interview_status: {
+        audio_interview_passed: boolean;
+        video_interview_attended: boolean;
+        audio_interview_attended: boolean;
+        video_email_sent: boolean;
+        video_interview_url: string | null;
+        audio_interview_url: string;
+        resume_url_from_user_account: string;
+    };
+    audio_proctoring_details: {
+        _id: string;
+        user_id: string;
+        dev_tools_attempts: number;
+        email: string;
+        flags: Array<{
+            message: string;
+            timestamp: string;
+            type: string;
+            severity: string;
+            details?: Record<string, any>;
+        }>;
+        interview_duration: number;
+        interview_events: Array<{
+            event: string;
+            timestamp: string;
+            details: Record<string, any>;
+        }>;
+        multi_touch_gestures: number;
+        orientation_changes: number;
+        right_clicks: number;
+        screen_time: string;
+        submission_timestamp: string;
+        swipe_gestures: number;
+        tab_switches: number;
+        updated_at: string;
+        window_focus_loss: number;
+    };
+    video_proctoring_details: {
+        _id: string;
+        user_id: string;
+        dev_tools_attempts: number;
+        email: string;
+        flags: Array<{
+            message: string;
+            timestamp: string;
+            type: string;
+            severity: string;
+            details?: Record<string, any>;
+        }>;
+        interview_duration: number;
+        interview_events: Array<{
+            event: string;
+            timestamp: string;
+            details: Record<string, any>;
+        }>;
+        multi_touch_gestures: number;
+        orientation_changes: number;
+        right_clicks: number;
+        screen_time: string;
+        submission_timestamp: string;
+        swipe_gestures: number;
+        tab_switches: number;
+        updated_at: string;
+        window_focus_loss: number;
+    };
+}
+
 export interface MyJobCandidatesResponse {
     status: boolean;
     message: string;
@@ -131,7 +267,7 @@ export interface MyJobCandidatesResponse {
         has_next: boolean;
         has_previous: boolean;
     };
-    candidates: any[];
+    candidates: ManagerCandidate[];
 }
 
 export interface CreateJobStage1Request {
@@ -445,6 +581,7 @@ export async function getMyJobCandidates(
         video_interview_sent?: boolean;
         shortlisted?: boolean;
         call_for_interview?: boolean;
+        seen?: boolean;
     }
 ): Promise<MyJobCandidatesResponse> {
     const params = new URLSearchParams({ page: String(page), page_size: String(page_size) });
@@ -455,6 +592,7 @@ export async function getMyJobCandidates(
         if (opts.video_interview_sent != null) params.set('video_interview_sent', String(opts.video_interview_sent));
         if (opts.shortlisted != null) params.set('shortlisted', String(opts.shortlisted));
         if (opts.call_for_interview != null) params.set('call_for_interview', String(opts.call_for_interview));
+        if (opts.seen != null) params.set('seen', String(opts.seen));
     }
     const url = `${BASE_URL}/my-job-candidates/${encodeURIComponent(jobId)}?${params.toString()}`;
     const res = await managerApi.get(url);
@@ -463,6 +601,40 @@ export async function getMyJobCandidates(
 
 export async function getMyJobRoles(): Promise<MyJobRolesResponse> {
     const res = await managerApi.get(`/my-job-roles/`);
+    return res.data;
+}
+
+// Interview link sending interfaces
+export interface SendInterviewLinkRequest {
+    application_id: string;
+    interview_type: 'audio' | 'video';
+    candidate_name: string;
+    candidate_email: string;
+}
+
+export interface SendInterviewLinkResponse {
+    status: boolean;
+    message: string;
+    application_id?: string;
+}
+
+// Send audio interview link
+export async function sendAudioInterviewLink(request: SendInterviewLinkRequest): Promise<SendInterviewLinkResponse> {
+    const res = await managerApi.post('/send-audio-interview-link/', {
+        application_id: request.application_id,
+        candidate_name: request.candidate_name,
+        candidate_email: request.candidate_email
+    });
+    return res.data;
+}
+
+// Send video interview link
+export async function sendVideoInterviewLink(request: SendInterviewLinkRequest): Promise<SendInterviewLinkResponse> {
+    const res = await managerApi.post('/send-video-interview-link/', {
+        application_id: request.application_id,
+        candidate_name: request.candidate_name,
+        candidate_email: request.candidate_email
+    });
     return res.data;
 }
 
