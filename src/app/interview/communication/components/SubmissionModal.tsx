@@ -77,7 +77,7 @@ export function SubmissionModal({
                             <motion.div
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                className="w-full h-full rounded-full border-4 border-primary border-t-transparent"
+                                className="w-full h-full rounded-full border-4 border-grad-1 border-t-transparent"
                             />
                         )}
                         {submissionStep === 'uploading' && (
@@ -87,7 +87,7 @@ export function SubmissionModal({
                                 transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
                                 className="w-full h-full flex items-center justify-center"
                             >
-                                <svg className="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-16 h-16 text-grad-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>
                             </motion.div>
@@ -128,7 +128,7 @@ export function SubmissionModal({
                                         initial={{ width: 0 }}
                                         animate={{ width: "95%" }}
                                         transition={{ duration: 20, ease: "easeInOut" }}
-                                        className="h-full bg-green-400 rounded-full"
+                                        className="h-full bg-gradient-to-r from-grad-1 to-grad-2 rounded-full"
                                     />
 
                                     {/* Moving Scooter Icon */}
