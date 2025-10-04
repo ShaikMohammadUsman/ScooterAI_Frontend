@@ -8,7 +8,8 @@ import { LoadingDots } from "@/components/ui/loadingDots";
 import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio, SupportedLanguageCode, SUPPORTED_LANGUAGES } from "@/lib/interviewService";
 import { candidateAudioInterview, evaluateAudioInterview, updateAudioProctoringLogs } from "@/lib/candidateService";
 import { textInAudioOut, resetSynthesizer } from "@/lib/voiceBot";
-import { InterviewAudioRecorder } from "@/lib/audioRecorder";
+import { textInAudioOutWithCapture } from "@/lib/enhancedVoiceBot";
+import { EnhancedInterviewAudioRecorder } from "@/lib/enhancedAudioRecorder";
 
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -65,7 +66,7 @@ export default function VoiceInterviewPage() {
     const proctoringRef = useRef<ProctoringSystemRef>(null);
 
     // Audio recording states
-    const audioRecorderRef = useRef<InterviewAudioRecorder | null>(null);
+    const audioRecorderRef = useRef<EnhancedInterviewAudioRecorder | null>(null);
     const [isUploadingAudio, setIsUploadingAudio] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showUploadModal, setShowUploadModal] = useState(false);
@@ -277,8 +278,24 @@ export default function VoiceInterviewPage() {
                 return;
             }
 
-            // Initialize audio recorder
-            audioRecorderRef.current = new InterviewAudioRecorder();
+            // Initialize enhanced audio recorder
+            audioRecorderRef.current = new EnhancedInterviewAudioRecorder();
+
+            // Start TTS capture setup
+            try {
+                await audioRecorderRef.current.startTTSCapture();
+            } catch (error) {
+                console.warn("TTS capture setup failed, continuing without it:", error);
+            }
+
+            // Start continuous recording for the entire interview
+            try {
+                await audioRecorderRef.current.startContinuousRecording();
+                console.log("Continuous recording started for entire interview");
+            } catch (error) {
+                console.error("Failed to start continuous recording:", error);
+                // Continue without continuous recording as fallback
+            }
 
             // Reset all states
             setStarted(false);
@@ -352,13 +369,8 @@ export default function VoiceInterviewPage() {
                 icon: <FaUserTie className="text-primary w-6 h-6" />
             }]);
 
-            // Add TTS segment to audio recorder
-            if (audioRecorderRef.current) {
-                audioRecorderRef.current.addTTSSegment(question);
-            }
-
-            // Speak the question
-            const duration = await textInAudioOut(
+            // Speak the question with audio capture
+            const ttsResult = await textInAudioOutWithCapture(
                 question,
                 (spokenText) => {
                     setMessages((prev) => {
@@ -374,6 +386,13 @@ export default function VoiceInterviewPage() {
                 setIsSpeaking,
                 questionLanguage
             );
+
+            // Add TTS segment to audio recorder with captured audio
+            if (audioRecorderRef.current) {
+                await audioRecorderRef.current.addTTSSegment(question, ttsResult.audioData);
+            }
+
+            const duration = ttsResult.duration;
             setSpeechDuration(duration || 0);
 
             // Track question narration end
@@ -428,15 +447,7 @@ export default function VoiceInterviewPage() {
         // Track answer start
         handleAnswerStart(currentQ);
 
-        // Start audio recording for user response
-        if (audioRecorderRef.current) {
-            try {
-                await audioRecorderRef.current.startUserRecording();
-            } catch (error) {
-                console.error("Error starting audio recording:", error);
-                // Continue with speech recognition even if audio recording fails
-            }
-        }
+        // Note: Continuous recording is already active, no need to start per-question recording
 
         try {
             const speechConfig = speechsdk.SpeechConfig.fromSubscription(SPEECH_KEY, SPEECH_REGION);
@@ -505,10 +516,7 @@ export default function VoiceInterviewPage() {
         // Track answer end
         handleAnswerEnd(currentQ, currentRecognizedText);
 
-        // Stop audio recording for user response
-        if (audioRecorderRef.current) {
-            audioRecorderRef.current.stopUserRecording();
-        }
+        // Note: Continuous recording continues, no need to stop per-question recording
 
         // Create the new QA pair
         const newQAPair = {
@@ -645,6 +653,16 @@ export default function VoiceInterviewPage() {
                 await uploadAudioProctoringLogs(applicationId);
             }
 
+            // Stop continuous recording after all uploads are complete
+            if (audioRecorderRef.current) {
+                try {
+                    console.log("Stopping continuous recording after leave interview uploads completed");
+                    audioRecorderRef.current.stopContinuousRecording();
+                } catch (error) {
+                    console.warn("Error stopping continuous recording on leave:", error);
+                }
+            }
+
             // Deactivate proctoring and navigate
             setProctoringActive(false);
             router.push("/");
@@ -679,6 +697,18 @@ export default function VoiceInterviewPage() {
                 await uploadAudioFile(applicationId);
                 // Upload audio proctoring logs
                 await uploadAudioProctoringLogs(applicationId);
+            }
+
+            // Stop continuous recording after all uploads are complete
+            if (audioRecorderRef.current) {
+                try {
+                    console.log("Stopping continuous recording after all uploads completed");
+                    // The combineAudioSegments method already calls stopContinuousRecording internally
+                    // But we can also call it explicitly here for cleanup
+                    audioRecorderRef.current.stopContinuousRecording();
+                } catch (error) {
+                    console.warn("Error stopping continuous recording:", error);
+                }
             }
 
             // COMMENTED OUT: Evaluate interview results using candidate API
