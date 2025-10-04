@@ -244,8 +244,7 @@ function CommunicationInterview() {
         } else {
             // Set application ID and verified user, skip verification UI
             setApplicationId(appId);
-            const userId = localStorage.getItem('scooterUserId');
-            setVerifiedUser({ user_id: userId || '', full_name: 'Candidate', resume_status: true, reset_count: 0 });
+            setVerifiedUser({ user_id: appId || '', full_name: 'Candidate', resume_status: true, reset_count: 0 });
             setShowUnauthorized(false);
             // Trigger dark theme transition for consistency
             setTimeout(() => setIsDarkTheme(false), 100);
@@ -310,9 +309,8 @@ function CommunicationInterview() {
         setShowWelcomeScreen(false);
         setLoading(true);
         setError(null);
-        const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
-        if (!userId) {
-            setError("No profile ID found");
+        if (!applicationId) {
+            setError("No application ID found");
             setLoading(false);
             return;
         }
@@ -709,9 +707,8 @@ function CommunicationInterview() {
             recordingFormatRef.current = { fileExtension: format.fileExtension, mimeType: format.mimeType };
 
             // Initialize chunked uploader
-            const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
-            if (!userId) {
-                throw new Error("No user ID found for video upload");
+            if (!applicationId) {
+                throw new Error("No application ID found for video upload");
             }
 
             const resetCount = (verifiedUser?.reset_count || 0);
@@ -721,7 +718,7 @@ function CommunicationInterview() {
             // });
 
             const uploader = createChunkedUploader({
-                userId,
+                userId: applicationId,
                 fileExtension: format.fileExtension,
                 resetCount: resetCount,
                 onProgress: (uploadedBytes) => {
@@ -840,9 +837,8 @@ function CommunicationInterview() {
         setLoading(true);
         setIsProcessingResponse(true);
         setError(null);
-        const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
-        if (!userId) {
-            setError("No profile ID found");
+        if (!applicationId) {
+            setError("No application ID found");
             setLoading(false);
             setIsProcessingResponse(false);
             return;
@@ -1111,9 +1107,8 @@ function CommunicationInterview() {
                 // Stop recording and finalize chunked upload
                 try {
                     const { blobUrl, fileExtension, mimeType } = await stopRecording();
-                    const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
-                    if (userId) {
+                    if (applicationId) {
                         // Video is already uploaded via chunked uploader
                         setIsUploadingVideo(true);
                         setSubmissionStep('uploading');
@@ -1128,7 +1123,7 @@ function CommunicationInterview() {
                         });
 
                         // Upload video proctoring logs AFTER video is finalized; include video_url
-                        await uploadVideoProctoringLogs(userId, blobUrl);
+                        await uploadVideoProctoringLogs(applicationId, blobUrl);
 
                         // Clear timeout since submission completed successfully
                         clearTimeout(submissionTimeout);
@@ -1283,9 +1278,8 @@ function CommunicationInterview() {
             // Stop recording and finalize chunked upload
             try {
                 const { blobUrl, fileExtension, mimeType } = await stopRecording();
-                const userId = verifiedUser?.user_id || localStorage.getItem('scooterUserId');
 
-                if (userId) {
+                if (applicationId) {
                     // Video is already uploaded via chunked uploader
                     setIsUploadingVideo(true);
                     setSubmissionStep('uploading');
@@ -1299,7 +1293,7 @@ function CommunicationInterview() {
                     });
 
                     // Upload video proctoring logs AFTER video is finalized; include video_url
-                    await uploadVideoProctoringLogs(userId, blobUrl);
+                    await uploadVideoProctoringLogs(applicationId, blobUrl);
 
                     // Clear timeout since process completed successfully
                     clearTimeout(earlyEndingTimeout);
@@ -1358,7 +1352,7 @@ function CommunicationInterview() {
     };
 
     // Upload video proctoring logs
-    const uploadVideoProctoringLogs = async (userId: string, videoUrl: string) => {
+    const uploadVideoProctoringLogs = async (applicationId: string, videoUrl: string) => {
         try {
             const endTime = new Date();
             const proctoringData = proctoringRef.current?.getProctoringData();
@@ -2173,7 +2167,7 @@ function CommunicationInterview() {
             <ResumeUploadModal
                 open={showResumeUploadModal}
                 onOpenChange={setShowResumeUploadModal}
-                userId={verifiedUser?.user_id || ""}
+                userId={applicationId || ""}
                 onResumeUploaded={handleResumeUploaded}
             />
 
