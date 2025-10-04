@@ -5,8 +5,8 @@ import { FaMicrophone, FaUser, FaUserTie, FaCheck, FaRedo, FaArrowRight, FaUploa
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingDots } from "@/components/ui/loadingDots";
-import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio, updateAudioProctoringLogs, SupportedLanguageCode, SUPPORTED_LANGUAGES } from "@/lib/interviewService";
-import { candidateAudioInterview, evaluateAudioInterview } from "@/lib/candidateService";
+import { generateInterviewQuestions, evaluateInterview, QAPair, uploadInterviewAudio, SupportedLanguageCode, SUPPORTED_LANGUAGES } from "@/lib/interviewService";
+import { candidateAudioInterview, evaluateAudioInterview, updateAudioProctoringLogs } from "@/lib/candidateService";
 import { textInAudioOut, resetSynthesizer } from "@/lib/voiceBot";
 import { InterviewAudioRecorder } from "@/lib/audioRecorder";
 
@@ -638,12 +638,11 @@ export default function VoiceInterviewPage() {
             }
 
             // Submit current progress and audio
-            const profile_id = localStorage.getItem('scooterUserId');
-            if (profile_id && qaPairs.length > 0) {
+            if (applicationId && qaPairs.length > 0) {
                 await evaluateInterviewResults(qaPairs);
-            } else if (profile_id) {
+            } else if (applicationId) {
                 // Upload proctoring logs even if no Q&A pairs
-                await uploadAudioProctoringLogs(profile_id);
+                await uploadAudioProctoringLogs(applicationId);
             }
 
             // Deactivate proctoring and navigate
@@ -674,44 +673,50 @@ export default function VoiceInterviewPage() {
             setSubmissionStep('processing');
             await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing
 
-            // Upload audio file (keep existing functionality)
+            // Upload audio file and proctoring logs
             setSubmissionStep('uploading');
-            const profile_id = localStorage.getItem('scooterUserId');
-            if (profile_id) {
-                await uploadAudioFile(profile_id);
+            if (applicationId) {
+                await uploadAudioFile(applicationId);
                 // Upload audio proctoring logs
-                await uploadAudioProctoringLogs(profile_id);
+                await uploadAudioProctoringLogs(applicationId);
             }
 
-            // Evaluate interview results using candidate API
-            setSubmissionStep('evaluating');
-            addInterviewEvent('evaluation_started', { timestamp: new Date() });
+            // COMMENTED OUT: Evaluate interview results using candidate API
+            // setSubmissionStep('evaluating');
+            // addInterviewEvent('evaluation_started', { timestamp: new Date() });
 
-            const evaluationResult = await evaluateAudioInterview({
-                application_id: applicationId,
-                qa_pairs: qaPairsToEvaluate,
-            });
+            // const evaluationResult = await evaluateAudioInterview({
+            //     application_id: applicationId,
+            //     qa_pairs: qaPairsToEvaluate,
+            // });
 
-            addInterviewEvent('evaluation_completed', {
-                timestamp: new Date(),
-                message: evaluationResult?.message
-            });
+            // addInterviewEvent('evaluation_completed', {
+            //     timestamp: new Date(),
+            //     message: evaluationResult?.message
+            // });
 
-            if (evaluationResult && evaluationResult.status) {
-                setEvaluationStatus('Evaluation completed successfully!');
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
+            // if (evaluationResult && evaluationResult.status) {
+            //     setEvaluationStatus('Evaluation completed successfully!');
+            //     await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
 
-                setShowResults(true);
-                setProctoringActive(false);
-                if (evaluationResult.qualified_for_video_round) {
-                    setPassed(evaluationResult.qualified_for_video_round);
-                }
-            } else {
-                setEvaluationStatus('Evaluation failed. Please try again.');
-            }
+            //     setShowResults(true);
+            //     setProctoringActive(false);
+            //     if (evaluationResult.qualified_for_video_round) {
+            //         setPassed(evaluationResult.qualified_for_video_round);
+            //     }
+            // } else {
+            //     setEvaluationStatus('Evaluation failed. Please try again.');
+            // }
+
+            // Skip evaluation for audio round - just complete the interview
+            setEvaluationStatus('Audio interview completed successfully!');
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
+
+            setShowResults(true);
+            setProctoringActive(false);
         } catch (err: any) {
-            setError(err.message || "Failed to evaluate interview");
-            setEvaluationStatus('An error occurred during evaluation.');
+            setError(err.message || "Failed to complete interview");
+            setEvaluationStatus('An error occurred during submission.');
             setProctoringActive(false);
         } finally {
             setLoading(false);
@@ -726,7 +731,7 @@ export default function VoiceInterviewPage() {
     };
 
     // Upload audio file
-    const uploadAudioFile = async (profile_id: string) => {
+    const uploadAudioFile = async (application_id: string) => {
         if (!audioRecorderRef.current) {
             console.warn("No audio recorder available");
             return;
@@ -743,7 +748,7 @@ export default function VoiceInterviewPage() {
             // Upload the audio file
             await uploadInterviewAudio({
                 file: audioFile,
-                user_id: profile_id,
+                user_id: application_id,
                 onProgress: (progress) => {
                     setUploadProgress(Math.round(progress * 100));
                 }
@@ -764,7 +769,7 @@ export default function VoiceInterviewPage() {
     };
 
     // Upload audio proctoring logs
-    const uploadAudioProctoringLogs = async (profile_id: string) => {
+    const uploadAudioProctoringLogs = async (application_id: string) => {
         try {
             const endTime = new Date();
             const proctoringData = proctoringRef.current?.getProctoringData();
@@ -792,7 +797,7 @@ export default function VoiceInterviewPage() {
             };
 
             await updateAudioProctoringLogs({
-                user_id: profile_id,
+                user_id: application_id,
                 audio_proctoring_logs: proctoringLogs
             });
 
