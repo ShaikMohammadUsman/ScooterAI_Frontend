@@ -2180,6 +2180,31 @@ function CommunicationInterview() {
             {/* Browser Warning Modal for non-Chrome */}
             <BrowserWarningModal open={showBrowserWarning} onOpenChange={setShowBrowserWarning} />
 
+            {/* Submitting Answer Overlay */}
+            <AnimatePresence>
+                {isSubmittingFinal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className={`rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl transition-all duration-1000 ${isDarkTheme ? 'bg-gray-800 border border-gray-700' : 'bg-bg-main'}`}
+                        >
+                            {/* <div className="w-16 h-16 border-4 border-grad-1 border-t-transparent rounded-full animate-spin" /> */}
+                            <h3 className={`flex items-center gap-2 text-xl font-semibold transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-grad-1'}`}>Submitting <div className="w-8 h-8 border-4 border-grad-1 border-t-transparent rounded-full animate-spin" /></h3>
+                            {/* <p className={`text-center transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-muted-foreground'}`}>
+                                Processing your answer...
+                            </p> */}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {proctoringActive && !showCompletionScreen && (
                 // Proctoring System
                 <ProctoringSystem

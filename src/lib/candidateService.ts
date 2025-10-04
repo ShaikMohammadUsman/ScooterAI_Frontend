@@ -28,6 +28,7 @@ export interface ApplicationHistory {
     application_status: string;
     video_interview_start: boolean;
     video_email_sent: boolean;
+    audio_interview_status: boolean;
 }
 
 export interface CandidateProfileData {
@@ -246,6 +247,13 @@ export interface UpdateVideoProctoringLogsRequest {
 export interface UpdateVideoProctoringLogsResponse {
     status: boolean;
     message: string;
+}
+
+// GET CANDIDATE DASHBOARD DATA
+export interface CandidateDashboardResponse {
+    status: boolean;
+    message: string;
+    data: CandidateProfileData;
 }
 
 // Auth helpers
@@ -525,6 +533,17 @@ export async function updateAudioProctoringLogs(
         return res.data;
     } catch (err: any) {
         throw new Error(err.response?.data?.message || "Failed to update audio proctoring logs");
+    }
+}
+
+
+
+export async function getCandidateDashboardData(): Promise<CandidateDashboardResponse> {
+    try {
+        const res = await candidateApi.get('/my-candidate-profile/');
+        return res.data;
+    } catch (err: any) {
+        throw new Error(err.response?.data?.message || "Failed to fetch candidate dashboard data");
     }
 }
 

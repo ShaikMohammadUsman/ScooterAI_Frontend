@@ -227,6 +227,8 @@ export default function CandidateProfileFlow() {
             setCurrentSection(nextSectionId);
         } else {
             // All sections completed → submit to backend
+            setSubmitting(true);
+            setSubmitError(null); // Clear any previous errors
             try {
                 const payload = buildUpdatePayload(localProfile);
                 const res = await updateCandidateData(payload);
@@ -395,7 +397,13 @@ export default function CandidateProfileFlow() {
                             disabled={submitting}
                             className="px-8"
                         >
-                            {submitting ? 'Submitting…' : currentSection === "contact" ? "Complete" : "Proceed"}
+                            {submitting ? (
+                                <div className="flex items-center gap-2">
+                                    <span>Submitting…</span>
+                                </div>
+                            ) : (
+                                currentSection === "contact" ? "Complete" : "Proceed"
+                            )}
                         </Button>
                     </div>
                 </div>
@@ -499,7 +507,13 @@ export default function CandidateProfileFlow() {
                                         disabled={submitting}
                                         className="px-8"
                                     >
-                                        {submitting ? 'Submitting…' : currentSection === "contact" ? "Complete" : "Proceed"}
+                                        {submitting ? (
+                                            <div className="flex items-center gap-2">
+                                                <span>Submitting…</span>
+                                            </div>
+                                        ) : (
+                                            currentSection === "contact" ? "Complete" : "Proceed"
+                                        )}
                                     </Button>
                                 </div>
                             </div>

@@ -108,7 +108,9 @@ export default function CandidateSignupPage() {
 
     const handlePhoneChange = (value: string) => {
         const formatted = handlePhoneInputChange(value);
-        form.setValue("phone", formatted);
+        form.setValue("phone", formatted, { shouldValidate: true, shouldDirty: true });
+        // Also trigger validation manually to ensure immediate feedback
+        form.trigger("phone");
     };
 
     const onSubmit = async (data: SignupFormData) => {

@@ -6,10 +6,12 @@ function ConnectorLine({
     containerRef,
     topRef,
     bottomRef,
+    visible,
 }: {
     containerRef: React.RefObject<HTMLDivElement | null>;
     topRef: React.RefObject<HTMLDivElement | null>;
     bottomRef: React.RefObject<HTMLDivElement | null>;
+    visible: boolean;
 }) {
     const [path, setPath] = useState("");
 
@@ -27,7 +29,7 @@ function ConnectorLine({
 
                 const midY = (startY + endY) / 2;
 
-                const upperCurveOffset = 120; // more right curve
+                const upperCurveOffset = 240; // more right curve
                 const lowerCurveOffset = 80;  // keep bottom softer
 
                 const newPath = `M${startX},${startY} 
@@ -39,10 +41,18 @@ function ConnectorLine({
             }
         }
 
+        // Initial update with a small delay to ensure elements are rendered
+        const timeoutId = setTimeout(updatePath, 100);
+
+        // Also update immediately in case elements are already rendered
         updatePath();
+
         window.addEventListener("resize", updatePath);
-        return () => window.removeEventListener("resize", updatePath);
-    }, [containerRef, topRef, bottomRef]);
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener("resize", updatePath);
+        };
+    }, [containerRef, topRef, bottomRef, visible]);
 
     return (
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
@@ -92,12 +102,13 @@ export default function SuccessOverlay({
                     containerRef={containerRef}
                     topRef={topRef}
                     bottomRef={bottomRef}
+                    visible={visible}
                 />
 
                 {/* Bottom Icon */}
                 <div
                     ref={bottomRef}
-                    className="mx-auto my-10 mt-10 w-12 h-12 rounded-full bg-gradient-to-r from-grad-1 to-grad-2 flex items-center justify-center"
+                    className="mx-auto my-10 mt-30 w-12 h-12 rounded-full bg-gradient-to-r from-grad-1 to-grad-2 flex items-center justify-center"
                 >
                     <Mic className="text-white" />
                 </div>
