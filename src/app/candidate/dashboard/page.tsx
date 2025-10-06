@@ -7,6 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { getCandidateData, getCandidateDashboardData, CandidateProfileData, ApplicationHistory } from "@/lib/candidateService";
 import { MdRefresh } from "react-icons/md";
+import {
+    Briefcase,
+    Clock,
+    CheckCircle,
+    PlayCircle,
+    Mail,
+    Calendar,
+    TrendingUp,
+    User,
+    MapPin,
+    Building
+} from "lucide-react";
 
 export default function CandidateDashboardPage() {
     const router = useRouter();
@@ -46,15 +58,15 @@ export default function CandidateDashboardPage() {
 
     const getStatusColor = (application: ApplicationHistory) => {
         if (application.video_interview_start) {
-            return "bg-blue-100 text-blue-800";
+            return { backgroundColor: 'var(--color-element-3)', color: 'var(--color-text-primary)' };
         } else if (application.video_email_sent && !application.video_interview_start) {
-            return "bg-purple-100 text-purple-800";
+            return { backgroundColor: 'var(--color-element-2)', color: 'white' };
         } else if (application.audio_interview_status) {
-            return "bg-green-100 text-green-800";
+            return { backgroundColor: 'var(--color-element-4)', color: 'white' };
         } else if (application.application_status) {
-            return "bg-orange-100 text-orange-800";
+            return { backgroundColor: 'var(--color-element-1)', color: 'var(--color-text-primary)' };
         } else {
-            return "bg-yellow-100 text-yellow-800";
+            return { backgroundColor: 'var(--color-element-1)', color: 'var(--color-text-primary)' };
         }
     };
 
@@ -89,57 +101,76 @@ export default function CandidateDashboardPage() {
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
-                    <div className="flex-1">
-                        <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                    <div className="flex-1 text-center sm:text-left">
+                        <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                             Welcome back{candidateData?.name ? `, ${candidateData.name}` : ''}!
                         </h1>
-                        <p className="text-gray-600 text-center">Track your applications and manage your job search</p>
+                        <p className="opacity-70" style={{ color: 'var(--color-text-primary)' }}>Track your applications and manage your job search</p>
                     </div>
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={fetchDashboardData}
                         disabled={loading}
-                        className="ml-4"
+                        className="border-0"
+                        style={{
+                            backgroundColor: 'var(--color-element-1)',
+                            color: 'var(--color-text-primary)'
+                        }}
                     >
                         <MdRefresh className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
                         Refresh
                     </Button>
                 </div>
                 {error && (
-                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-red-600 text-sm text-center">{error}</p>
+                    <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--color-destructive)', color: 'var(--color-destructive-foreground)' }}>
+                        <p className="text-sm text-center">{error}</p>
                     </div>
                 )}
             </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <Card>
+                <Card className="shadow-lg border-0">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">Total Applications</CardTitle>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-1)' }}>
+                                <Briefcase className="h-5 w-5" style={{ color: 'var(--color-text-primary)' }} />
+                            </div>
+                            <CardTitle className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Total Applications</CardTitle>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{applications.length}</div>
+                        <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{applications.length}</div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="shadow-lg border-0">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">Video Interviews Completed</CardTitle>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-2)' }}>
+                                <PlayCircle className="h-5 w-5 text-white" />
+                            </div>
+                            <CardTitle className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Video Interviews</CardTitle>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
                             {applications.filter(app => app.video_interview_start).length}
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="shadow-lg border-0">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-gray-600">Audio Interviews Completed</CardTitle>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-4)' }}>
+                                <CheckCircle className="h-5 w-5 text-white" />
+                            </div>
+                            <CardTitle className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Audio Interviews</CardTitle>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
                             {applications.filter(app => app.audio_interview_status).length}
                         </div>
                     </CardContent>
@@ -147,59 +178,140 @@ export default function CandidateDashboardPage() {
             </div>
 
             {/* Applications */}
-            <Card>
+            <Card className="shadow-lg border-0">
                 <CardHeader>
-                    <CardTitle>Recent Applications</CardTitle>
-                    <CardDescription>Track the status of your job applications</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                        <Briefcase className="h-5 w-5" style={{ color: 'var(--color-grad-1)' }} />
+                        <span style={{ color: 'var(--color-text-primary)' }}>Recent Applications</span>
+                    </CardTitle>
+                    <CardDescription style={{ color: 'var(--color-text-primary)' }}>Track the status of your job applications</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="text-center py-8">
-                            <p className="text-gray-500">Loading applications...</p>
+                        <div className="text-center py-12">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--color-grad-1)' }}></div>
+                            <p style={{ color: 'var(--color-text-primary)' }}>Loading applications...</p>
                         </div>
                     ) : applications.length === 0 ? (
-                        <div className="text-center py-8">
-                            <p className="text-gray-500">No applications found. Start applying to jobs!</p>
+                        <div className="text-center py-12">
+                            <div className="p-4 rounded-full mx-auto mb-4 w-fit" style={{ backgroundColor: 'var(--color-element-1)' }}>
+                                <Briefcase className="h-8 w-8" style={{ color: 'var(--color-text-primary)' }} />
+                            </div>
+                            <p style={{ color: 'var(--color-text-primary)' }}>No applications found. Start applying to jobs!</p>
+                            <Button
+                                className="mt-4"
+                                style={{
+                                    backgroundColor: 'var(--color-cta-primary)',
+                                    color: 'var(--color-cta-primary-text)'
+                                }}
+                                onClick={() => router.push('/home/careers')}
+                            >
+                                Browse Jobs
+                            </Button>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {applications.map((application) => (
-                                <div key={application.application_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-gray-900">{application.job_role_name}</h3>
-                                        <p className="text-sm text-gray-500">Application ID: {application.application_id}</p>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <Badge className={getStatusColor(application)}>
-                                            {getStatusText(application)}
-                                        </Badge>
-                                        <div className="text-right">
-                                            <p className="text-sm text-gray-600">Next: {getNextStep(application)}</p>
+                                <Card key={application.application_id} className="shadow-md border-0 hover:shadow-lg transition-shadow duration-200">
+                                    <CardContent className="p-6">
+                                        {/* Header */}
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-1)' }}>
+                                                        <Briefcase className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                    </div>
+                                                    <h3 className="font-semibold text-lg" style={{ color: 'var(--color-text-primary)' }}>
+                                                        {application.job_role_name}
+                                                    </h3>
+                                                </div>
+                                                <p className="text-sm opacity-70" style={{ color: 'var(--color-text-primary)' }}>
+                                                    ID: {application.application_id}
+                                                </p>
+                                            </div>
+                                            <Badge
+                                                className="px-3 py-1 text-xs font-medium border-0"
+                                                style={getStatusColor(application)}
+                                            >
+                                                {getStatusText(application)}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Status Timeline */}
+                                        <div className="mb-6">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Clock className="h-4 w-4" style={{ color: 'var(--color-grad-1)' }} />
+                                                <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Progress</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {/* Application Submitted */}
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-3 h-3 rounded-full ${application.application_status ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    <span className="text-sm" style={{ color: 'var(--color-text-primary)' }}>Application Submitted</span>
+                                                </div>
+
+                                                {/* Audio Interview */}
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-3 h-3 rounded-full ${application.audio_interview_status ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                    <span className="text-sm" style={{ color: 'var(--color-text-primary)' }}>Audio Interview</span>
+                                                </div>
+
+                                                {/* Video Interview */}
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-3 h-3 rounded-full ${application.video_interview_start ? 'bg-green-500' : application.video_email_sent ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
+                                                    <span className="text-sm" style={{ color: 'var(--color-text-primary)' }}>Video Interview</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Next Step */}
+                                        <div className="mb-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <TrendingUp className="h-4 w-4" style={{ color: 'var(--color-grad-2)' }} />
+                                                <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Next Step</span>
+                                            </div>
+                                            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{getNextStep(application)}</p>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex flex-col sm:flex-row gap-2">
                                             {/* Show video interview button if audio is completed and video email is sent */}
                                             {application.audio_interview_status && application.video_email_sent && !application.video_interview_start && (
                                                 <Button
-                                                    variant="primary"
                                                     size="sm"
-                                                    className="mt-1"
+                                                    className="flex-1 text-white border-0"
+                                                    style={{ backgroundColor: 'var(--color-cta-primary)' }}
                                                     onClick={() => router.push(`/interview/communication?application_id=${application.application_id}`)}
                                                 >
-                                                    Proceed to Video Interview
+                                                    <PlayCircle className="mr-2 h-4 w-4" />
+                                                    Video Interview
                                                 </Button>
                                             )}
+
                                             {/* Show audio interview button if audio is not completed */}
                                             {!application.audio_interview_status && (
                                                 <Button
-                                                    variant="primary"
                                                     size="sm"
-                                                    className="mt-1"
+                                                    className="flex-1 text-white border-0"
+                                                    style={{ backgroundColor: 'var(--color-cta-primary)' }}
                                                     onClick={() => router.push(`/interview/general?application_id=${application.application_id}`)}
                                                 >
-                                                    Start Audio Interview
+                                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                                    Audio Interview
                                                 </Button>
                                             )}
+
+                                            {/* Show awaiting message if video interview is completed */}
+                                            {application.video_interview_start && (
+                                                <div className="flex-1 p-3 rounded-lg text-center" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                    <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                                                        Awaiting Results
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                </div>
+                                    </CardContent>
+                                </Card>
                             ))}
                         </div>
                     )}

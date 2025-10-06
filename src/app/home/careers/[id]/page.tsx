@@ -5,7 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getJobById, Job } from "@/lib/userService";
+import { getJobById, Job, JobDetailsResponse } from "@/lib/userService";
+import { applyJob } from "@/lib/candidateService";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import LoadingSpinner from "@/components/ui/loadingSpinner";
@@ -30,6 +31,8 @@ export default function JobDetailsPage() {
     const [job, setJob] = useState<Job | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [applying, setApplying] = useState(false);
+    const [applyError, setApplyError] = useState<string | null>(null);
 
     const jobId = params.id as string;
 
@@ -44,8 +47,12 @@ export default function JobDetailsPage() {
             try {
                 setLoading(true);
                 setError(null);
-                const jobData = await getJobById(jobId);
-                setJob(jobData);
+                const response = await getJobById(jobId);
+                if (response.status && response.job) {
+                    setJob(response.job);
+                } else {
+                    setError(response.message || "Failed to fetch job details");
+                }
             } catch (err: any) {
                 console.error("Error fetching job details:", err);
                 setError(err.message || "Failed to fetch job details");
@@ -62,11 +69,29 @@ export default function JobDetailsPage() {
         fetchJobDetails();
     }, [jobId]);
 
-    const handleApply = () => {
+    const handleApply = async () => {
         if (!job) return;
 
-        // Navigate to resume upload with job context
-        router.push(`/resume?job_id=${job.job_id}&role=${encodeURIComponent(job.job_title)}`);
+        setApplying(true);
+        setApplyError(null);
+        try {
+            const response = await applyJob({ job_id: job.job_id });
+            if (response?.status) {
+                toast({
+                    title: "Application Submitted",
+                    description: "Your application has been submitted successfully!",
+                    variant: "default"
+                });
+                // Redirect to profile page to complete the application
+                router.push(`/candidate/dashboard`);
+            } else {
+                setApplyError(response?.message || 'Failed to apply for job');
+            }
+        } catch (err: any) {
+            setApplyError(err?.response?.data?.message || err?.message || 'Failed to apply for job');
+        } finally {
+            setApplying(false);
+        }
     };
 
     const handleBack = () => {
@@ -141,7 +166,7 @@ export default function JobDetailsPage() {
                         <Button
                             onClick={handleApply}
                             size="lg"
-                            className="h-12 px-8 text-lg font-semibold bg-primary hover:bg-primary/90"
+                            className="h-12 px-8 text-lg font-semibold"
                         >
                             <Briefcase className="mr-2 h-5 w-5" />
                             Apply Now
@@ -156,39 +181,161 @@ export default function JobDetailsPage() {
                         <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Briefcase className="h-5 w-5 text-primary" />
-                                    Job Description
+                                    <Briefcase className="h-5 w-5" style={{ color: 'var(--color-grad-1)' }} />
+                                    <span style={{ color: 'var(--color-text-primary)' }}>Job Description</span>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="prose prose-gray max-w-none">
-                                    <div className="text-gray-700 leading-relaxed text-lg space-y-4">
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900 mb-2">Role Type:</h4>
-                                            <p>{job.role_type}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Left Column */}
+                                    <div className="space-y-4">
+                                        {/* Role Type */}
+                                        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                    <Briefcase className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                </div>
+                                                <h4 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Role Type</h4>
+                                            </div>
+                                            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{job.role_type}</p>
                                         </div>
 
-                                        {job.primary_focus && job.primary_focus.length > 0 && (
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900 mb-2">Primary Focus:</h4>
-                                                <p>{job.primary_focus.join(', ')}</p>
+                                        {/* Experience Required */}
+                                        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                    <Clock className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                </div>
+                                                <h4 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Experience Required</h4>
+                                            </div>
+                                            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{job.min_experience} - {job.max_experience} years</p>
+                                        </div>
+
+                                        {/* Base Salary */}
+                                        {job.base_salary && (
+                                            <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                        <TrendingUp className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                    </div>
+                                                    <h4 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Base Salary</h4>
+                                                </div>
+                                                <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                                                    {job.base_salary.currency}{job.base_salary.minSalary.toLocaleString()} - {job.base_salary.currency}{job.base_salary.maxSalary.toLocaleString()} {job.base_salary.cadence}
+                                                </p>
                                             </div>
                                         )}
 
-                                        {job.sales_process_stages && job.sales_process_stages.length > 0 && (
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900 mb-2">Sales Process Stages:</h4>
-                                                <p>{job.sales_process_stages.join(', ')}</p>
-                                            </div>
-                                        )}
-
+                                        {/* Work Location */}
                                         {job.work_location && (
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900 mb-2">Work Location:</h4>
-                                                <p>{job.work_location}</p>
+                                            <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                        <MapPin className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                    </div>
+                                                    <h4 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Work Location</h4>
+                                                </div>
+                                                <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{job.work_location}</p>
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Right Column */}
+                                    <div className="space-y-4">
+                                        {/* Primary Focus */}
+                                        {job.primary_focus && job.primary_focus.length > 0 && (
+                                            <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                        <Users className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                    </div>
+                                                    <h4 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Primary Focus</h4>
+                                                </div>
+                                                <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{job.primary_focus.join(', ')}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Sales Process Stages */}
+                                        {job.sales_process_stages && job.sales_process_stages.length > 0 && (
+                                            <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                        <TrendingUp className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                    </div>
+                                                    <h4 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Sales Process</h4>
+                                                </div>
+                                                <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{job.sales_process_stages.join(', ')}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Locations */}
+                                        {job.locations && job.locations.length > 0 && (
+                                            <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                        <MapPin className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                    </div>
+                                                    <h4 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Locations</h4>
+                                                </div>
+                                                <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{job.locations.join(', ')}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Time Zones */}
+                                        {job.time_zones && job.time_zones.length > 0 && (
+                                            <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                        <Clock className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                    </div>
+                                                    <h4 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Time Zones</h4>
+                                                </div>
+                                                <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{job.time_zones.join(', ')}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Additional Information Row */}
+                                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Languages */}
+                                    {job.languages && job.languages.length > 0 && (
+                                        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                    <Users className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                </div>
+                                                <h4 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>Languages</h4>
+                                            </div>
+                                            <p className="text-xs" style={{ color: 'var(--color-text-primary)' }}>{job.languages.join(', ')}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Opportunities */}
+                                    {job.opportunities && job.opportunities.length > 0 && (
+                                        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                    <TrendingUp className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                </div>
+                                                <h4 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>Opportunities</h4>
+                                            </div>
+                                            <p className="text-xs" style={{ color: 'var(--color-text-primary)' }}>{job.opportunities.join(', ')}</p>
+                                        </div>
+                                    )}
+
+                                    {/* OTE */}
+                                    {job.ote && job.ote.length > 0 && (
+                                        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-element-3)' }}>
+                                                    <TrendingUp className="h-4 w-4" style={{ color: 'var(--color-text-primary)' }} />
+                                                </div>
+                                                <h4 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>OTE</h4>
+                                            </div>
+                                            <p className="text-xs" style={{ color: 'var(--color-text-primary)' }}>{job.ote.join(', ')}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -198,51 +345,132 @@ export default function JobDetailsPage() {
                             <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-sm">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
-                                        <TrendingUp className="h-5 w-5 text-primary" />
-                                        Skills & Requirements
+                                        <TrendingUp className="h-5 w-5" style={{ color: 'var(--color-grad-2)' }} />
+                                        <span style={{ color: 'var(--color-text-primary)' }}>Skills & Requirements</span>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex flex-wrap gap-2">
-                                        {job.primary_focus?.map((focus, index) => (
-                                            <Badge
-                                                key={`focus-${index}`}
-                                                variant="secondary"
-                                                className="px-3 py-1 text-sm font-medium bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                                            >
-                                                {focus}
-                                            </Badge>
-                                        ))}
-                                        {job.sales_process_stages?.map((stage, index) => (
-                                            <Badge
-                                                key={`stage-${index}`}
-                                                variant="secondary"
-                                                className="px-3 py-1 text-sm font-medium bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                                            >
-                                                {stage}
-                                            </Badge>
-                                        ))}
-                                        {job.skills_required?.map((skill, index) => (
-                                            <Badge
-                                                key={`skill-${index}`}
-                                                variant="secondary"
-                                                className="px-3 py-1 text-sm font-medium bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
-                                            >
-                                                {skill}
-                                            </Badge>
-                                        ))}
+                                    <div className="space-y-4">
+                                        {/* Primary Focus Skills */}
+                                        {job.primary_focus && job.primary_focus.length > 0 && (
+                                            <div>
+                                                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Primary Focus</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {job.primary_focus.map((focus, index) => (
+                                                        <Badge
+                                                            key={`focus-${index}`}
+                                                            className="px-3 py-1 text-sm font-medium border"
+                                                            style={{
+                                                                backgroundColor: 'var(--color-bg-main)',
+                                                                color: 'var(--color-text-primary)',
+                                                                borderColor: 'var(--color-element-3)'
+                                                            }}
+                                                        >
+                                                            {focus}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Sales Process Skills */}
+                                        {job.sales_process_stages && job.sales_process_stages.length > 0 && (
+                                            <div>
+                                                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Sales Process</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {job.sales_process_stages.map((stage, index) => (
+                                                        <Badge
+                                                            key={`stage-${index}`}
+                                                            className="px-3 py-1 text-sm font-medium border"
+                                                            style={{
+                                                                backgroundColor: 'var(--color-bg-main)',
+                                                                color: 'var(--color-text-primary)',
+                                                                borderColor: 'var(--color-element-3)'
+                                                            }}
+                                                        >
+                                                            {stage}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Required Skills */}
+                                        {job.skills_required && job.skills_required.length > 0 && (
+                                            <div>
+                                                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Required Skills</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {job.skills_required.map((skill, index) => (
+                                                        <Badge
+                                                            key={`skill-${index}`}
+                                                            className="px-3 py-1 text-sm font-medium border"
+                                                            style={{
+                                                                backgroundColor: 'var(--color-bg-main)',
+                                                                color: 'var(--color-text-primary)',
+                                                                borderColor: 'var(--color-element-3)'
+                                                            }}
+                                                        >
+                                                            {skill}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Role Type */}
                                         {job.role_type && (
-                                            <Badge
-                                                variant="secondary"
-                                                className="px-3 py-1 text-sm font-medium bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
-                                            >
-                                                {job.role_type}
-                                            </Badge>
+                                            <div>
+                                                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Role Type</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <Badge
+                                                        className="px-3 py-1 text-sm font-medium border"
+                                                        style={{
+                                                            backgroundColor: 'var(--color-bg-main)',
+                                                            color: 'var(--color-text-primary)',
+                                                            borderColor: 'var(--color-element-3)'
+                                                        }}
+                                                    >
+                                                        {job.role_type}
+                                                    </Badge>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </CardContent>
                             </Card>
                         )}
+
+                        {/* Apply Now Button */}
+                        <Card className="shadow-lg border-0" style={{ backgroundColor: 'var(--color-bg-main)', borderColor: 'var(--color-element-3)' }}>
+                            <CardContent className="p-6">
+                                <div className="text-center space-y-4">
+                                    <div>
+                                        <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                                            Ready to Apply?
+                                        </h3>
+                                        <p className="text-sm mb-4" style={{ color: 'var(--color-text-primary)' }}>
+                                            Click below to apply for this position
+                                        </p>
+                                    </div>
+                                    <Button
+                                        onClick={handleApply}
+                                        disabled={applying}
+                                        className="w-full h-12 text-base font-semibold text-white border-0"
+                                        style={{
+                                            backgroundColor: 'var(--color-cta-primary)',
+                                            color: 'var(--color-cta-primary-text)'
+                                        }}
+                                    >
+                                        {applying ? "Applying..." : "Apply Now"}
+                                    </Button>
+                                    {applyError && (
+                                        <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-destructive)', color: 'var(--color-destructive-foreground)' }}>
+                                            <p className="text-sm text-center">{applyError}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
 
                     {/* Sidebar */}
@@ -292,30 +520,6 @@ export default function JobDetailsPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Quick Apply */}
-                        <Card className="shadow-lg border-0 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-                            <CardContent className="p-6">
-                                <div className="text-center space-y-4">
-                                    <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full">
-                                        <Briefcase className="h-6 w-6 text-primary" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-lg text-gray-900 mb-2">
-                                            Ready to Apply?
-                                        </h3>
-                                        <p className="text-sm text-gray-600 mb-4">
-                                            Upload your resume and start your application process
-                                        </p>
-                                    </div>
-                                    <Button
-                                        onClick={handleApply}
-                                        className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90"
-                                    >
-                                        Start Application
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
                 </div>
             </div>

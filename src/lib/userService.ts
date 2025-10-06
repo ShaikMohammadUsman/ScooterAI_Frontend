@@ -16,6 +16,13 @@ export interface HiringManager {
     last_name: string;
 }
 
+export interface BaseSalary {
+    currency: string;
+    minSalary: number;
+    maxSalary: number;
+    cadence: string;
+}
+
 export interface Job {
     job_id: string;
     job_title: string;
@@ -23,18 +30,24 @@ export interface Job {
     role_type: string;
     primary_focus: string[];
     sales_process_stages: string[];
-    min_experience: string;
-    max_experience: string;
+    min_experience: number;
+    max_experience: number;
     skills_required: string[];
     work_location: string;
     locations: string[];
     time_zones: string[];
-    base_salary: Record<string, any>;
-    ote: any[];
-    opportunities: any[];
+    base_salary: BaseSalary;
+    ote: string[];
+    opportunities: string[];
     languages: string[];
     created_at: string;
     hiring_manager: HiringManager;
+}
+
+export interface JobDetailsResponse {
+    status: boolean;
+    message: string;
+    job: Job;
 }
 
 export interface PaginationInfo {
@@ -145,7 +158,7 @@ export async function getAllJobs(page: number = 1, pageSize: number = 10): Promi
  * @param jobId - The ID of the job to fetch
  * @returns Promise with the job details
  */
-export async function getJobById(jobId: string): Promise<Job> {
+export async function getJobById(jobId: string): Promise<JobDetailsResponse> {
     try {
         const response = await axios.get(`${API_BASE}/job/${jobId}`);
         return response.data;
