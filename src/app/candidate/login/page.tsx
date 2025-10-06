@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { candidateLogin, isCandidateAccessTokenValid } from "@/lib/candidateService";
 import { useRouter } from "next/navigation";
+import { getRedirectUrl, clearRedirectUrl } from "@/lib/utils";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import ScooterHeader from "@/components/ScooterHeader";
 import BottomQuote from "@/components/candidate/BottomQuote";
@@ -44,7 +45,14 @@ export default function CandidateLoginPage() {
 
     React.useEffect(() => {
         if (isCandidateAccessTokenValid()) {
-            router.replace("/candidate/dashboard");
+            // Check if there's a redirect URL stored
+            const redirectUrl = getRedirectUrl();
+            if (redirectUrl) {
+                clearRedirectUrl();
+                router.replace(redirectUrl);
+            } else {
+                router.replace("/candidate/dashboard");
+            }
         }
     }, []);
 
@@ -57,7 +65,14 @@ export default function CandidateLoginPage() {
                 password: data.password
             });
             if (res?.status) {
-                router.push("/candidate/dashboard");
+                // Check if there's a redirect URL stored
+                const redirectUrl = getRedirectUrl();
+                if (redirectUrl) {
+                    clearRedirectUrl();
+                    router.push(redirectUrl);
+                } else {
+                    router.push("/candidate/dashboard");
+                }
                 return;
             }
             // Handle error response with message or detail field

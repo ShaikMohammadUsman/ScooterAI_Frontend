@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { clearManagerAuth, isAccessTokenValid } from "@/lib/managerService";
 import { useRouter } from "next/navigation";
+import { storeRedirectUrl, getCurrentUrlWithQuery } from "@/lib/utils";
 
 export default function ManagerLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -20,6 +21,11 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
             // Redirect to login if not authenticated and not already on auth pages
             if (!authenticated && !window.location.pathname.includes('/manager/login') && !window.location.pathname.includes('/manager/signup')) {
+                // Store current URL for redirect after login
+                const currentUrl = getCurrentUrlWithQuery();
+                if (currentUrl) {
+                    storeRedirectUrl(currentUrl);
+                }
                 router.replace("/manager/login");
             }
         };
@@ -36,6 +42,11 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
             setIsAuthenticated(event.detail.authenticated);
             // Also redirect if authentication is lost
             if (!event.detail.authenticated && !window.location.pathname.includes('/manager/login') && !window.location.pathname.includes('/manager/signup')) {
+                // Store current URL for redirect after login
+                const currentUrl = getCurrentUrlWithQuery();
+                if (currentUrl) {
+                    storeRedirectUrl(currentUrl);
+                }
                 router.replace("/manager/login");
             }
         };

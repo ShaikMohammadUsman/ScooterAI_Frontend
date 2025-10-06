@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import { storeRedirectUrl, getCurrentUrlWithQuery } from './utils';
 
 // Base URLs
 const BASE_URL = 'https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io';
@@ -529,6 +530,13 @@ const managerApi = axios.create({ baseURL: BASE_URL });
 managerApi.interceptors.request.use((config) => {
     // Check if we have a valid token before making any request
     if (!isAccessTokenValid()) {
+        // Store current URL for redirect after login
+        if (typeof window !== 'undefined') {
+            const currentUrl = getCurrentUrlWithQuery();
+            if (currentUrl && !currentUrl.includes('/manager/login') && !currentUrl.includes('/manager/signup')) {
+                storeRedirectUrl(currentUrl);
+            }
+        }
         // Clear any stored auth data
         clearManagerAuth();
         // Redirect to login page
@@ -600,6 +608,13 @@ managerApi.interceptors.response.use(
                 return managerApi(originalRequest);
             } catch (refreshErr) {
                 processQueue(refreshErr, null);
+                // Store current URL for redirect after login
+                if (typeof window !== 'undefined') {
+                    const currentUrl = getCurrentUrlWithQuery();
+                    if (currentUrl && !currentUrl.includes('/manager/login') && !currentUrl.includes('/manager/signup')) {
+                        storeRedirectUrl(currentUrl);
+                    }
+                }
                 // clear stored auth on failure
                 clearManagerAuth();
                 // Redirect to login page when refresh fails

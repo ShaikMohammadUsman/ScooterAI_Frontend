@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { hiringManagerLogin, isAccessTokenValid } from "@/lib/managerService";
 import { useRouter } from "next/navigation";
+import { getRedirectUrl, clearRedirectUrl } from "@/lib/utils";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function LoginPage() {
@@ -19,7 +20,14 @@ export default function LoginPage() {
 
     React.useEffect(() => {
         if (isAccessTokenValid()) {
-            router.replace("/manager/dashboard");
+            // Check if there's a redirect URL stored
+            const redirectUrl = getRedirectUrl();
+            if (redirectUrl) {
+                clearRedirectUrl();
+                router.replace(redirectUrl);
+            } else {
+                router.replace("/manager/dashboard");
+            }
         }
     }, []);
 
@@ -30,7 +38,14 @@ export default function LoginPage() {
         try {
             const res = await hiringManagerLogin({ email: email.trim(), password });
             if (res?.status) {
-                router.push("/manager/jobs");
+                // Check if there's a redirect URL stored
+                const redirectUrl = getRedirectUrl();
+                if (redirectUrl) {
+                    clearRedirectUrl();
+                    router.push(redirectUrl);
+                } else {
+                    router.push("/manager/jobs");
+                }
                 return;
             }
             setError(res?.message || "Login failed");

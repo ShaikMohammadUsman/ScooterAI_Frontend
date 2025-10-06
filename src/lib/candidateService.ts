@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import { storeRedirectUrl, getCurrentUrlWithQuery } from './utils';
 
 // Base URLs
 const BASE_URL = 'https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io';
@@ -331,6 +332,13 @@ const candidateApi = axios.create({ baseURL: BASE_URL });
 candidateApi.interceptors.request.use((config) => {
     // Check if we have a valid token before making any request
     if (!isCandidateAccessTokenValid()) {
+        // Store current URL for redirect after login
+        if (typeof window !== 'undefined') {
+            const currentUrl = getCurrentUrlWithQuery();
+            if (currentUrl && !currentUrl.includes('/candidate/login') && !currentUrl.includes('/candidate/signup')) {
+                storeRedirectUrl(currentUrl);
+            }
+        }
         // Clear any stored auth data
         clearCandidateAuth();
         // Redirect to login page
@@ -402,6 +410,13 @@ candidateApi.interceptors.response.use(
                 return candidateApi(originalRequest);
             } catch (refreshErr) {
                 processQueue(refreshErr, null);
+                // Store current URL for redirect after login
+                if (typeof window !== 'undefined') {
+                    const currentUrl = getCurrentUrlWithQuery();
+                    if (currentUrl && !currentUrl.includes('/candidate/login') && !currentUrl.includes('/candidate/signup')) {
+                        storeRedirectUrl(currentUrl);
+                    }
+                }
                 // clear stored auth on failure
                 clearCandidateAuth();
                 // Redirect to login page when refresh fails

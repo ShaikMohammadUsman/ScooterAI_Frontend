@@ -55,3 +55,30 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
     return bytes.buffer;
 }
 
+// Redirect URL utilities
+export function storeRedirectUrl(url: string): void {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('redirect_after_login', url);
+    }
+}
+
+export function getRedirectUrl(): string | null {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem('redirect_after_login');
+    }
+    return null;
+}
+
+export function clearRedirectUrl(): void {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('redirect_after_login');
+    }
+}
+
+export function getCurrentUrlWithQuery(): string {
+    if (typeof window !== 'undefined') {
+        return window.location.pathname + window.location.search;
+    }
+    return '';
+}
+
