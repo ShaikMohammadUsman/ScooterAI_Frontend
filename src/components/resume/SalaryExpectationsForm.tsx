@@ -42,13 +42,13 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
     const getSalaryRange = () => {
         switch (currencyType) {
             case "USD":
-                return { min: 0, max: 300000, step: 5000 };
+                return { min: 0, max: 300000, step: 10000 };
             case "EUR":
-                return { min: 0, max: 250000, step: 5000 };
+                return { min: 0, max: 250000, step: 10000 };
             case "GBP":
-                return { min: 0, max: 200000, step: 5000 };
+                return { min: 0, max: 200000, step: 10000 };
             default: // INR
-                return { min: 0, max: 20000000, step: 50000 };
+                return { min: 0, max: 10000000, step: 10000 }; // 1 crore max, 10k steps
         }
     };
 
@@ -149,6 +149,26 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
         onFieldChange("basic_information", "expected_ctc", {
             ...profile?.basic_information.expected_ctc,
             value: value[0]
+        });
+    };
+
+    // Handle direct input changes for current salary
+    const handleCurrentSalaryInputChange = (value: string) => {
+        const numericValue = parseInt(value.replace(/[^0-9]/g, '')) || 0;
+        const clampedValue = Math.min(Math.max(numericValue, salaryRange.min), salaryRange.max);
+        onFieldChange("basic_information", "current_ctc", {
+            ...profile?.basic_information.current_ctc,
+            value: clampedValue
+        });
+    };
+
+    // Handle direct input changes for expected salary
+    const handleExpectedSalaryInputChange = (value: string) => {
+        const numericValue = parseInt(value.replace(/[^0-9]/g, '')) || 0;
+        const clampedValue = Math.min(Math.max(numericValue, Math.max(salaryRange.min, currentValue)), salaryRange.max);
+        onFieldChange("basic_information", "expected_ctc", {
+            ...profile?.basic_information.expected_ctc,
+            value: clampedValue
         });
     };
 
@@ -265,13 +285,25 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
                                 </div>
                             </div>
 
-                            {/* Display value */}
-                            <div className="text-center">
+                            {/* Display value with direct input */}
+                            <div className="text-center space-y-3">
                                 <div className="text-2xl font-bold text-orange-600">
                                     {currentValue === 0 ? "Fresher (₹0)" : formatCurrency(currentValue)}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                     {cadence === 'annual' ? 'per year' : 'per month'}
+                                </div>
+
+                                {/* Direct input field */}
+                                <div className="flex items-center justify-center gap-2">
+                                    <span className="text-sm text-gray-600">Or enter directly:</span>
+                                    <Input
+                                        type="text"
+                                        value={currentValue === 0 ? "" : currentValue.toLocaleString('en-IN')}
+                                        onChange={(e) => handleCurrentSalaryInputChange(e.target.value)}
+                                        placeholder="Enter amount"
+                                        className="w-32 text-center"
+                                    />
                                 </div>
                             </div>
 
@@ -343,13 +375,25 @@ export default function SalaryExpectationsForm({ profile, onFieldChange, parsedU
                                 </div>
                             </div>
 
-                            {/* Display value */}
-                            <div className="text-center">
+                            {/* Display value with direct input */}
+                            <div className="text-center space-y-3">
                                 <div className="text-2xl font-bold text-lime-600">
                                     {formatCurrency(expectedValue)}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                     {cadence === 'annual' ? 'per year' : 'per month'}
+                                </div>
+
+                                {/* Direct input field */}
+                                <div className="flex items-center justify-center gap-2">
+                                    <span className="text-sm text-gray-600">Or enter directly:</span>
+                                    <Input
+                                        type="text"
+                                        value={expectedValue.toLocaleString('en-IN')}
+                                        onChange={(e) => handleExpectedSalaryInputChange(e.target.value)}
+                                        placeholder="Enter amount"
+                                        className="w-32 text-center"
+                                    />
                                 </div>
                             </div>
 
