@@ -20,7 +20,8 @@ import {
     Briefcase,
     Clock,
     Users,
-    TrendingUp
+    TrendingUp,
+    User
 } from "lucide-react";
 
 export default function JobDetailsPage() {
@@ -65,7 +66,7 @@ export default function JobDetailsPage() {
         if (!job) return;
 
         // Navigate to resume upload with job context
-        router.push(`/resume?job_id=${job.job_id}&role=${encodeURIComponent(job.title)}`);
+        router.push(`/resume?job_id=${job.job_id}&role=${encodeURIComponent(job.job_title)}`);
     };
 
     const handleBack = () => {
@@ -123,12 +124,12 @@ export default function JobDetailsPage() {
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div>
                             <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                                {job.title}
+                                {job.job_title}
                             </h1>
                             <div className="flex items-center gap-4 text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                     <Building2 className="h-4 w-4" />
-                                    <span>{job.company.company_name}</span>
+                                    <span>{job.company_name}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <Calendar className="h-4 w-4" />
@@ -161,15 +162,39 @@ export default function JobDetailsPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="prose prose-gray max-w-none">
-                                    <p className="text-gray-700 leading-relaxed text-lg">
-                                        {job.description}
-                                    </p>
+                                    <div className="text-gray-700 leading-relaxed text-lg space-y-4">
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 mb-2">Role Type:</h4>
+                                            <p>{job.role_type}</p>
+                                        </div>
+
+                                        {job.primary_focus && job.primary_focus.length > 0 && (
+                                            <div>
+                                                <h4 className="font-semibold text-gray-900 mb-2">Primary Focus:</h4>
+                                                <p>{job.primary_focus.join(', ')}</p>
+                                            </div>
+                                        )}
+
+                                        {job.sales_process_stages && job.sales_process_stages.length > 0 && (
+                                            <div>
+                                                <h4 className="font-semibold text-gray-900 mb-2">Sales Process Stages:</h4>
+                                                <p>{job.sales_process_stages.join(', ')}</p>
+                                            </div>
+                                        )}
+
+                                        {job.work_location && (
+                                            <div>
+                                                <h4 className="font-semibold text-gray-900 mb-2">Work Location:</h4>
+                                                <p>{job.work_location}</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Skills & Requirements */}
-                        {job.badges && job.badges.length > 0 && (
+                        {(job.primary_focus?.length > 0 || job.sales_process_stages?.length > 0 || job.skills_required?.length > 0) && (
                             <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-sm">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
@@ -179,15 +204,41 @@ export default function JobDetailsPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex flex-wrap gap-2">
-                                        {job.badges.map((badge, index) => (
+                                        {job.primary_focus?.map((focus, index) => (
                                             <Badge
-                                                key={index}
+                                                key={`focus-${index}`}
                                                 variant="secondary"
                                                 className="px-3 py-1 text-sm font-medium bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                                             >
-                                                {badge}
+                                                {focus}
                                             </Badge>
                                         ))}
+                                        {job.sales_process_stages?.map((stage, index) => (
+                                            <Badge
+                                                key={`stage-${index}`}
+                                                variant="secondary"
+                                                className="px-3 py-1 text-sm font-medium bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                            >
+                                                {stage}
+                                            </Badge>
+                                        ))}
+                                        {job.skills_required?.map((skill, index) => (
+                                            <Badge
+                                                key={`skill-${index}`}
+                                                variant="secondary"
+                                                className="px-3 py-1 text-sm font-medium bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                                            >
+                                                {skill}
+                                            </Badge>
+                                        ))}
+                                        {job.role_type && (
+                                            <Badge
+                                                variant="secondary"
+                                                className="px-3 py-1 text-sm font-medium bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+                                            >
+                                                {job.role_type}
+                                            </Badge>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -207,39 +258,35 @@ export default function JobDetailsPage() {
                             <CardContent className="space-y-4">
                                 <div>
                                     <h3 className="font-semibold text-lg text-gray-900 mb-2">
-                                        {job.company.company_name}
+                                        {job.company_name}
                                     </h3>
                                     <p className="text-gray-600 text-sm leading-relaxed">
-                                        {job.company.description}
+                                        {job.role_type} • {job.work_location || 'Location not specified'}
                                     </p>
                                 </div>
 
                                 <Separator />
 
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-gray-700">{job.company.address}</span>
-                                    </div>
+                                    {job.work_location && (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-gray-700">{job.work_location}</span>
+                                        </div>
+                                    )}
+
+                                    {job.hiring_manager && (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <User className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-gray-700">
+                                                Hiring Manager: {job.hiring_manager.first_name} {job.hiring_manager.last_name}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     <div className="flex items-center gap-2 text-sm">
-                                        <Mail className="h-4 w-4 text-muted-foreground" />
-                                        <a
-                                            href={`mailto:${job.company.email}`}
-                                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                                        >
-                                            {job.company.email}
-                                        </a>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Phone className="h-4 w-4 text-muted-foreground" />
-                                        <a
-                                            href={`tel:${job.company.contact_number}`}
-                                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                                        >
-                                            {job.company.contact_number}
-                                        </a>
+                                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-gray-700">Posted {formatDate(job.created_at)}</span>
                                     </div>
                                 </div>
                             </CardContent>
