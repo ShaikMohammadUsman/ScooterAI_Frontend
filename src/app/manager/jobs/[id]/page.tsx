@@ -101,7 +101,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [pageLoading, setPageLoading] = useState(false);
 
     // Active tab for primary status buckets
-    const [activeTab, setActiveTab] = useState<'new' | 'seen' | 'shortlisted' | 'rejected'>('shortlisted');
+    const [activeTab, setActiveTab] = useState<'new' | 'seen' | 'shortlisted' | 'rejected'>('new');
 
     // Smart filtering state
     const [hasActiveFilters, setHasActiveFilters] = useState(false);
