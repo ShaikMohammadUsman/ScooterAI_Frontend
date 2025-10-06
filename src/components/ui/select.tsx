@@ -19,13 +19,13 @@ const SelectGroup = SelectPrimitive.Group
 const SelectValue = SelectPrimitive.Value
 
 const selectTriggerVariants = cva(
-  "flex w-full items-center justify-between whitespace-nowrap rounded-lg border-2 text-sm shadow-sm transition-all duration-200 ring-offset-background placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50 [&>span]:line-clamp-1",
+  "flex w-full items-center justify-between whitespace-nowrap rounded-lg border-2 text-sm shadow-sm transition-all duration-200 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50 [&>span]:line-clamp-1",
   {
     variants: {
       variant: {
-        default: "border-gray-200 bg-white hover:border-gray-300 focus:ring-blue-500 focus:border-blue-500",
-        filled: "border-transparent bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 focus:ring-blue-500 focus:border-blue-500 focus:bg-white",
-        outline: "border-gray-300 bg-transparent hover:border-gray-400 focus:ring-blue-500 focus:border-blue-500"
+        default: "border-[var(--color-element-3)] bg-white hover:border-[var(--color-element-2)] focus:ring-[var(--color-element-3)] focus:border-[var(--color-element-3)]",
+        filled: "border-transparent bg-gradient-to-r from-[var(--color-element-3)]/10 to-[var(--color-element-3)]/20 hover:from-[var(--color-element-3)]/20 hover:to-[var(--color-element-3)]/30 focus:ring-[var(--color-element-3)] focus:border-[var(--color-element-3)] focus:bg-white",
+        outline: "border-[var(--color-element-3)] bg-transparent hover:border-[var(--color-element-2)] focus:ring-[var(--color-element-3)] focus:border-[var(--color-element-3)]"
       },
       size: {
         sm: "h-9 px-3 text-sm",
@@ -68,12 +68,12 @@ const SelectScrollUpButton = React.forwardRef<
   <SelectPrimitive.ScrollUpButton
     ref={ref}
     className={cn(
-      "flex cursor-default items-center justify-center py-1 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 transition-all duration-200",
+      "flex cursor-default items-center justify-center py-1 hover:bg-gradient-to-r hover:from-[var(--color-element-3)]/5 hover:to-[var(--color-element-3)]/15 transition-all duration-200",
       className
     )}
     {...props}
   >
-    <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+    <ChevronUpIcon className="h-4 w-4" style={{ color: 'var(--color-element-3)' }} />
   </SelectPrimitive.ScrollUpButton>
 ))
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
@@ -85,12 +85,12 @@ const SelectScrollDownButton = React.forwardRef<
   <SelectPrimitive.ScrollDownButton
     ref={ref}
     className={cn(
-      "flex cursor-default items-center justify-center py-1 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 transition-all duration-200",
+      "flex cursor-default items-center justify-center py-1 hover:bg-gradient-to-r hover:from-[var(--color-element-3)]/5 hover:to-[var(--color-element-3)]/15 transition-all duration-200",
       className
     )}
     {...props}
   >
-    <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+    <ChevronDownIcon className="h-4 w-4" style={{ color: 'var(--color-element-3)' }} />
   </SelectPrimitive.ScrollDownButton>
 ))
 SelectScrollDownButton.displayName =
@@ -104,7 +104,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg bg-white text-gray-900 border-2 border-gray-200 shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 backdrop-blur-sm",
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg bg-white text-gray-900 border-2 border-[var(--color-element-3)] shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 backdrop-blur-sm",
         position === "popper" &&
         "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className
@@ -147,14 +147,14 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-3 pr-8 text-sm outline-none transition-all duration-200 focus:bg-gradient-to-r focus:from-blue-50 focus:to-blue-100 focus:text-blue-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100",
+      "relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-3 pr-8 text-sm outline-none transition-all duration-200 focus:bg-gradient-to-r focus:from-[var(--color-element-3)]/10 focus:to-[var(--color-element-3)]/20 focus:text-[var(--color-text-primary)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-gradient-to-r hover:from-[var(--color-element-3)]/5 hover:to-[var(--color-element-3)]/15",
       className
     )}
     {...props}
   >
     <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <CheckIcon className="h-4 w-4 text-blue-600" />
+        <CheckIcon className="h-4 w-4" style={{ color: 'var(--color-element-3)' }} />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
