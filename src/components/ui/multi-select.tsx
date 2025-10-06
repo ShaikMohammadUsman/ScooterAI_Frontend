@@ -27,7 +27,7 @@ type OptionType = { value: string; label: string };
 // Custom dropdown indicator
 const CustomDropdownIndicator = (props: DropdownIndicatorProps<OptionType, true>) => (
     <components.DropdownIndicator {...props}>
-        <ChevronDown className="w-4 h-4 text-slate-300" />
+        <ChevronDown className="w-4 h-4" style={{ color: 'var(--color-element-3)' }} />
     </components.DropdownIndicator>
 );
 
@@ -54,7 +54,7 @@ const CustomMenuList = (props: MenuListProps<OptionType, true>) => {
         <div className="relative">
             {showTop && (
                 <div className="menu-fade-top flex justify-center items-start">
-                    <ChevronUp className="w-5 h-5 text-slate-300 drop-shadow" style={{ marginTop: 2 }} />
+                    <ChevronUp className="w-5 h-5 drop-shadow" style={{ marginTop: 2, color: 'var(--color-element-3)' }} />
                 </div>
             )}
             <div
@@ -66,7 +66,7 @@ const CustomMenuList = (props: MenuListProps<OptionType, true>) => {
             </div>
             {showBottom && (
                 <div className="menu-fade-bottom flex justify-center items-end">
-                    <ChevronDown className="w-5 h-5 text-slate-300 drop-shadow" style={{ marginBottom: 2 }} />
+                    <ChevronDown className="w-5 h-5 drop-shadow" style={{ marginBottom: 2, color: 'var(--color-element-3)' }} />
                 </div>
             )}
         </div>
@@ -104,19 +104,16 @@ export function MultiSelect({
     const customStyles: StylesConfig<OptionType, true, GroupBase<OptionType>> = {
         control: (base: CSSObjectWithLabel, state: ControlProps<OptionType, true, GroupBase<OptionType>>) => ({
             ...base,
-            backgroundColor: state.isFocused ? 'white' : '#f8fafc',
-            borderColor: state.isFocused ? 'transparent' : '#e2e8f0',
+            backgroundColor: state.isFocused ? 'rgba(201, 191, 255, 0.15)' : 'var(--color-bg-main)',
+            borderColor: state.isFocused ? 'var(--color-element-3)' : 'var(--color-element-3)',
             borderWidth: '2px',
             borderRadius: sizeStyles[size].borderRadius,
             minHeight: sizeStyles[size].minHeight,
             fontSize: sizeStyles[size].fontSize,
             boxShadow: state.isFocused
-                ? '0 0 0 3px rgba(99,102,241,0.18), 0 2px 8px 0 rgba(59,130,246,0.08)'
+                ? '0 0 0 3px rgba(201, 191, 255, 0.25), 0 2px 8px 0 rgba(201, 191, 255, 0.1)'
                 : '0 1px 2px 0 rgba(0,0,0,0.05)',
-            backgroundImage: state.isFocused
-                ? 'linear-gradient(90deg, #3b82f6 0%, #6366f1 100%)'
-                : 'none',
-            backgroundClip: state.isFocused ? 'padding-box, border-box' : 'border-box',
+            backgroundImage: 'none',
             transition: 'all 0.2s cubic-bezier(.4,0,.2,1)',
         }),
         menuPortal: (base: CSSObjectWithLabel) => ({
@@ -127,11 +124,11 @@ export function MultiSelect({
             ...base,
             backgroundColor: 'white',
             borderRadius: '8px',
-            border: '2px solid #e2e8f0',
+            border: '2px solid var(--color-element-3)',
             zIndex: 9999,
             marginTop: 4,
             paddingBottom: 0,
-            boxShadow: '0 10px 15px -3px rgba(203,213,225,0.08), 0 4px 6px -2px rgba(0,0,0,0.05)',
+            boxShadow: '0 10px 15px -3px rgba(201, 191, 255, 0.15), 0 4px 6px -2px rgba(0,0,0,0.05)',
             minWidth: 0,
             maxWidth: '100%',
         }),
@@ -148,25 +145,25 @@ export function MultiSelect({
             whiteSpace: 'normal',
             fontSize: '0.8rem',
             backgroundColor: state.isSelected
-                ? '#6366f1'
+                ? 'var(--color-element-2)'
                 : state.isFocused
-                    ? '#f1f5ff'
+                    ? 'var(--color-element-3)'
                     : 'white',
-            color: state.isSelected ? 'white' : '#475569',
+            color: state.isSelected ? 'white' : 'var(--color-text-primary)',
             padding: '8px 12px',
             borderRadius: '6px',
             margin: '2px 4px',
             fontWeight: state.isSelected ? 600 : 400,
             '&:hover': {
-                backgroundColor: state.isSelected ? '#4f46e5' : '#f3f4f6',
-                color: state.isSelected ? 'white' : '#475569',
+                backgroundColor: state.isSelected ? 'var(--color-element-2)' : 'var(--color-element-3)',
+                color: state.isSelected ? 'white' : 'var(--color-text-primary)',
             },
             transition: 'all 0.2s cubic-bezier(.4,0,.2,1)',
         }),
         multiValue: (base: CSSObjectWithLabel) => ({
             ...base,
-            backgroundColor: '#cbd5e1', // slate-300
-            color: '#475569', // slate-600
+            backgroundColor: 'var(--color-element-3)',
+            color: 'var(--color-text-primary)',
             borderRadius: '6px',
             padding: '2px 8px',
             margin: '2px',
@@ -174,14 +171,14 @@ export function MultiSelect({
         }),
         multiValueLabel: (base: CSSObjectWithLabel) => ({
             ...base,
-            color: '#475569', // slate-600
+            color: 'var(--color-text-primary)',
             fontWeight: '500'
         }),
         multiValueRemove: (base: CSSObjectWithLabel) => ({
             ...base,
-            color: '#475569', // slate-600
+            color: 'var(--color-text-primary)',
             '&:hover': {
-                backgroundColor: '#94a3b8', // slate-400
+                backgroundColor: 'var(--color-element-2)',
                 color: 'white'
             },
             borderRadius: '4px',
@@ -189,11 +186,11 @@ export function MultiSelect({
         }),
         placeholder: (base: CSSObjectWithLabel) => ({
             ...base,
-            color: '#cbd5e1' // slate-300
+            color: 'var(--color-element-3)'
         }),
         input: (base: CSSObjectWithLabel) => ({
             ...base,
-            color: '#475569' // slate-600
+            color: 'var(--color-text-primary)'
         })
     };
 
