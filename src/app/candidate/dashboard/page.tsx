@@ -278,7 +278,7 @@ export default function CandidateDashboardPage() {
                                             {/* Show video interview button if audio is completed and video email is sent */}
                                             {application.audio_interview_status && application.video_email_sent && !application.video_interview_start && (
                                                 <Button
-                                                    size="sm"
+                                                    // size="sm"
                                                     className="flex-1 text-white border-0"
                                                     style={{ backgroundColor: 'var(--color-cta-primary)' }}
                                                     onClick={() => router.push(`/interview/communication?application_id=${application.application_id}`)}
@@ -291,7 +291,7 @@ export default function CandidateDashboardPage() {
                                             {/* Show audio interview button if audio is not completed */}
                                             {!application.audio_interview_status && (
                                                 <Button
-                                                    size="sm"
+                                                    // size="sm"
                                                     className="flex-1 text-white border-0"
                                                     style={{ backgroundColor: 'var(--color-cta-primary)' }}
                                                     onClick={() => router.push(`/interview/general?application_id=${application.application_id}`)}
