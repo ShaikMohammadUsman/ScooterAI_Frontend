@@ -4,6 +4,7 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResumeProfile } from "@/lib/resumeService";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,12 +12,13 @@ import * as z from "zod";
 import { isValidEmail, isValidPhoneNumber } from "@/lib/formValidation";
 
 const contactSchema = z.object({
-    full_name: z.string().min(1, "Full name is required"),
-    email: z.string().min(1, "Email is required").refine(isValidEmail, "Please enter a valid email"),
-    phone_number: z.string().min(1, "Phone number is required").refine(isValidPhoneNumber, "Please enter a valid phone number"),
+    full_name: z.string().optional(),
+    email: z.string().optional(),
+    phone_number: z.string().optional(),
     current_location: z.string().min(1, "Location is required"),
     linkedin_url: z.string().optional(),
-    open_to_relocation: z.boolean()
+    open_to_relocation: z.boolean(),
+    work_preference: z.string().optional()
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
@@ -28,15 +30,32 @@ interface ContactDetailsFormProps {
 }
 
 export default function ContactDetailsForm({ profile, onFieldChange, parsedUserName }: ContactDetailsFormProps) {
+    // Check if fields are valid/missing to determine if they should be shown
+    const shouldShowFullName = !profile?.basic_information?.full_name || profile.basic_information.full_name.trim() === "";
+    const shouldShowEmail = !profile?.basic_information?.email || !isValidEmail(profile.basic_information.email);
+    const shouldShowPhone = !profile?.basic_information?.phone_number || !isValidPhoneNumber(profile.basic_information.phone_number);
+
+    // Create dynamic schema based on which fields should be shown
+    const dynamicSchema = z.object({
+        full_name: shouldShowFullName ? z.string().min(1, "Full name is required") : z.string().optional(),
+        email: shouldShowEmail ? z.string().min(1, "Email is required").refine(isValidEmail, "Please enter a valid email") : z.string().optional(),
+        phone_number: shouldShowPhone ? z.string().min(1, "Phone number is required").refine(isValidPhoneNumber, "Please enter a valid phone number") : z.string().optional(),
+        current_location: z.string().min(1, "Location is required"),
+        linkedin_url: z.string().optional(),
+        open_to_relocation: z.boolean(),
+        work_preference: z.string().optional()
+    });
+
     const form = useForm<ContactFormData>({
-        resolver: zodResolver(contactSchema),
+        resolver: zodResolver(dynamicSchema),
         defaultValues: {
             full_name: profile?.basic_information?.full_name || "",
             email: profile?.basic_information?.email || "",
             phone_number: profile?.basic_information?.phone_number || "",
             current_location: profile?.basic_information?.current_location || "",
             linkedin_url: profile?.basic_information?.linkedin_url || "",
-            open_to_relocation: profile?.basic_information?.open_to_relocation || false
+            open_to_relocation: profile?.basic_information?.open_to_relocation || false,
+            work_preference: "" // Will be added to profile data structure later
         }
     });
 
@@ -48,82 +67,88 @@ export default function ContactDetailsForm({ profile, onFieldChange, parsedUserN
     return (
         <div className="space-y-6 rounded-lg p-6 max-w-3xl mx-auto">
             <div className="space-y-4">
-                {/* Full Name */}
-                <Controller
-                    control={form.control}
-                    name="full_name"
-                    render={({ field, fieldState }) => (
-                        <div>
-                            <Label className="text-sm font-medium">
-                                Full Name*
-                            </Label>
-                            <Input
-                                {...field}
-                                placeholder="John Doe"
-                                className="mt-2"
-                                onChange={(e) => handleInputChange("full_name", e.target.value)}
-                            />
-                            {fieldState.error && (
-                                <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>
-                            )}
-                        </div>
-                    )}
-                />
+                {/* Full Name - Only show if missing or invalid */}
+                {shouldShowFullName && (
+                    <Controller
+                        control={form.control}
+                        name="full_name"
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <Label className="text-sm font-medium">
+                                    Full Name*
+                                </Label>
+                                <Input
+                                    {...field}
+                                    placeholder="John Doe"
+                                    className="mt-2"
+                                    onChange={(e) => handleInputChange("full_name", e.target.value)}
+                                />
+                                {fieldState.error && (
+                                    <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>
+                                )}
+                            </div>
+                        )}
+                    />
+                )}
 
-                {/* Email Address */}
-                <Controller
-                    control={form.control}
-                    name="email"
-                    render={({ field, fieldState }) => (
-                        <div>
-                            <Label className="text-sm font-medium">
-                                Email Address*
-                            </Label>
-                            <Input
-                                {...field}
-                                type="email"
-                                placeholder="johndoe@xyzcompany.com"
-                                className="mt-2"
-                                onChange={(e) => handleInputChange("email", e.target.value)}
-                            />
-                            {fieldState.error && (
-                                <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>
-                            )}
-                        </div>
-                    )}
-                />
+                {/* Email Address - Only show if missing or invalid */}
+                {shouldShowEmail && (
+                    <Controller
+                        control={form.control}
+                        name="email"
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <Label className="text-sm font-medium">
+                                    Email Address*
+                                </Label>
+                                <Input
+                                    {...field}
+                                    type="email"
+                                    placeholder="johndoe@xyzcompany.com"
+                                    className="mt-2"
+                                    onChange={(e) => handleInputChange("email", e.target.value)}
+                                />
+                                {fieldState.error && (
+                                    <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>
+                                )}
+                            </div>
+                        )}
+                    />
+                )}
 
-                {/* Phone Number */}
-                <Controller
-                    control={form.control}
-                    name="phone_number"
-                    render={({ field, fieldState }) => (
-                        <div>
-                            <Label className="text-sm font-medium">
-                                Phone Number*
-                            </Label>
-                            <Input
-                                {...field}
-                                type="tel"
-                                placeholder="99XXX XXX47"
-                                className="mt-2"
-                                onChange={(e) => handleInputChange("phone_number", e.target.value)}
-                            />
-                            {fieldState.error && (
-                                <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>
-                            )}
-                        </div>
-                    )}
-                />
+                {/* Phone Number - Only show if missing or invalid */}
+                {shouldShowPhone && (
+                    <Controller
+                        control={form.control}
+                        name="phone_number"
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <Label className="text-sm font-medium">
+                                    Phone Number*
+                                </Label>
+                                <Input
+                                    {...field}
+                                    type="tel"
+                                    placeholder="99XXX XXX47"
+                                    className="mt-2"
+                                    onChange={(e) => handleInputChange("phone_number", e.target.value)}
+                                />
+                                {fieldState.error && (
+                                    <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>
+                                )}
+                            </div>
+                        )}
+                    />
+                )}
 
-                {/* Location */}
+                {/* Current Location */}
                 <Controller
                     control={form.control}
                     name="current_location"
                     render={({ field, fieldState }) => (
                         <div>
                             <Label className="text-sm font-medium">
-                                Location?*
+                                Current Location*
                             </Label>
                             <Input
                                 {...field}
@@ -138,34 +163,40 @@ export default function ContactDetailsForm({ profile, onFieldChange, parsedUserN
                     )}
                 />
 
-                {/* LinkedIn Profile */}
+                {/* Work Preference */}
                 <Controller
                     control={form.control}
-                    name="linkedin_url"
+                    name="work_preference"
                     render={({ field }) => (
                         <div>
                             <Label className="text-sm font-medium">
-                                Linkedin Profile
+                                Work Preference
                             </Label>
-                            <Input
-                                {...field}
-                                type="url"
-                                placeholder="johndoe_123"
-                                className="mt-2"
-                                onChange={(e) => handleInputChange("linkedin_url", e.target.value)}
-                            />
+                            <Select value={field.value} onValueChange={(value) => {
+                                field.onChange(value);
+                                handleInputChange("work_preference", value);
+                            }}>
+                                <SelectTrigger className="mt-2">
+                                    <SelectValue placeholder="Select work preference" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="remote">Remote</SelectItem>
+                                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                                    <SelectItem value="inPerson">In-person</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     )}
                 />
 
-                {/* Relocation Switch */}
+                {/* Open to Relocation */}
                 <Controller
                     control={form.control}
                     name="open_to_relocation"
                     render={({ field }) => (
                         <div className="flex items-center justify-between py-4">
                             <Label className="text-sm font-medium">
-                                Are you open to relocating?
+                                Open to Relocation
                             </Label>
                             <Switch
                                 checked={field.value}
