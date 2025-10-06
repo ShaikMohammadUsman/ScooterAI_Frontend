@@ -1003,7 +1003,7 @@ export default function VoiceInterviewPage() {
                         router.push("/");
                     }}
                     title="Kudos!"
-                    description="You've successfully completed your voice assessment."
+                    description={`Hurray🥳! You're one step ahead of other candidates. \n Will reach out to you soon.`}
                     buttonText="Continue to home"
                 />
             ) : (

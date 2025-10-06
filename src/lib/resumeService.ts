@@ -4,6 +4,7 @@ export interface BasicInformation {
   full_name: string;
   current_location: string;
   open_to_relocation: boolean;
+  work_preference?: string;
   phone_number: string;
   linkedin_url: string;
   email: string;
@@ -133,6 +134,7 @@ export interface ResumeProfile {
     full_name: string;
     current_location: string;
     open_to_relocation: boolean;
+    work_preference?: string;
     phone_number: string;
     linkedin_url: string;
     email: string;

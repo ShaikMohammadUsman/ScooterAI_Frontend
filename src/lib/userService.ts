@@ -10,14 +10,31 @@ export interface Company {
     address: string;
 }
 
+export interface HiringManager {
+    manager_id: string;
+    first_name: string;
+    last_name: string;
+}
+
 export interface Job {
     job_id: string;
-    title: string;
-    description: string;
-    badges: string[];
+    job_title: string;
+    company_name: string;
+    role_type: string;
+    primary_focus: string[];
+    sales_process_stages: string[];
+    min_experience: string;
+    max_experience: string;
+    skills_required: string[];
+    work_location: string;
+    locations: string[];
+    time_zones: string[];
+    base_salary: Record<string, any>;
+    ote: any[];
+    opportunities: any[];
+    languages: string[];
     created_at: string;
-    company: Company;
-    is_active?: boolean;
+    hiring_manager: HiringManager;
 }
 
 export interface PaginationInfo {

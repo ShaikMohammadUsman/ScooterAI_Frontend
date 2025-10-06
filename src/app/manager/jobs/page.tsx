@@ -88,8 +88,8 @@ export default function JobsPage() {
                     <div className="mt-4">
                         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'open' | 'closed')}>
                             <TabsList className="w-full justify-start bg-transparent p-0 h-auto border-b border-muted rounded-none">
-                                <TabsTrigger value="open" className="rounded-none w-full data-[state=active]:border-b-2 data-[state=active]:border-purple-400 data-[state=active]:text-gray-900 text-gray-500 px-3 py-2">Open Roles</TabsTrigger>
-                                <TabsTrigger value="closed" className="rounded-none w-full data-[state=active]:border-b-2 data-[state=active]:border-purple-400 data-[state=active]:text-gray-900 text-gray-500 px-3 py-2">Closed Roles</TabsTrigger>
+                                <TabsTrigger value="open" className="rounded-none w-full data-[state=active]:border-b-2 data-[state=active]:border-purple-400 data-[state=active]:text-gray-900 text-gray-500 px-3 py-2 cursor-pointer">Open Roles</TabsTrigger>
+                                <TabsTrigger value="closed" className="rounded-none w-full data-[state=active]:border-b-2 data-[state=active]:border-purple-400 data-[state=active]:text-gray-900 text-gray-500 px-3 py-2 cursor-pointer">Closed Roles</TabsTrigger>
                             </TabsList>
                         </Tabs>
                     </div>

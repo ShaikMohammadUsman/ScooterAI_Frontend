@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 text-white shadow-lg hover:from-blue-600 hover:via-blue-700 hover:to-purple-700 hover:shadow-2xl hover:brightness-105 focus-visible:ring-blue-400/40 focus-visible:border-blue-500 active:scale-98",
+          "bg-gradient-to-r from-element-3 to-element-2 text-white shadow-lg hover:from-element-2 hover:to-element-3 hover:shadow-2xl hover:brightness-105 focus-visible:ring-element-3/40 focus-visible:border-element-3 active:scale-98",
         primary:
           "bg-cta-primary hover:bg-gradient-to-r from-grad-1 to-grad-2 hover:text-cta-primary hover:border-grad-1 hover:border-2 text-white px-6 sm:px-8 py-3 rounded-full",
         destructive:

@@ -1,10 +1,10 @@
 "use client";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Candidate } from "@/lib/adminService";
 import { getFitLabel } from "./audioScore";
+import { ManagerCandidate } from "@/lib/managerService";
 
-export default function RejectedApplicantCard({ candidate, jobId }: { candidate: Candidate; jobId: string }) {
+export default function RejectedApplicantCard({ candidate, jobId }: { candidate: ManagerCandidate; jobId: string }) {
     const name = candidate.basic_information?.full_name || "Unknown";
     const location = candidate.basic_information?.current_location || "-";
     return (
@@ -20,7 +20,7 @@ export default function RejectedApplicantCard({ candidate, jobId }: { candidate:
                     variant="primary"
                     className="rounded-full"
                     onClick={() => {
-                        const customEvent = new CustomEvent('openCandidateDetails', { detail: { profileId: candidate.profile_id } });
+                        const customEvent = new CustomEvent('openCandidateDetails', { detail: { applicationId: candidate.application_id } });
                         window.dispatchEvent(customEvent);
                     }}
                 >

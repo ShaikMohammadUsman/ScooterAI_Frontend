@@ -1,5 +1,6 @@
 "use client";
 import { Candidate } from "@/lib/adminService";
+import { ManagerCandidate } from "@/lib/managerService";
 
 // Returns 0–100 normalized score or null
 export function getAudioSummaryScore(candidate: Candidate | any): number | null {
@@ -25,7 +26,7 @@ export function getAudioSummaryScore(candidate: Candidate | any): number | null 
   return null;
 }
 
-export function getFitLabel(candidate: Candidate): { label: string; className: string } {
+export function getFitLabel(candidate: ManagerCandidate): { label: string; className: string } {
   const score100 = getAudioSummaryScore(candidate);
   const normalized5 = score100 == null ? 0 : score100 / 20; // 0–5
   if (normalized5 >= 3.5) return { label: "Excellent Fit", className: "bg-lime-200 text-gray-800" };

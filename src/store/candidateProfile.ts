@@ -41,6 +41,7 @@ export interface ContactDetails {
     phone: string;
     location: string;
     linkedin_profile?: string;
+    work_preference?: string;
 }
 
 export interface CandidateProfile {

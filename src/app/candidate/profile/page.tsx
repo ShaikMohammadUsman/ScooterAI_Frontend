@@ -11,36 +11,11 @@ import SalaryExpectationsForm from "@/components/resume/SalaryExpectationsForm";
 import SalesProfileForm from "@/components/candidate/SalesProfileForm";
 import ContactDetailsForm from "@/components/candidate/ContactDetailsForm";
 import { ResumeProfile } from "@/lib/resumeService";
-import { updateCandidateData } from "@/lib/candidateService";
+import { updateCandidateData, applyJob } from "@/lib/candidateService";
 import SuccessOverlay from "@/components/candidate/SuccessOverlay";
+import ProfileSuccessPopup from "@/components/candidate/ProfileSuccessPopup";
 
-// function SuccessOverlay({ visible, onProceed }: { visible: boolean; onProceed: () => void }) {
-//     if (!visible) return null;
-//     return (
-//         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-main">
-//             <div className="rounded-xl p-10 text-center max-w-md shadow-xl">
-//                 <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-gradient-to-r from-grad-1 to-grad-2 flex items-center justify-center">
-//                     <CheckCircle className="text-white" />
-//                 </div>
-//                 <h3 className="font-semibold">Congratulations</h3>
-//                 <p className="text-sm text-gray-600">Your profile is approved.</p>
-//                 <div className="my-10">
-//                     <svg width="180" height="220" viewBox="0 0 180 220" className="mx-auto">
-//                         <path d="M10 20 C 120 0, 120 80, 80 120 C 40 160, 120 180, 140 205" stroke="#9CA3AF" strokeDasharray="4 6" fill="none" strokeWidth="2" />
-//                     </svg>
-//                 </div>
-//                 <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-gradient-to-r from-grad-1 to-grad-2 flex items-center justify-center">
-//                     <span className="text-white text-lg"><Mic /></span>
-//                 </div>
-//                 <h4 className="font-semibold">Final step</h4>
-//                 <p className="text-sm text-gray-600">Add your voice. 5 minutes to stand out and get call backs from companies.</p>
-//                 <div className="mt-8">
-//                     <button onClick={onProceed} className="px-6 py-2 rounded-full bg-cta-primary text-cta-primary-text">Proceed</button>
-//                 </div>
-//             </div>
-//         </div>
-//     );
-// }
+
 
 const sections = [
     {
@@ -86,6 +61,7 @@ export default function CandidateProfileFlow() {
             full_name: profile?.contact_details?.full_name || "",
             current_location: profile?.contact_details?.location || "",
             open_to_relocation: false,
+            work_preference: (profile?.contact_details as any)?.work_preference || "",
             phone_number: profile?.contact_details?.phone || "",
             linkedin_url: profile?.contact_details?.linkedin_profile || "",
             email: profile?.contact_details?.email || "",
@@ -223,6 +199,7 @@ export default function CandidateProfileFlow() {
     };
 
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showProfileSuccess, setShowProfileSuccess] = useState(false);
     const [applicationId, setApplicationId] = useState<string | null>(null);
 
     const handleNext = async () => {
@@ -245,12 +222,32 @@ export default function CandidateProfileFlow() {
             setSubmitting(true);
             setSubmitError(null); // Clear any previous errors
             try {
+                // First, update candidate data without job_id
                 const payload = buildUpdatePayload(localProfile);
                 const res = await updateCandidateData(payload);
+
                 if (res?.status) {
                     markerProfileComplete();
-                    setApplicationId(res.application_id);
-                    setShowSuccess(true);
+
+                    // If job_id is present in URL, apply for the job
+                    if (jobId) {
+                        try {
+                            const applyRes = await applyJob({ job_id: jobId });
+                            if (applyRes?.status) {
+                                setApplicationId(applyRes.application_id || res.application_id);
+                                setShowSuccess(true);
+                            } else {
+                                setSubmitError(applyRes?.message || 'Failed to apply for job');
+                            }
+                        } catch (applyError: any) {
+                            const applyMsg = applyError?.response?.data?.message || applyError?.message || 'Failed to apply for job';
+                            setSubmitError(applyMsg);
+                        }
+                    } else {
+                        // No job_id, show profile success popup
+                        setApplicationId(null);
+                        setShowProfileSuccess(true);
+                    }
                 } else {
                     setSubmitError(res?.message || 'Failed to update candidate data');
                 }
@@ -265,11 +262,11 @@ export default function CandidateProfileFlow() {
 
     function buildUpdatePayload(profileIn: ResumeProfile) {
         return {
-            job_id: jobId,
             basic_information: {
                 full_name: profileIn.basic_information.full_name,
                 current_location: profileIn.basic_information.current_location,
                 open_to_relocation: profileIn.basic_information.open_to_relocation,
+                work_preference: (profileIn.basic_information as any).work_preference,
                 phone_number: profileIn.basic_information.phone_number,
                 linkedin_url: profileIn.basic_information.linkedin_url,
                 email: profileIn.basic_information.email,
@@ -544,6 +541,13 @@ export default function CandidateProfileFlow() {
                     } else {
                         router.push("/candidate/dashboard");
                     }
+                }}
+            />
+
+            <ProfileSuccessPopup
+                visible={showProfileSuccess}
+                onProceed={() => {
+                    router.push("/home/careers");
                 }}
             />
         </div>

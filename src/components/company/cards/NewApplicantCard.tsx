@@ -1,11 +1,11 @@
 "use client";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Candidate } from "@/lib/adminService";
 import { getFitLabel } from "./audioScore";
+import { ManagerCandidate } from "@/lib/managerService";
 
 export interface CandidateCardProps {
-    candidate: Candidate;
+    candidate: ManagerCandidate;
     jobId: string;
 }
 
@@ -32,7 +32,7 @@ export default function NewApplicantCard({ candidate, jobId }: CandidateCardProp
                     variant="primary"
                     onClick={() => {
                         // Open details modal on the jobs page instead of navigating
-                        const customEvent = new CustomEvent('openCandidateDetails', { detail: { profileId: candidate.profile_id } });
+                        const customEvent = new CustomEvent('openCandidateDetails', { detail: { applicationId: candidate.application_id } });
                         window.dispatchEvent(customEvent);
                     }}
                 >

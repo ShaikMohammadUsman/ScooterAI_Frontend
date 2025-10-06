@@ -1,11 +1,11 @@
 "use client";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Candidate } from "@/lib/adminService";
 import { getFitLabel } from "./audioScore";
 import { useRouter } from "next/navigation";
+import { ManagerCandidate } from "@/lib/managerService";
 
-export default function ShortlistedApplicantCard({ candidate, jobId, roleTitle }: { candidate: Candidate; jobId: string; roleTitle?: string }) {
+export default function ShortlistedApplicantCard({ candidate, jobId, roleTitle }: { candidate: ManagerCandidate; jobId: string; roleTitle?: string }) {
     const router = useRouter();
     const name = candidate.basic_information?.full_name || "Unknown";
     const location = candidate.basic_information?.current_location || "-";
@@ -40,7 +40,7 @@ export default function ShortlistedApplicantCard({ candidate, jobId, roleTitle }
                         const exp = encodeURIComponent(getExp());
                         const expected = getCtcValue((candidate as any)?.basic_information?.expected_ctc);
                         const rel = (candidate as any)?.basic_information?.open_to_relocation ? 1 : 0;
-                        const url = `/schedule-interview?jobId=${jobId}&profileId=${candidate.profile_id}&role=${role}&name=${nm}&location=${loc}&exp=${exp}&expected=${expected ?? ""}&relocation=${rel}`;
+                        const url = `/schedule-interview?jobId=${jobId}&profileId=${candidate.application_id}&role=${role}&name=${nm}&location=${loc}&exp=${exp}&expected=${expected ?? ""}&relocation=${rel}`;
                         router.push(url);
                     }}
                 >
@@ -50,7 +50,7 @@ export default function ShortlistedApplicantCard({ candidate, jobId, roleTitle }
                     variant="secondary"
                     className="rounded-full"
                     onClick={() => {
-                        const customEvent = new CustomEvent('openCandidateDetails', { detail: { profileId: candidate.profile_id } });
+                        const customEvent = new CustomEvent('openCandidateDetails', { detail: { applicationId: candidate.application_id } });
                         window.dispatchEvent(customEvent);
                     }}
                 >

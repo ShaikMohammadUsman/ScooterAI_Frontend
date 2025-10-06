@@ -70,6 +70,7 @@ export interface BasicInformation {
     full_name: string;
     current_location: string;
     open_to_relocation: boolean;
+    work_preference?: string;
     phone_number: string;
     linkedin_url: string;
     email: string;
@@ -181,6 +182,16 @@ export interface RemindLaterResponse {
     data: {
         remaind_at: string;
     };
+}
+
+export interface ApplyJobRequest {
+    job_id: string;
+}
+
+export interface ApplyJobResponse {
+    status: boolean;
+    message: string;
+    application_id?: string;
 }
 
 export interface AudioInterviewRequest {
@@ -468,6 +479,11 @@ export async function updateProfessionalSummary(data: UpdateProfessionalSummaryR
 
 export async function remindLater(data: RemindLaterRequest): Promise<RemindLaterResponse> {
     const res = await candidateApi.post(`/remind-later/`, data);
+    return res.data;
+}
+
+export async function applyJob(data: ApplyJobRequest): Promise<ApplyJobResponse> {
+    const res = await candidateApi.post(`/apply-job/`, data);
     return res.data;
 }
 

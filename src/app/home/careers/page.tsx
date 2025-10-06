@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { getAllJobs, Job, JobsResponse } from "@/lib/userService"
+import { applyJob } from "@/lib/candidateService"
 import LoadingSpinner from "@/components/ui/loadingSpinner"
 import ErrorBox from "@/components/ui/error"
 import { ChevronLeft, ChevronRight, Mic, ArrowRight, X } from "lucide-react"
@@ -17,6 +18,8 @@ function CareersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<JobsResponse['pagination'] | null>(null);
     const [showFloatingComponent, setShowFloatingComponent] = useState(false);
+    const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+    const [applyError, setApplyError] = useState<string | null>(null);
     const pageSize = 6; // Number of jobs per page
 
     useEffect(() => {
@@ -36,12 +39,30 @@ function CareersPage() {
         setError(null);
         try {
             const response = await getAllJobs(page, pageSize);
-            setJobs(response.jobs);
-            setPagination(response.pagination);
+            setJobs(response?.jobs || []);
+            setPagination(response?.pagination || null);
         } catch (err: any) {
-            setError(err.message || "Failed to fetch jobs");
+            setError(err?.message || "Failed to fetch jobs");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleApplyJob = async (jobId: string) => {
+        setApplyingJobId(jobId);
+        setApplyError(null);
+        try {
+            const response = await applyJob({ job_id: jobId });
+            if (response?.status) {
+                // Redirect to profile page with job_id to complete the application
+                router.push(`/candidate/dashboard`);
+            } else {
+                setApplyError(response?.message || 'Failed to apply for job');
+            }
+        } catch (err: any) {
+            setApplyError(err?.response?.data?.message || err?.message || 'Failed to apply for job');
+        } finally {
+            setApplyingJobId(null);
         }
     };
 
@@ -109,32 +130,58 @@ function CareersPage() {
                         <Card key={job.job_id} className="bg-card shadow-lg hover:shadow-xl transition-shadow">
                             <CardHeader>
                                 <CardTitle className="text-xl flex items-center gap-2">
-                                    {job.title}
-                                    {job?.is_active === false && (
-                                        <Badge variant="destructive">Inactive</Badge>
-                                    )}
+                                    {job?.job_title}
                                 </CardTitle>
                                 <p className="text-sm text-muted-foreground">
-                                    {job.company.company_name} • {job.company.address}
+                                    {job?.company_name} • {job?.role_type}
                                 </p>
                             </CardHeader>
                             <CardContent>
-                                <p className="mb-4 text-foreground line-clamp-3">{job.description}</p>
+                                <div className="mb-4">
+                                    <p className="text-sm text-muted-foreground mb-2">
+                                        <strong>Primary Focus:</strong> {job?.primary_focus?.join(', ') || 'Not specified'}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground mb-2">
+                                        <strong>Sales Process:</strong> {job?.sales_process_stages?.join(', ') || 'Not specified'}
+                                    </p>
+                                    {job.work_location && (
+                                        <p className="text-sm text-muted-foreground mb-2">
+                                            <strong>Work Location:</strong> {job?.work_location}
+                                        </p>
+                                    )}
+                                    {/* {job.hiring_manager && (
+                                        <p className="text-sm text-muted-foreground">
+                                            <strong>Hiring Manager:</strong> {job?.hiring_manager?.first_name} {job?.hiring_manager?.last_name}
+                                        </p>
+                                    )} */}
+                                </div>
+
                                 <div className="flex flex-wrap gap-2 mb-6">
-                                    {job.badges.map((badge, i) => (
-                                        <Badge key={i} className={getBadgeColor(badge)}>
-                                            {badge}
+                                    {job.primary_focus?.map((focus, i) => (
+                                        <Badge key={`focus-${i}`} className={getBadgeColor(focus)}>
+                                            {focus}
                                         </Badge>
                                     ))}
+                                    {job?.sales_process_stages?.map((stage, i) => (
+                                        <Badge key={`stage-${i}`} className={getBadgeColor(stage)}>
+                                            {stage}
+                                        </Badge>
+                                    ))}
+                                    {job?.role_type && (
+                                        <Badge className={getBadgeColor(job?.role_type)}>
+                                            {job?.role_type}
+                                        </Badge>
+                                    )}
                                 </div>
+
                                 <div className="flex flex-col-reverse md:flex-row justify-between items-center">
                                     <Button
                                         className="my-2 px-8 py-2 text-base font-semibold"
-                                        onClick={() => router.push(`/resume?role=${encodeURIComponent(job.title)}&job_id=${job.job_id}`)}
-                                        disabled={job.is_active === false}
-                                        variant={job.is_active === false ? 'secondary' : 'default'}
+                                        onClick={() => handleApplyJob(job.job_id)}
+                                        disabled={applyingJobId === job.job_id}
+                                        variant="default"
                                     >
-                                        {job.is_active === false ? 'Inactive' : 'Apply Now'}
+                                        {applyingJobId === job.job_id ? "Applying..." : "Apply Now"}
                                     </Button>
                                     <p className="text-sm text-muted-foreground">
                                         Posted {new Date(job.created_at).toLocaleDateString()}
@@ -145,13 +192,30 @@ function CareersPage() {
                     ))}
                 </div>
 
+                {/* Apply Error Display */}
+                {applyError && (
+                    <div className="mt-6 flex items-center justify-center">
+                        <div className="flex flex-col justify-center bg-red-50 border border-red-200 rounded-lg p-4 max-w-md">
+                            <p className="text-red-800 text-sm text-center">{applyError}</p>
+                            <Button
+                                onClick={() => setApplyError(null)}
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 w-fit mx-auto rounded-full"
+                            >
+                                Dismiss
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 {pagination && (
                     <div className="mt-8 flex items-center justify-center gap-4">
                         <Button
                             variant="outline"
                             size="icon"
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={!pagination.has_previous}
+                            disabled={!pagination?.has_previous}
                             className="h-10 w-10"
                         >
                             <ChevronLeft className="h-4 w-4" />
@@ -160,18 +224,18 @@ function CareersPage() {
 
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">
-                                Page {pagination.current_page} of {pagination.total_pages}
+                                Page {pagination?.current_page || 1} of {pagination?.total_pages || 1}
                             </span>
                             <span className="text-sm text-muted-foreground">
-                                ({pagination.total_jobs} jobs)
+                                ({pagination?.total_jobs || 0} jobs)
                             </span>
                         </div>
 
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setCurrentPage(prev => Math.min(pagination.total_pages, prev + 1))}
-                            disabled={!pagination.has_next}
+                            onClick={() => setCurrentPage(prev => Math.min(pagination?.total_pages || 1, prev + 1))}
+                            disabled={!pagination?.has_next}
                             className="h-10 w-10"
                         >
                             <ChevronRight className="h-4 w-4" />

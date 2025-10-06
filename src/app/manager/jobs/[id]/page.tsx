@@ -9,8 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 
-import { Candidate, updateApplicationStatus, markFinalShortlist, resetVideoInterview, downloadContactsCsv } from '@/lib/adminService';
-import { getMyJobCandidates, MyJobCandidatesResponse } from '@/lib/managerService';
+import { updateApplicationStatus, markFinalShortlist, resetVideoInterview, downloadContactsCsv } from '@/lib/adminService';
+import { getMyJobCandidates, ManagerCandidate, MyJobCandidatesResponse } from '@/lib/managerService';
 import ReactMarkdown from 'react-markdown';
 import { toast } from "@/hooks/use-toast";
 import { FaCheckCircle, FaTimesCircle, FaMicrophone, FaVideo, FaCheck, FaExternalLinkAlt, FaEdit, FaClock, FaPlay, FaPause, FaStop, FaEye, FaEyeSlash, FaMousePointer, FaKeyboard, FaMobile, FaDesktop, FaEnvelope } from 'react-icons/fa';
@@ -41,7 +41,7 @@ interface PageProps {
 export default function JobCandidatesPage({ params }: PageProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+    const [selectedCandidate, setSelectedCandidate] = useState<ManagerCandidate | null>(null);
     const [jobDetails, setJobDetails] = useState<MyJobCandidatesResponse['job_details'] | null>(null);
     const resolvedParams = use(params);
     const jobId = resolvedParams.id;
@@ -84,10 +84,10 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
     // Separate candidates state for each section
     const [candidatesBySection, setCandidatesBySection] = useState({
-        new: [] as Candidate[],
-        seen: [] as Candidate[],
-        shortlisted: [] as Candidate[],
-        rejected: [] as Candidate[]
+        new: [] as ManagerCandidate[],
+        seen: [] as ManagerCandidate[],
+        shortlisted: [] as ManagerCandidate[],
+        rejected: [] as ManagerCandidate[]
     });
 
     // Loading states for each section
@@ -182,7 +182,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
         const handler = (e: any) => {
             const pid = e?.detail?.profileId as string | undefined;
             if (!pid) return;
-            const cand = candidates.find(c => c.profile_id === pid);
+            const cand = candidates.find(c => c.application_id === pid);
             if (cand) setSelectedCandidate(cand);
         };
         window.addEventListener('openCandidateDetails', handler as any);
@@ -477,8 +477,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                 return avgScore * 20; // Convert from 0-5 scale to 0-100 scale
             }
         }
-
-        return null;
+        // Audio interview summary not available in ManagerCandidate
     };
 
     const getAudioCredibilityScore = (candidate: any) => {
@@ -493,6 +492,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
         // Old format - scores are out of 5, convert to out of 100
         const oldScore = summary.dimension_averages?.credibility;
         return oldScore ? oldScore * 20 : null;
+        // Audio interview summary not available in ManagerCandidate
     };
 
     const getAudioCommunicationScore = (candidate: any) => {
@@ -516,6 +516,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
         // Old format only - scores are out of 5, convert to out of 100
         const oldScore = summary.dimension_averages?.ownership_depth;
         return oldScore ? oldScore * 20 : null;
+        // Audio interview summary not available in ManagerCandidate
     };
 
     const getAudioAreasForImprovement = (candidate: any) => {
@@ -523,10 +524,12 @@ export default function JobCandidatesPage({ params }: PageProps) {
         if (!summary?.areas_for_improvement) return [];
 
         return summary.areas_for_improvement;
+        // Audio interview summary not available in ManagerCandidate
     };
 
     const getAudioQAEvaluations = (candidate: any) => {
         return candidate?.audio_interview_details?.qa_evaluations || [];
+        // Audio interview summary not available in ManagerCandidate
     };
 
     const getQAEvaluationScore = (qa: any) => {
@@ -700,17 +703,17 @@ export default function JobCandidatesPage({ params }: PageProps) {
         }
     }
 
-    const openStatusModal = (candidate: Candidate) => {
+    const openStatusModal = (candidate: ManagerCandidate) => {
         setSelectedCandidate(candidate);
         setIsStatusModalOpen(true);
     };
 
-    const openShortlistModal = (candidate: Candidate) => {
+    const openShortlistModal = (candidate: ManagerCandidate) => {
         setSelectedCandidate(candidate);
         setIsShortlistModalOpen(true);
     };
 
-    const openResetVideoModal = (candidate: Candidate) => {
+    const openResetVideoModal = (candidate: ManagerCandidate) => {
         setSelectedCandidate(candidate);
         setIsResetVideoModalOpen(true);
     };
@@ -857,7 +860,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                         {activeTab === 'new' ? (
                             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {candidates.map((c) => (
-                                    <NewApplicantCard key={c.profile_id} candidate={c} jobId={jobId} />
+                                    <NewApplicantCard key={c.application_id} candidate={c} jobId={jobId} />
                                 ))}
                             </div>
                         ) : (
@@ -906,11 +909,11 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                 )} */}
                                 {(activeTab === 'seen' ? candidates : candidates).map((c) => (
                                     activeTab === 'seen' ? (
-                                        <SeenApplicantCard key={c.profile_id} candidate={c} jobId={jobId} roleTitle={jobDetails?.title || ''} />
+                                        <SeenApplicantCard key={c.application_id} candidate={c} jobId={jobId} roleTitle={jobDetails?.title || ''} />
                                     ) : activeTab === 'shortlisted' ? (
-                                        <ShortlistedApplicantCard key={c.profile_id} candidate={c} jobId={jobId} roleTitle={jobDetails?.title || ''} />
+                                        <ShortlistedApplicantCard key={c.application_id} candidate={c} jobId={jobId} roleTitle={jobDetails?.title || ''} />
                                     ) : (
-                                        <RejectedApplicantCard key={c.profile_id} candidate={c} jobId={jobId} />
+                                        <RejectedApplicantCard key={c.application_id} candidate={c} jobId={jobId} />
                                     )
                                 ))}
                             </div>
@@ -1134,7 +1137,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                             ))
                         ) : (
                             filteredCandidates.map((candidate) => (
-                                <Card key={candidate?.profile_id} className="p-4 sm:p-6">
+                                <Card key={candidate?.application_id} className="p-4 sm:p-6">
                                     <div className="flex flex-col lg:flex-row items-start justify-between gap-4">
                                         <div className="flex-1 min-w-0">
                                             <h3 className="text-lg font-semibold text-gray-900 truncate">
@@ -1163,13 +1166,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         <div className="w-full sm:w-auto flex flex-row items-center gap-2 flex-shrink-0">
                                            
 
-                                            {candidate?.interview_status?.resume_url && (
+                                            {candidate?.interview_status?.resume_url_from_user_account && (
                                                 <Button
                                                     variant="outline"
                                                     className="flex w-full items-center gap-2 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-600 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
                                                     onClick={() => {
-                                                        if (candidate?.interview_status?.resume_url) {
-                                                            window.open(candidate?.interview_status?.resume_url, '_blank');
+                                                        if (candidate?.interview_status?.resume_url_from_user_account) {
+                                                            window.open(candidate?.interview_status?.resume_url_from_user_account, '_blank');
                                                         }
                                                     }}
                                                 >
@@ -1302,15 +1305,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             <p className="text-gray-600 mt-1">
                                                 {selectedCandidate?.basic_information?.current_location}
                                             </p>
-                                            {selectedCandidate?.basic_information?.languages_spoken && selectedCandidate?.basic_information?.languages_spoken?.length > 0 && (
-                                                <div className="flex gap-2 mt-2">
-                                                    {selectedCandidate?.basic_information?.languages_spoken?.map((lang: string, index: number) => (
-                                                        <span key={index} className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
-                                                            {lang}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
+
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
                                             <div className="flex items-center gap-2">
@@ -1362,18 +1357,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                     </div>
 
                                     {/* Job Fit Assessment */}
-                                    {selectedCandidate?.job_fit_assessment && (
-                                        <div className="mb-6">
-                                            <h4 className="text-lg font-semibold text-gray-900 mb-3">Job Fit Assessment</h4>
-                                            <div className="bg-gray-50 p-4 rounded-lg">
-                                                <div className="prose prose-sm max-w-none">
-                                                    <ReactMarkdown>
-                                                        {selectedCandidate.job_fit_assessment}
-                                                    </ReactMarkdown>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                                    {/* Job fit assessment not available in ManagerCandidate */}
 
                                     {/* Company History */}
                                     <div className="mb-6">
@@ -1426,13 +1410,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                                     {/* Action Buttons */}
                                     <div className="flex flex-col md:flex-row gap-4">
-                                        {selectedCandidate?.interview_status?.resume_url && (
+                                        {selectedCandidate?.interview_status?.resume_url_from_user_account && (
                                             <Button
                                                 variant="outline"
                                                 className="flex-1"
                                                 onClick={() => {
-                                                    if (selectedCandidate?.interview_status?.resume_url) {
-                                                        window.open(selectedCandidate?.interview_status?.resume_url, '_blank');
+                                                    if (selectedCandidate?.interview_status?.resume_url_from_user_account) {
+                                                        window.open(selectedCandidate?.interview_status?.resume_url_from_user_account, '_blank');
                                                     }
                                                 }}
                                             >
@@ -1445,10 +1429,10 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             variant="outline"
                                             className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
                                             onClick={() => openShortlistModal(selectedCandidate)}
-                                            disabled={updatingShortlist === selectedCandidate?.profile_id}
+                                            disabled={updatingShortlist === selectedCandidate?.application_id}
                                         >
                                             <FaCheck className="text-white animate-pulse" />
-                                            {updatingShortlist === selectedCandidate?.profile_id ? (
+                                            {updatingShortlist === selectedCandidate?.application_id ? (
                                                 <>
                                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                                     Updating...
@@ -1463,10 +1447,10 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             variant="outline"
                                             className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-medium px-4 py-2 rounded-lg"
                                             onClick={() => openStatusModal(selectedCandidate)}
-                                            disabled={updatingStatus === selectedCandidate?.profile_id}
+                                            disabled={updatingStatus === selectedCandidate?.application_id}
                                         >
                                             <FaEdit className="text-white animate-pulse" />
-                                            {updatingStatus === selectedCandidate?.profile_id ? (
+                                            {updatingStatus === selectedCandidate?.application_id ? (
                                                 <>
                                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                                     Updating...
@@ -1502,7 +1486,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
                                     {/* Interview Performance Scores */}
                                     <div className="mt-8">
-                                        <InterviewScoreCard candidate={selectedCandidate} />
+                                        <InterviewScoreCard candidate={selectedCandidate as any} />
                                     </div>
 
                                     {/* Audio Interview Q&A */}
@@ -2040,7 +2024,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                     <ProctoringDetailsDialog
                                         isOpen={isProctorDialogOpen}
                                         onOpenChange={setIsProctorDialogOpen}
-                                        candidate={selectedCandidate}
+                                        candidate={selectedCandidate as any}
                                     />
 
                                 </div>
@@ -2132,13 +2116,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
                         }}
                         onSubmit={(status, note) => {
                             if (selectedCandidate) {
-                                handleApplicationStatus(selectedCandidate.profile_id, status, note);
+                                handleApplicationStatus(selectedCandidate.application_id, status, note);
                             }
                         }}
                         candidateName={selectedCandidate?.basic_information?.full_name || ''}
-                        isLoading={updatingStatus === selectedCandidate?.profile_id}
-                        currentStatus={typeof selectedCandidate?.application_status === 'string' ? selectedCandidate.application_status : typeof selectedCandidate?.application_status === 'boolean' ? selectedCandidate.application_status.toString() : null}
-                        currentNote={selectedCandidate?.application_status_reason}
+                        isLoading={updatingStatus === selectedCandidate?.application_id}
+                        currentStatus={typeof selectedCandidate?.application_status === 'string' ? selectedCandidate.application_status : typeof selectedCandidate?.application_status === 'boolean' ? selectedCandidate.application_status : null}
+                        currentNote={selectedCandidate?.application_status_reason || ''}
                     />
                     {/* Shortlist Modal */}
                     <ShortlistModal
@@ -2148,20 +2132,20 @@ export default function JobCandidatesPage({ params }: PageProps) {
                         }}
                         onSubmit={(status, note) => {
                             if (selectedCandidate) {
-                                handleShortlist(selectedCandidate.profile_id, status, note);
+                                handleShortlist(selectedCandidate.application_id, status, note);
                             }
                         }}
                         candidateName={selectedCandidate?.basic_information?.full_name || ''}
-                        isLoading={updatingShortlist === selectedCandidate?.profile_id}
+                        isLoading={updatingShortlist === selectedCandidate?.application_id}
                         currentStatus={typeof selectedCandidate?.final_shortlist === 'boolean' ? selectedCandidate.final_shortlist : null}
-                        currentNote={selectedCandidate?.shortlist_status_reason}
+                        currentNote={selectedCandidate?.shortlist_status_reason || ""}
                     />
 
                     {/* Reset Video Interview Modal */}
                     <ResetVideoInterviewModal
                         isOpen={isResetVideoModalOpen}
                         onClose={() => setIsResetVideoModalOpen(false)}
-                        candidate={selectedCandidate}
+                        candidate={selectedCandidate as any}
                         onSuccess={fetchCandidates}
                     />
                 </div>

@@ -15,7 +15,13 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
     useEffect(() => {
         // Check authentication status on mount and when it changes
         const checkAuth = () => {
-            setIsAuthenticated(isAccessTokenValid());
+            const authenticated = isAccessTokenValid();
+            setIsAuthenticated(authenticated);
+
+            // Redirect to login if not authenticated and not already on auth pages
+            if (!authenticated && !window.location.pathname.includes('/manager/login') && !window.location.pathname.includes('/manager/signup')) {
+                router.replace("/manager/login");
+            }
         };
 
         checkAuth();
@@ -28,6 +34,10 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
         // Listen for custom auth change events (e.g., when user logs in/out in same tab)
         const handleAuthChange = (event: CustomEvent) => {
             setIsAuthenticated(event.detail.authenticated);
+            // Also redirect if authentication is lost
+            if (!event.detail.authenticated && !window.location.pathname.includes('/manager/login') && !window.location.pathname.includes('/manager/signup')) {
+                router.replace("/manager/login");
+            }
         };
 
         window.addEventListener('storage', handleStorageChange);
@@ -37,7 +47,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('managerAuthChanged', handleAuthChange as EventListener);
         };
-    }, []);
+    }, [router]);
 
     const nav = (
         <nav className="flex items-center gap-2">

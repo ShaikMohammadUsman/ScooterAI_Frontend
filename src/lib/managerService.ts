@@ -183,6 +183,7 @@ export interface ManagerCandidate {
         audio_interview_attended: boolean;
         video_email_sent: boolean;
         video_interview_url: string | null;
+        processed_video_interview_url: string | null;
         audio_interview_url: string;
         resume_url_from_user_account: string;
     };
@@ -241,6 +242,90 @@ export interface ManagerCandidate {
         tab_switches: number;
         updated_at: string;
         window_focus_loss: number;
+    };
+    application_status_reason?: string;
+    shortlist_status_reason?: string;
+    interview_details?: {
+        communication_evaluation?: {
+            content_and_thought?: {
+                score?: number;
+                feedback?: string;
+            };
+            verbal_delivery?: {
+                score?: number;
+                feedback?: string;
+            };
+            non_verbal?: {
+                score?: number;
+                feedback?: string;
+            };
+            presence_and_authenticity?: {
+                score?: number;
+                feedback?: string;
+            };
+            overall_score?: number;
+            summary?: string;
+        };
+        qa_evaluations?: {
+            question_evaluations?: {
+                question_number?: number;
+                step?: string;
+                question?: string;
+                answer?: string;
+                skill_score?: number;
+                trait_score?: number;
+                skill_reasoning?: string;
+                trait_reasoning?: string;
+                has_signal?: boolean;
+                timestamp?: string;
+            }[];
+            overall_scores?: {
+                average_skill_score?: number;
+                average_trait_score?: number;
+                total_questions?: number;
+                questions_with_signal?: number;
+                questions_answered?: number;
+            };
+            summary?: string;
+            interview_completed?: boolean;
+            evaluation_timestamp?: string;
+            role?: string;
+            session_id?: string;
+        };
+    };
+
+    audio_interview_details?: {
+        audio_interview_id: string;
+        created_at: string;
+        qa_evaluations: Array<{
+            question: string;
+            answer: string;
+            evaluation: {
+                credibility_score: number;
+                communication_score: number;
+                sales_motion: string;
+                sales_cycle: string;
+                icp: string;
+                highlights: string[];
+                red_flags: string[];
+                coaching_focus: string;
+                fit_summary: string;
+            };
+        }>;
+        audio_interview_summary: {
+            average_score: number;
+            credibility_score: number;
+            communication_score: number;
+            total_questions: number;
+            strengths: string[];
+            areas_for_improvement: string[];
+            red_flags: string[];
+            icp_summary: string[];
+            sales_motion_summary: string[];
+            sales_cycle_summary: string[];
+            coaching_focus: string | null;
+            audio_interview_status: boolean;
+        };
     };
 }
 
