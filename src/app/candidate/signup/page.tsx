@@ -44,6 +44,7 @@ export default function CandidateSignupPage() {
     const [resumeFile, setResumeFile] = useState<File | null>(null);
     const [showParsingOverlay, setShowParsingOverlay] = useState(false);
     const [parsingProgress, setParsingProgress] = useState(0);
+    const [showResumeError, setShowResumeError] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -116,8 +117,17 @@ export default function CandidateSignupPage() {
     const onSubmit = async (data: SignupFormData) => {
         setSubmitting(true);
         setError(null);
+        setShowResumeError(false);
         // Clear any previous form errors
         form.clearErrors();
+
+        // Check if resume file is uploaded
+        if (!resumeFile) {
+            setShowResumeError(true);
+            setSubmitting(false);
+            return;
+        }
+
         try {
             // Step 1: Call signup API
             const signupRes = await candidateSignup({
@@ -221,6 +231,7 @@ export default function CandidateSignupPage() {
         const file = event.target.files?.[0];
         if (file) {
             setResumeFile(file);
+            setShowResumeError(false); // Clear error when file is uploaded
         }
     };
 
@@ -243,6 +254,13 @@ export default function CandidateSignupPage() {
                         <div className="text-center mb-6">
                             <h2 className="text-xl font-semibold italic">Unlock your dream sales job</h2>
                             <p className="text-sm text-gray-500">Simple steps today, big opportunities tomorrow.</p>
+                        </div>
+
+                        {/* Required Fields Notice */}
+                        <div className="mb-6 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-[10px] text-blue-800 ">
+                                <span className="text-blue-600">*</span> All fields marked with an asterisk (*) are required to complete your registration.
+                            </p>
                         </div>
 
                         <Form {...form}>
@@ -385,9 +403,9 @@ export default function CandidateSignupPage() {
                                     />
                                     {resumeFile ? (
                                         <p className="mt-2 text-sm text-green-600">✓ {resumeFile.name} selected</p>
-                                    ) : (
+                                    ) : showResumeError ? (
                                         <p className="mt-2 text-sm text-red-500">⚠ Resume file is required</p>
-                                    )}
+                                    ) : null}
                                 </div>
 
                                 {/* Password Field */}
