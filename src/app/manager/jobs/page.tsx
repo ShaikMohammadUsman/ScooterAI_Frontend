@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getMyJobRoles, getMyJobCandidates, JobAggregate, getStoredManagerAuth } from "@/lib/managerService";
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, Share2, Check } from 'lucide-react';
 
 export default function JobsPage() {
     const router = useRouter();
@@ -17,6 +17,7 @@ export default function JobsPage() {
     const [searchTerm] = useState('');
     const [activeTab, setActiveTab] = useState<'open' | 'closed'>('open');
     const [countsByJob, setCountsByJob] = useState<Record<string, { candidates: number; shortlisted: number; interviewed: number }>>({});
+    const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
     const manager = getStoredManagerAuth();
 
     useEffect(() => {
@@ -57,6 +58,17 @@ export default function JobsPage() {
 
     const openJobs = useMemo(() => jobs.filter(j => j.is_active === true), [jobs]);
     const closedJobs = useMemo(() => jobs.filter(j => j.is_active === false), [jobs]);
+
+    const handleShareJob = async (jobId: string) => {
+        try {
+            const jobUrl = `${window.location.origin}/home/careers/${jobId}`;
+            await navigator.clipboard.writeText(jobUrl);
+            setCopiedJobId(jobId);
+            setTimeout(() => setCopiedJobId(null), 2000); // Reset after 2 seconds
+        } catch (err) {
+            console.error('Failed to copy job link:', err);
+        }
+    };
 
     if (loading) {
         return (
@@ -115,7 +127,7 @@ export default function JobsPage() {
                                 const location = job.experienceSkills?.workLocation && job.experienceSkills?.location?.length ? `${job.experienceSkills.workLocation}, ${job.experienceSkills.location[0]}` : '—';
                                 return (
                                     <Card key={job_id} className="p-6 bg-bg-secondary-4">
-                                        <div className="flex items-start justify-between">
+                                        <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                                             <div>
                                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">{basicInfo.jobTitle}</h3>
                                                 <p className="text-sm text-gray-600">{location}</p>
@@ -135,7 +147,24 @@ export default function JobsPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="mt-4 flex items-center justify-end gap-3">
+                                        <div className="mt-4 flex items-center justify-around sm:justify-end flex-wrap gap-3">
+                                            <Button
+                                                variant="secondary"
+                                                onClick={() => handleShareJob(job_id)}
+                                                className="flex items-center gap-2"
+                                            >
+                                                {copiedJobId === job_id ? (
+                                                    <>
+                                                        <Check className="h-4 w-4" />
+                                                        Copied!
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Share2 className="h-4 w-4" />
+                                                        Share
+                                                    </>
+                                                )}
+                                            </Button>
                                             <Button variant="secondary" onClick={() => router.push(`/manager/insights?job_id=${job_id}`)}>Hiring Insights</Button>
                                             <Button variant="primary" onClick={() => router.push(`/manager/jobs/${job_id}`)}>View Candidates</Button>
                                         </div>
