@@ -165,11 +165,12 @@ export default function JobDetailsPage() {
 
                         <Button
                             onClick={handleApply}
+                            disabled={applying}
                             size="lg"
                             className="h-12 px-8 text-lg font-semibold"
                         >
                             <Briefcase className="mr-2 h-5 w-5" />
-                            Apply Now
+                            {applying ? "Applying..." : "Apply Now"}
                         </Button>
                     </div>
                 </div>

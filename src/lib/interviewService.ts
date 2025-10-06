@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
+const API_BASE = "https://scooter-backend-prod.thankfulwater-944fb792.centralindia.azurecontainerapps.io";
 const API_BASE_TEST = "https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io";
 
 

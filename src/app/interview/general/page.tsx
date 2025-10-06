@@ -1000,11 +1000,11 @@ export default function VoiceInterviewPage() {
             {showResults ? (
                 <AnimatedPlaceholder
                     onStart={() => {
-                        router.push("/");
+                        router.push("/candidate/dashboard");
                     }}
                     title="Kudos!"
                     description={`Hurray🥳! You're one step ahead of other candidates. \n Will reach out to you soon.`}
-                    buttonText="Continue to home"
+                    buttonText="Continue to dashboard"
                 />
             ) : (
                 <>

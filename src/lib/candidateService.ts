@@ -2,8 +2,7 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { storeRedirectUrl, getCurrentUrlWithQuery } from './utils';
 
 // Base URLs
-const BASE_URL = 'https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io';
-const LOCAL_BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'https://scooter-backend-prod.thankfulwater-944fb792.centralindia.azurecontainerapps.io';
 
 // Storage keys
 const CANDIDATE_AUTH_STORAGE_KEY = 'candidate_auth';

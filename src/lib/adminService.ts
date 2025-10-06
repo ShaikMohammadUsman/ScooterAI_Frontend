@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io';
+const BASE_URL = 'https://scooter-backend-prod.thankfulwater-944fb792.centralindia.azurecontainerapps.io';
 
 // Types
 export interface CompanySignupData {

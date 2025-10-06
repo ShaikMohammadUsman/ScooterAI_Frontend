@@ -2,8 +2,7 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { storeRedirectUrl, getCurrentUrlWithQuery } from './utils';
 
 // Base URLs
-const BASE_URL = 'https://scooter-test.salmonpebble-101e17d0.canadacentral.azurecontainerapps.io';
-const LOCAL_BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'https://scooter-backend-prod.thankfulwater-944fb792.centralindia.azurecontainerapps.io';
 
 // Storage keys
 const MANAGER_AUTH_STORAGE_KEY = 'manager_auth';
@@ -764,7 +763,7 @@ export async function getInterviewById(interviewId: string): Promise<InterviewDe
 }
 
 export async function remindMeLater(body: RemindLaterRequest): Promise<RemindLaterResponse> {
-    const res = await axios.post(`${LOCAL_BASE_URL}/remaind-later/`, body, { headers: authHeaders() });
+    const res = await axios.post(`${BASE_URL}/remaind-later/`, body, { headers: authHeaders() });
     return res.data;
 }
 
