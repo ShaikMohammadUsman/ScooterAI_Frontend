@@ -60,8 +60,8 @@ const sections = [
     },
     {
         id: "contact",
-        title: "4. CONTACT DETAILS",
-        subtitle: "Confirm your contact information"
+        title: "4. LOCATION PREFERENCES",
+        subtitle: "Set your location and work preferences"
     }
 ];
 
@@ -392,7 +392,7 @@ export default function CandidateProfileFlow() {
                     {currentSection === "contact" && (
                         <div>
                             <h2 className="text-xl font-semibold mb-4 text-center">{sections[3].title}</h2>
-                            <p className="text-gray-600 mb-6 text-center">Kindly double check your details and proceed</p>
+                            <p className="text-gray-600 mb-6 text-center">{sections[3].subtitle}</p>
                             <ContactDetailsForm
                                 profile={localProfile}
                                 onFieldChange={handleFieldChange}
@@ -502,7 +502,7 @@ export default function CandidateProfileFlow() {
                                 {currentSection === "contact" && (
                                     <div>
                                         <h2 className="text-xl font-semibold mb-4 text-center">{sections[3].title}</h2>
-                                        <p className="text-gray-600 mb-6 text-center">Kindly double check your details and proceed</p>
+                                        <p className="text-gray-600 mb-6 text-center">{sections[3].subtitle}</p>
                                         <ContactDetailsForm
                                             profile={localProfile}
                                             onFieldChange={handleFieldChange}
