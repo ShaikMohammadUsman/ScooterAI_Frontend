@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState } from "react";
-import { CheckCircle, Mic } from "lucide-react";
+import { CheckCircle, Flag, Mic } from "lucide-react";
 import { Button } from "../ui/button";
 
 function ConnectorLine({
@@ -110,7 +110,7 @@ export default function SuccessOverlay({
                     ref={bottomRef}
                     className="mx-auto my-10 mt-30 w-12 h-12 rounded-full bg-gradient-to-r from-grad-1 to-grad-2 flex items-center justify-center"
                 >
-                    <Mic className="text-white" />
+                    <Flag className="text-white" />
                 </div>
                 <h4 className="font-semibold">Final step</h4>
                 <p className="text-sm text-gray-600">
