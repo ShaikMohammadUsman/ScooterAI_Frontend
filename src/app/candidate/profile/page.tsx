@@ -140,6 +140,21 @@ export default function CandidateProfileFlow() {
     const [localProfile, setLocalProfile] = useState<ResumeProfile>(resumeProfile);
 
     const handleSectionChange = (sectionId: string) => {
+        const targetIndex = sections.findIndex(s => s.id === sectionId);
+
+        // Mark all sections before the target section as completed
+        const newSectionStates = { ...sectionStates };
+        sections.forEach((section, index) => {
+            if (index < targetIndex) {
+                newSectionStates[section.id as keyof typeof newSectionStates] = 'completed';
+            } else if (index === targetIndex) {
+                newSectionStates[section.id as keyof typeof newSectionStates] = 'active';
+            } else {
+                newSectionStates[section.id as keyof typeof newSectionStates] = 'pending';
+            }
+        });
+
+        setSectionStates(newSectionStates);
         setCurrentSection(sectionId);
     };
 
