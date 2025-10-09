@@ -36,7 +36,7 @@ export class InterviewAudioRecorder {
             if (!mediaDevices || typeof mediaDevices.getUserMedia !== 'function') {
                 // Provide a friendly, actionable error message
                 throw new Error(
-                    'Microphone access is not supported on this device/browser. On iOS Chrome/Firefox, WebKit limitations apply. Please use Safari or Desktop Chrome, and ensure HTTPS.'
+                    'Microphone access is not supported on this device/browser. On iOS Chrome/Firefox, WebKit limitations apply. Please use Chrome on desktop/laptop, and ensure HTTPS.'
                 );
             }
 

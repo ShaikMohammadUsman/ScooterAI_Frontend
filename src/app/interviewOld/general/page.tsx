@@ -98,7 +98,7 @@ export default function VoiceInterviewPage() {
             const mediaDevices = (navigator as any).mediaDevices as MediaDevices | undefined;
             if (!mediaDevices || typeof mediaDevices.getUserMedia !== 'function') {
                 setMicPermissionStatus('unsupported');
-                setPermissionError('This browser does not support microphone access. On iOS, use Safari. Ensure HTTPS.');
+                setPermissionError('This browser does not support microphone access. Use Chrome on desktop/laptop, for smoother experience.');
                 return false;
             }
 
@@ -947,7 +947,7 @@ export default function VoiceInterviewPage() {
                                             )}
                                         </div>
                                         <div className="mt-4 text-xs text-gray-500">
-                                            Tip: On iOS, use Safari. Ensure site is opened over HTTPS.
+                                            Tip: Use Chrome on desktop/laptop, for smoother experience.
                                         </div>
                                     </div>
                                 ) : (
