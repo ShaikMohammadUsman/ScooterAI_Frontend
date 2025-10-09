@@ -128,7 +128,7 @@ export default function SupportTicketForm({ onSubmitted }: { onSubmitted?: () =>
                     }}
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Phone number</FormLabel>
+                            <FormLabel>Whatsapp number</FormLabel>
                             <FormControl>
                                 <div className="flex items-center gap-2">
                                     <div className="h-11 px-3 inline-flex items-center rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-700 text-sm select-none">

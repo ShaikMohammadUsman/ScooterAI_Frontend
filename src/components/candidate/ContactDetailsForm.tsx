@@ -124,7 +124,7 @@ export default function ContactDetailsForm({ profile, onFieldChange, parsedUserN
                         render={({ field, fieldState }) => (
                             <div>
                                 <Label className="text-sm font-medium">
-                                    Phone Number*
+                                    Whatsapp Number*
                                 </Label>
                                 <Input
                                     {...field}

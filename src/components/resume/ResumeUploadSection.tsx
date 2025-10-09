@@ -77,7 +77,7 @@ export default function ResumeUploadSection({
                     <p className="text-sm text-red-600 font-medium mt-2">⚠️ Please upload PDF files only!</p>
                     {file && <span className="text-muted-foreground text-sm">{file.name}</span>}
                     {(!profile?.basic_information?.full_name || !profile?.basic_information?.email || !profile?.basic_information?.phone_number) && (
-                        <p className="text-sm text-orange-600">Please fill in your name, email, and phone number above to upload your resume.</p>
+                        <p className="text-sm text-orange-600">Please fill in your name, email, and WhatsApp number above to upload your resume.</p>
                     )}
 
                     {/* Message when no resume has been uploaded */}
