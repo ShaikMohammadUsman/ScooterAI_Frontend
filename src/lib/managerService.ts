@@ -19,6 +19,59 @@ export interface HiringManagerProfileData {
     email: string;
 }
 
+export interface ManagerProfileJob {
+    basicInfo: {
+        companyName: string;
+        jobTitle: string;
+        roleType: string;
+        primaryFocus: string[];
+        salesProcessStages: string[];
+    };
+    experienceSkills?: {
+        minExp: number;
+        maxExp: number;
+        skillsRequired: string[];
+        workLocation: string;
+        location: string[];
+        timeZone: string[];
+    } | null;
+    compensations?: {
+        baseSalary: {
+            currency: string;
+            minSalary: number;
+            maxSalary: number;
+            cadence: string;
+        };
+        ote: string[];
+        equityOffered: boolean;
+        opportunities: string[];
+        keyChallenged: string[];
+        laguages: string[];
+    } | null;
+    isCompleted: boolean;
+    created_at: string;
+    is_active: boolean;
+    created_by: string;
+    job_id: string;
+    total_candidates: number;
+    audio_attended_count: number;
+    video_attended_count: number;
+    moved_to_video_round_count: number;
+}
+
+export interface ManagerProfileResponse {
+    status: boolean;
+    message: string;
+    data: {
+        manager_id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        profile_created_at: string;
+        jobs: ManagerProfileJob[];
+    };
+}
+
 export interface HiringManagerAuthResponse {
     status: boolean;
     message: string;
@@ -700,6 +753,11 @@ export async function getMyJobCandidates(
 
 export async function getMyJobRoles(): Promise<MyJobRolesResponse> {
     const res = await managerApi.get(`/my-job-roles/`);
+    return res.data;
+}
+
+export async function getMyManagerProfile(): Promise<ManagerProfileResponse> {
+    const res = await managerApi.post('/my-manager-profile/');
     return res.data;
 }
 
