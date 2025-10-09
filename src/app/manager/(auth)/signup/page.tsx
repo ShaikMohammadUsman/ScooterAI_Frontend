@@ -8,6 +8,7 @@ import Link from "next/link";
 import { hiringManagerSignup, isAccessTokenValid } from "@/lib/managerService";
 import { useRouter } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { toast } from "@/hooks/use-toast";
 
 export default function SignupPage() {
     const [firstName, setFirstName] = useState("");
@@ -44,11 +45,23 @@ export default function SignupPage() {
         setError(null);
         try {
             if (!isPasswordValid) {
-                setError("Please satisfy all password requirements.");
+                const errorMessage = "Please satisfy all password requirements.";
+                setError(errorMessage);
+                toast({
+                    title: "Error",
+                    description: errorMessage,
+                    variant: "destructive"
+                });
                 return;
             }
             if (password !== confirmPassword) {
-                setError("Passwords do not match.");
+                const errorMessage = "Passwords do not match.";
+                setError(errorMessage);
+                toast({
+                    title: "Error",
+                    description: errorMessage,
+                    variant: "destructive"
+                });
                 return;
             }
             const res = await hiringManagerSignup({
@@ -58,10 +71,29 @@ export default function SignupPage() {
                 password
             });
             if (res?.status) {
+                toast({
+                    title: "Success",
+                    description: "Signup successful!",
+                    variant: "success"
+                });
                 router.push("/manager/jobs");
                 return;
             }
-            setError(res?.message || "Signup failed");
+            const errorMessage = res?.message || "Signup failed";
+            setError(errorMessage);
+            toast({
+                title: "Error",
+                description: errorMessage,
+                variant: "destructive"
+            });
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.message || "An error occurred during signup";
+            setError(errorMessage);
+            toast({
+                title: "Error",
+                description: errorMessage,
+                variant: "destructive"
+            });
         } finally {
             setSubmitting(false);
         }

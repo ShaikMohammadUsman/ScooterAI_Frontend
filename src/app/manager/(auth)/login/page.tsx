@@ -9,6 +9,7 @@ import { hiringManagerLogin, isAccessTokenValid } from "@/lib/managerService";
 import { useRouter } from "next/navigation";
 import { getRedirectUrl, clearRedirectUrl } from "@/lib/utils";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { toast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -38,6 +39,11 @@ export default function LoginPage() {
         try {
             const res = await hiringManagerLogin({ email: email.trim(), password });
             if (res?.status) {
+                toast({
+                    title: "Success",
+                    description: "Login successful!",
+                    variant: "success"
+                });
                 // Check if there's a redirect URL stored
                 const redirectUrl = getRedirectUrl();
                 if (redirectUrl) {
@@ -48,7 +54,21 @@ export default function LoginPage() {
                 }
                 return;
             }
-            setError(res?.message || "Login failed");
+            const errorMessage = res?.message || "Login failed";
+            setError(errorMessage);
+            toast({
+                title: "Error",
+                description: errorMessage,
+                variant: "destructive"
+            });
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.message || "An error occurred during login";
+            setError(errorMessage);
+            toast({
+                title: "Error",
+                description: errorMessage,
+                variant: "destructive"
+            });
         } finally {
             setSubmitting(false);
         }
