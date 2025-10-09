@@ -51,11 +51,11 @@ export default function SupportPanel() {
     return (
         <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 flex items-center">
             {menuOpen && (
-                <div className="mr-3 flex flex-col gap-3 bg-white/90 backdrop-blur rounded-xl shadow-lg p-3 border">
+                <div className="mr-3 flex flex-col gap-3 bg-white/90 backdrop-blur rounded-xl shadow-lg p-3 border border-element-3">
                     <Dialog open={ticketOpen} onOpenChange={setTicketOpen}>
                         <DialogTrigger asChild>
-                            <Button size="icon" variant="secondary" aria-label="Support Ticket">
-                                <Handshake className="h-5 w-5" />
+                            <Button size="icon" variant="outline" aria-label="Support Ticket">
+                                <Handshake className="h-5 w-5 text-grad-1" />
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -63,8 +63,8 @@ export default function SupportPanel() {
                             <SupportTicketForm onSubmitted={() => setTicketOpen(false)} />
                         </DialogContent>
                     </Dialog>
-                    <Button size="icon" variant="secondary" aria-label="WhatsApp" onClick={openWhatsApp}>
-                        <FaWhatsapp className="h-5 w-5" />
+                    <Button size="icon" variant="outline" aria-label="WhatsApp" onClick={openWhatsApp}>
+                        <FaWhatsapp className="h-5 w-5 text-grad-1" />
                     </Button>
                 </div>
             )}
@@ -72,7 +72,7 @@ export default function SupportPanel() {
                 <Tooltip delayDuration={200}>
                     <TooltipTrigger asChild>
                         <Button
-                            className='bg-black text-white rounded-full shadow-xl transition-transform duration-200 hover:scale-105'
+                            className='rounded-full shadow-xl transition-transform duration-200 hover:scale-105'
                             size="icon"
                             variant={menuOpen ? 'destructive' : 'default'}
                             aria-label={menuOpen ? 'Close support menu' : 'Open support menu'}

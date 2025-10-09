@@ -547,7 +547,7 @@ export default function CandidateProfileFlow() {
             <ProfileSuccessPopup
                 visible={showProfileSuccess}
                 onProceed={() => {
-                    router.push("/home/careers");
+                    router.push("/candidate/dashboard");
                 }}
             />
         </div>
