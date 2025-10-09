@@ -168,6 +168,12 @@ export default function CandidateLoginPage() {
                                         {submitting ? "Logging in..." : "Login"}
                                     </Button>
                                 </div>
+
+                                <div className="text-center">
+                                    <Link href="/candidate/reset-password" className="text-sm text-element-2 hover:text-amber-700 underline">
+                                        Forgot your password?
+                                    </Link>
+                                </div>
                             </form>
                         </Form>
 

@@ -22,6 +22,26 @@ export interface CandidateLoginRequest {
     password: string;
 }
 
+export interface ResetPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordResponse {
+    status: boolean;
+    message: string;
+}
+
+export interface SetPasswordRequest {
+    email: string;
+    otp: string;
+    new_password: string;
+}
+
+export interface SetPasswordResponse {
+    status: boolean;
+    message: string;
+}
+
 export interface ApplicationHistory {
     application_id: string;
     job_role_name: string;
@@ -575,6 +595,21 @@ export async function getCandidateDashboardData(): Promise<CandidateDashboardRes
     } catch (err: any) {
         throw new Error(err.response?.data?.message || "Failed to fetch candidate dashboard data");
     }
+}
+
+// Reset password functions
+export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+    const res = await axios.post(`${BASE_URL}/reset-password/`, data, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+    return res.data;
+}
+
+export async function setPassword(data: SetPasswordRequest): Promise<SetPasswordResponse> {
+    const res = await axios.post(`${BASE_URL}/candidate-set-password/`, data, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+    return res.data;
 }
 
 // Utility to clear stored auth (e.g., on logout)
