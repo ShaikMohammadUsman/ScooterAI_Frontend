@@ -45,6 +45,7 @@ export interface SetPasswordResponse {
 export interface ApplicationHistory {
     application_id: string;
     job_role_name: string;
+    job_id: string;
     application_status: string;
     video_interview_start: boolean;
     video_email_sent: boolean;
@@ -55,6 +56,13 @@ export interface CandidateProfileData {
     candidate_id: string;
     name: string;
     email: string;
+    phone: string;
+    basic_information: BasicInformation;
+    career_overview: CareerOverview;
+    role_process_exposure: RoleProcessExposure;
+    sales_context: SalesContext;
+    tools_platforms: ToolsPlatforms;
+    resume_url: string;
     application_history: ApplicationHistory[];
 }
 
@@ -148,6 +156,7 @@ export interface RoleProcessExposure {
 
 export interface ToolsPlatforms {
     crm_tools: string[];
+    crm_used: string | null;
     sales_tools: string[];
 }
 
