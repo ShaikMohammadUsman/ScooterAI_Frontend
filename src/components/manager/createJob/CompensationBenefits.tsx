@@ -38,15 +38,16 @@ export default function CompensationBenefits({ form, onBack, submitting }: Props
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-xs text-muted-foreground">Currency</FormLabel>
-                                    <FormControl className="w-16">
+                                    <FormControl className="w-20">
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <SelectTrigger className="w-16 p-2">
+                                            <SelectTrigger className="w-20 p-2">
                                                 <SelectValue placeholder="Select" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="₹">₹</SelectItem>
-                                                <SelectItem value="$">$</SelectItem>
-                                                <SelectItem value="€">€</SelectItem>
+                                                <SelectItem value="INR">₹ INR</SelectItem>
+                                                <SelectItem value="USD">$ USD</SelectItem>
+                                                <SelectItem value="EUR">€ EUR</SelectItem>
+                                                <SelectItem value="GBP">£ GBP</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </FormControl>

@@ -16,7 +16,67 @@ type Props = {
     submitting?: boolean;
 };
 
+// Helper function to generate experience options dynamically
+const generateExperienceOptions = (minExp: number, maxExp: number) => {
+    const options = [];
+
+    // If minExp and maxExp are the same, create a single option
+    if (minExp === maxExp) {
+        options.push({ value: `${minExp}`, label: `${minExp} Years` });
+        return options;
+    }
+
+    // Create range options
+    const range = `${minExp}-${maxExp}`;
+    options.push({ value: range, label: `${minExp}-${maxExp} Years` });
+
+    // Add individual year options if the range is small (≤ 5 years)
+    if (maxExp - minExp <= 5) {
+        for (let i = minExp; i <= maxExp; i++) {
+            if (i !== minExp && i !== maxExp) { // Don't duplicate the range endpoints
+                options.push({ value: `${i}`, label: `${i} Years` });
+            }
+        }
+    }
+
+    // Add common ranges
+    if (minExp <= 1) {
+        options.push({ value: "0-1", label: "0-1 Years" });
+    }
+    if (minExp <= 2 && maxExp >= 3) {
+        options.push({ value: "2-3", label: "2-3 Years" });
+    }
+    if (minExp <= 3 && maxExp >= 5) {
+        options.push({ value: "3-5", label: "3-5 Years" });
+    }
+    if (maxExp >= 5) {
+        options.push({ value: ">5", label: "5+ Years" });
+    }
+
+    return options;
+};
+
 export default function ExperienceSkills({ form, onBack, onNext, submitting }: Props) {
+    // Get current form values to generate dynamic options
+    const currentValues = form.getValues();
+    const yearsOfExperience = currentValues.yearsOfExperience;
+
+    // Try to parse existing value to get min/max
+    let minExp = 1, maxExp = 3; // Default values
+    if (yearsOfExperience) {
+        if (yearsOfExperience.includes('-')) {
+            const [min, max] = yearsOfExperience.split('-').map(Number);
+            if (!isNaN(min) && !isNaN(max)) {
+                minExp = min;
+                maxExp = max;
+            }
+        } else if (!isNaN(Number(yearsOfExperience))) {
+            minExp = maxExp = Number(yearsOfExperience);
+        }
+    }
+
+    const experienceOptions = generateExperienceOptions(minExp, maxExp);
+
     return (
         <div className="space-y-8">
             <div className="text-center">
@@ -37,10 +97,11 @@ export default function ExperienceSkills({ form, onBack, onNext, submitting }: P
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="0-1">0-1 Years</SelectItem>
-                                        <SelectItem value="2-3">2-3 Years</SelectItem>
-                                        <SelectItem value="3-5">3-5 Years</SelectItem>
-                                        <SelectItem value=">5">5+ Years</SelectItem>
+                                        {experienceOptions.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </FormControl>
@@ -96,7 +157,7 @@ export default function ExperienceSkills({ form, onBack, onNext, submitting }: P
                                         <SelectValue placeholder="Select work location" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="inPerson">In-Person</SelectItem>
+                                        <SelectItem value="inPerson">On-site</SelectItem>
                                         <SelectItem value="hybrid">Hybrid</SelectItem>
                                         <SelectItem value="remote">Remote</SelectItem>
                                     </SelectContent>

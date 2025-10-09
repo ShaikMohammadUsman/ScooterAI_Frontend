@@ -182,7 +182,7 @@ export default function ContactDetailsForm({ profile, onFieldChange, parsedUserN
                                 <SelectContent>
                                     <SelectItem value="remote">Remote</SelectItem>
                                     <SelectItem value="hybrid">Hybrid</SelectItem>
-                                    <SelectItem value="inPerson">In-person</SelectItem>
+                                    <SelectItem value="inPerson">On-site</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

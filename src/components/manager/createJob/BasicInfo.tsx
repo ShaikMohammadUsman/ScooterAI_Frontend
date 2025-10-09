@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react";
+import React, { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,9 @@ type Props = {
 };
 
 export default function BasicInfo({ form, onNext, submitting }: Props) {
+    const [showOtherInput, setShowOtherInput] = useState(false);
+    const [showOtherSalesInput, setShowOtherSalesInput] = useState(false);
+
     return (
         <div className="space-y-8">
             <div className="text-center">
@@ -83,16 +86,44 @@ export default function BasicInfo({ form, onNext, submitting }: Props) {
                         <FormItem>
                             <FormLabel className="mb-2 block">Primary Focus *</FormLabel>
                             <FormControl>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Inbound Conversion" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Inbound Conversion">Inbound Conversion</SelectItem>
-                                        <SelectItem value="Outbound">Outbound</SelectItem>
-                                        <SelectItem value="Full-cycle">Full-cycle</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <div className="space-y-3">
+                                    <MultiSelect
+                                        instanceId="primary-focus"
+                                        options={[
+                                            "Inbound Conversion",
+                                            "Outbound",
+                                            "Full-cycle",
+                                            "Other (please specify)"
+                                        ]}
+                                        selected={field.value || []}
+                                        onChange={(selectedValues) => {
+                                            // Check if "Other (please specify)" is in the selection
+                                            const hasOther = selectedValues.includes("Other (please specify)");
+                                            setShowOtherInput(hasOther);
+
+                                            // Filter out "Other (please specify)" from the actual values
+                                            const filteredValues = selectedValues.filter(v => v !== "Other (please specify)");
+                                            field.onChange(filteredValues);
+                                        }}
+                                        closeOnOtherSelect={true}
+                                        placeholder="Select primary focus areas"
+                                    />
+                                    {showOtherInput && (
+                                        <Input
+                                            placeholder="Type other focus area and press Enter"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const val = (e.currentTarget.value || '').trim();
+                                                    if (!val) return;
+                                                    const currentValues = (field.value || []) as string[];
+                                                    field.onChange([...currentValues, val]);
+                                                    e.currentTarget.value = '';
+                                                }
+                                            }}
+                                        />
+                                    )}
+                                </div>
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -117,10 +148,19 @@ export default function BasicInfo({ form, onNext, submitting }: Props) {
                                             "Other (please specify)",
                                         ]}
                                         selected={field.value || []}
-                                        onChange={field.onChange}
+                                        onChange={(selectedValues) => {
+                                            // Check if "Other (please specify)" is in the selection
+                                            const hasOther = selectedValues.includes("Other (please specify)");
+                                            setShowOtherSalesInput(hasOther);
+
+                                            // Filter out "Other (please specify)" from the actual values
+                                            const filteredValues = selectedValues.filter(v => v !== "Other (please specify)");
+                                            field.onChange(filteredValues);
+                                        }}
+                                        closeOnOtherSelect={true}
                                         placeholder="Select stages"
                                     />
-                                    {(field.value || []).includes("Other (please specify)") && (
+                                    {showOtherSalesInput && (
                                         <Input
                                             placeholder="Type other stage and press Enter"
                                             onKeyDown={(e) => {
@@ -128,9 +168,10 @@ export default function BasicInfo({ form, onNext, submitting }: Props) {
                                                     e.preventDefault();
                                                     const val = (e.currentTarget.value || '').trim();
                                                     if (!val) return;
-                                                    const set = new Set<string>((field.value || []) as string[]);
-                                                    set.add(val);
-                                                    field.onChange(Array.from(set));
+                                                    const currentValues = (field.value || []) as string[];
+                                                    // Remove "Other (please specify)" and add the custom value
+                                                    const filteredValues = currentValues.filter(v => v !== "Other (please specify)");
+                                                    field.onChange([...filteredValues, val]);
                                                     e.currentTarget.value = '';
                                                 }
                                             }}

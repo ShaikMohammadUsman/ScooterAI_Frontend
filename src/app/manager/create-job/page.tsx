@@ -23,7 +23,7 @@ const schema = z.object({
     companyName: z.string().min(1, "Company name is required"),
     jobTitle: z.string().min(1, "Job title is required"),
     roleType: z.string().min(1, "Role type is required"),
-    primaryFocus: z.string().min(1, "Primary focus is required"),
+    primaryFocus: z.array(z.string()).min(1, "Primary focus is required"),
     salesProcessStages: z.array(z.string()).optional().default(["Full cycle (prospecting → closing)"]),
 
     // Step 2 - All required except mustHaveSkills and timezone
@@ -62,7 +62,7 @@ export default function CreateJobPage() {
             currency: "₹",
             salesProcessStages: ["Full cycle (prospecting → closing)"],
             timezone: "IST",
-            primaryFocus: "Inbound Conversion",
+            primaryFocus: ["Inbound Conversion"],
             languages: ["English"],
         }),
         []
@@ -89,7 +89,7 @@ export default function CreateJobPage() {
                         companyName: values.companyName,
                         jobTitle: values.jobTitle,
                         roleType: values.roleType,
-                        primaryFocus: [values.primaryFocus], // API expects array
+                        primaryFocus: values.primaryFocus, // Already an array
                         salesProcessStages: values.salesProcessStages || [],
                     },
                     isCompleted: false,

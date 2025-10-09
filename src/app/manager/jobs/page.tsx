@@ -171,6 +171,12 @@ export default function JobsPage() {
                                     </Card>
                                 );
                             })}
+                            <div className="text-center py-16">
+                                <div className="flex flex-col items-center gap-4">
+                                    <Button variant="primary" className="h-12 w-12 rounded-full font-bold  px-0 py-0 p-5 sm:px-0" onClick={() => router.push('/manager/create-job')}><PlusIcon className="w-8 h-8 font-bold" color='white' /></Button>
+                                    <p className="text-green-900 font-medium">Add New Job</p>
+                                </div>
+                            </div>
                         </div>
                     )
                 ) : (

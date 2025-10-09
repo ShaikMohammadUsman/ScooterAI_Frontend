@@ -146,7 +146,7 @@ export default function JDOnboardingModal({ open, onOpenChange, form, onChooseMa
                     if (basicInfo.companyName) form.setValue("companyName", basicInfo.companyName);
                     if (basicInfo.jobTitle) form.setValue("jobTitle", basicInfo.jobTitle);
                     if (basicInfo.roleType) form.setValue("roleType", basicInfo.roleType);
-                    if (basicInfo.primaryFocus && Array.isArray(basicInfo.primaryFocus) && basicInfo.primaryFocus[0]) form.setValue("primaryFocus", basicInfo.primaryFocus[0]);
+                    if (basicInfo.primaryFocus && Array.isArray(basicInfo.primaryFocus)) form.setValue("primaryFocus", basicInfo.primaryFocus);
                     if (basicInfo.salesProcessStages) form.setValue("salesProcessStages", basicInfo.salesProcessStages);
                 }
                 if (experienceSkills) {

@@ -20,6 +20,7 @@ interface MultiSelectProps {
     className?: string;
     size?: "sm" | "md" | "lg";
     instanceId?: string; // stable id to avoid hydration mismatch
+    closeOnOtherSelect?: boolean; // Auto-close when "Other (please specify)" is selected
 }
 
 type OptionType = { value: string; label: string };
@@ -81,6 +82,7 @@ export function MultiSelect({
     className,
     size = "md",
     instanceId,
+    closeOnOtherSelect = false,
 }: MultiSelectProps) {
     const reactId = React.useId();
     const stableId = instanceId ?? `ms-${reactId}`;
@@ -204,7 +206,19 @@ export function MultiSelect({
             options={selectOptions}
             value={selectedOptions}
             onChange={(newValue) => {
-                onChange(newValue.map(option => option.value));
+                const selectedValues = newValue.map(option => option.value);
+                onChange(selectedValues);
+
+                // Auto-close when "Other (please specify)" is selected
+                if (closeOnOtherSelect && selectedValues.includes("Other (please specify)")) {
+                    // Use setTimeout to allow the selection to process first
+                    setTimeout(() => {
+                        const selectElement = document.querySelector(`#${stableId}-input`);
+                        if (selectElement) {
+                            (selectElement as HTMLElement).blur();
+                        }
+                    }, 100);
+                }
             }}
             placeholder={placeholder}
             className={cn("w-full", className)}
