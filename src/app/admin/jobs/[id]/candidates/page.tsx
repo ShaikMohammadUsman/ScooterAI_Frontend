@@ -28,6 +28,7 @@ import {
     Users
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import CandidatePortfolioOverlay from "@/components/manager/CandidateReport";
 
 export default function JobCandidatesPage() {
     const params = useParams();
@@ -39,6 +40,10 @@ export default function JobCandidatesPage() {
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(10);
+
+    // Candidate report state
+    const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+    const [showCandidateReport, setShowCandidateReport] = useState(false);
 
     useEffect(() => {
         if (!isSuperAdminAccessTokenValid()) {
@@ -64,6 +69,16 @@ export default function JobCandidatesPage() {
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
+    };
+
+    const handleViewCandidate = (candidate: Candidate) => {
+        setSelectedCandidate(candidate);
+        setShowCandidateReport(true);
+    };
+
+    const handleCloseCandidateReport = () => {
+        setShowCandidateReport(false);
+        setSelectedCandidate(null);
     };
 
     const formatCurrency = (value: number, currency: string) => {
@@ -271,7 +286,12 @@ export default function JobCandidatesPage() {
                                             </TableCell>
                                             <TableCell className="py-4">
                                                 <div className="flex space-x-2">
-                                                    <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="hover:bg-blue-50 hover:border-blue-300"
+                                                        onClick={() => handleViewCandidate(candidate)}
+                                                    >
                                                         <Eye className="h-3 w-3 mr-1" />
                                                         View
                                                     </Button>
@@ -336,6 +356,17 @@ export default function JobCandidatesPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Candidate Report Overlay */}
+            {selectedCandidate && (
+                <CandidatePortfolioOverlay
+                    isOpen={showCandidateReport}
+                    onClose={handleCloseCandidateReport}
+                    candidate={selectedCandidate as any}
+                    jobId={jobId}
+                    jobDetails={data?.job_details}
+                />
+            )}
         </div>
     );
 }

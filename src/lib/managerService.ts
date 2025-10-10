@@ -361,14 +361,13 @@ export interface ManagerCandidate {
                 icp: string;
                 highlights: string[];
                 red_flags: string[];
-                coaching_focus: string;
+                coaching_focus: string[];
                 fit_summary: string;
             };
         }>;
         audio_interview_summary: {
             average_score: number;
-            credibility_score: number;
-            communication_score: number;
+            average_normalized_score: number;
             total_questions: number;
             strengths: string[];
             areas_for_improvement: string[];
@@ -376,7 +375,7 @@ export interface ManagerCandidate {
             icp_summary: string[];
             sales_motion_summary: string[];
             sales_cycle_summary: string[];
-            coaching_focus: string | null;
+            coaching_focus: string[];
             audio_interview_status: boolean;
         };
     };

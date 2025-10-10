@@ -400,6 +400,40 @@ export async function getJobCandidates(jobId: string, page: number = 1, pageSize
     return res.data;
 }
 
+// Application Status Update
+export interface ApplicationStatusRequest {
+    user_id: string;
+    application_status: string;
+    reason: string;
+}
+
+export interface ApplicationStatusResponse {
+    status: boolean;
+    message: string;
+}
+
+export async function updateApplicationStatus(data: ApplicationStatusRequest): Promise<ApplicationStatusResponse> {
+    const res = await superAdminApi.post('/application-status/', data);
+    return res.data;
+}
+
+// Final Shortlist Update
+export interface FinalShortlistRequest {
+    user_id: string;
+    final_shortlist: boolean;
+    reason: string;
+}
+
+export interface FinalShortlistResponse {
+    status: boolean;
+    message: string;
+}
+
+export async function updateFinalShortlist(data: FinalShortlistRequest): Promise<FinalShortlistResponse> {
+    const res = await superAdminApi.post('/mark-final-shortlist/', data);
+    return res.data;
+}
+
 export async function getAllJobs(page: number = 1, pageSize: number = 5): Promise<AllJobsResponse> {
     const res = await superAdminApi.get(`/all-jobs?page=${page}&page_size=${pageSize}`);
     return res.data;
