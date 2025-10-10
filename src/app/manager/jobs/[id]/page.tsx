@@ -263,7 +263,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
             switch (section) {
                 case 'new':
                     // New applicants = candidates who haven't been seen yet
-                    seenParam = false;
+                    videoAttendedParam = true;
                     break;
                 case 'seen':
                     seenParam = true; // Use the new seen filter
