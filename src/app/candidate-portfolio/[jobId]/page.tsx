@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getJobCandidates, Candidate, CandidatesResponse, callForInterview, markFinalShortlist } from '@/lib/adminService';
+import { getMyJobCandidates, ManagerCandidate, MyJobCandidatesResponse } from '@/lib/managerService';
+import { callForInterview, markFinalShortlist } from '@/lib/adminService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,12 +53,12 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     const jobId = resolvedParams.jobId;
 
     const [loading, setLoading] = useState(true);
-    const [candidates, setCandidates] = useState<Candidate[]>([]);
-    const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-    const [jobDetails, setJobDetails] = useState<CandidatesResponse['job_details'] | null>(null);
+    const [candidates, setCandidates] = useState<ManagerCandidate[]>([]);
+    const [selectedCandidate, setSelectedCandidate] = useState<ManagerCandidate | null>(null);
+    const [jobDetails, setJobDetails] = useState<MyJobCandidatesResponse['job_details'] | null>(null);
     const [showCandidateList, setShowCandidateList] = useState(true); // Start with list visible
     const [currentPage, setCurrentPage] = useState(1);
-    const [pagination, setPagination] = useState<CandidatesResponse['pagination'] | null>(null);
+    const [pagination, setPagination] = useState<MyJobCandidatesResponse['pagination'] | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
     const [showListContainer, setShowListContainer] = useState(true);
     const [showVideoModal, setShowVideoModal] = useState(false);
@@ -364,34 +365,60 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     };
 
     const sortedCandidates = candidates ? [...candidates].sort((a, b) => {
-        const aNewIdx = isNewCandidate(a.profile_id) ? NEW_IDS_ORDERED.indexOf(a.profile_id) : Infinity;
-        const bNewIdx = isNewCandidate(b.profile_id) ? NEW_IDS_ORDERED.indexOf(b.profile_id) : Infinity;
+        const aNewIdx = isNewCandidate(a.application_id) ? NEW_IDS_ORDERED.indexOf(a.application_id) : Infinity;
+        const bNewIdx = isNewCandidate(b.application_id) ? NEW_IDS_ORDERED.indexOf(b.application_id) : Infinity;
         if (aNewIdx !== bNewIdx) return aNewIdx - bNewIdx;
         // both new or both reviewed → fallback to base order
-        return getBaseOrder(a.profile_id) - getBaseOrder(b.profile_id);
+        return getBaseOrder(a.application_id) - getBaseOrder(b.application_id);
     }) : [];
 
     useEffect(() => {
         if (jobId) {
             fetchCandidates();
         }
-    }, [jobId, currentPage]);
+    }, [jobId, currentPage, searchParams]);
 
     const fetchCandidates = async () => {
         setLoading(true);
         try {
-            // Fetch candidates with videoAttended filter set to true
-            const response = await getJobCandidates(
+            // Parse query parameters for dynamic filtering
+            const applicationStatus = searchParams?.get('s'); // status
+            const videoAttended = searchParams?.get('v'); // video
+            const shortlisted = searchParams?.get('l'); // listed
+            const callForInterview = searchParams?.get('c'); // call
+            const audioAttended = searchParams?.get('a'); // audio
+            const videoInterviewSent = searchParams?.get('i'); // interview
+            const allCandidates = searchParams?.get('all'); // all
+
+            // Convert string parameters to appropriate types
+            const parseBoolean = (value: string | null): boolean | undefined => {
+                if (value === null) return undefined;
+                return value === 'true';
+            };
+
+            const parseStringOrBoolean = (value: string | null): boolean | string | undefined => {
+                if (value === null) return undefined;
+                if (value === 'true' || value === 'false') return value === 'true';
+                return value; // Return as string for custom status values
+            };
+
+            // Check if any query parameters are provided
+            const hasQueryParams = applicationStatus || videoAttended || shortlisted || callForInterview ||
+                audioAttended || videoInterviewSent || allCandidates || searchParams?.get('seen');
+
+            const response = await getMyJobCandidates(
                 jobId,
                 currentPage,
                 20,
-                undefined, // application_status
-                undefined, // videoAttended - only show candidates who attended video interviews
-                true, // shortlisted
-                undefined, // callForInterview
-                undefined, // audioAttended
-                undefined, // videoInterviewSent
-                undefined // all_candidates
+                {
+                    application_status: parseStringOrBoolean(applicationStatus),
+                    video_attended: parseBoolean(videoAttended),
+                    shortlisted: hasQueryParams ? parseBoolean(shortlisted) : true, // Default to shortlisted=true if no params
+                    call_for_interview: parseBoolean(callForInterview),
+                    audio_attended: parseBoolean(audioAttended),
+                    video_interview_sent: parseBoolean(videoInterviewSent),
+                    seen: parseBoolean(searchParams?.get('seen'))
+                }
             );
 
             setCandidates(response.candidates);
@@ -406,10 +433,10 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
 
     // Preselect candidate if profileId exists in query params
     useEffect(() => {
-        const profileId = searchParams ? searchParams.get('profileId') : null;
-        if (!profileId) return;
+        const applicationId = searchParams ? searchParams.get('applicationId') : null;
+        if (!applicationId) return;
         if (!candidates || candidates.length === 0) return;
-        const candidate = candidates.find(c => c.profile_id === profileId);
+        const candidate = candidates.find(c => c.application_id === applicationId);
         if (candidate) {
             setSelectedCandidate(candidate);
             setShowCandidateList(false);
@@ -420,7 +447,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         setCurrentPage(newPage);
     };
 
-    const handleCandidateSelect = (candidate: Candidate) => {
+    const handleCandidateSelect = (candidate: ManagerCandidate) => {
         setIsAnimating(true);
         setSelectedCandidate(candidate);
         setShowCandidateList(false);
@@ -434,7 +461,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     // Share report handler
     const handleShareReport = async () => {
         if (!selectedCandidate) return;
-        const shareUrl = `${window.location.origin}/candidate-portfolio/${jobId}?profileId=${selectedCandidate.profile_id}`;
+        const shareUrl = `${window.location.origin}/candidate-portfolio/${jobId}?applicationId=${selectedCandidate.application_id}`;
         try {
             const nav: any = navigator as any;
             if (nav && typeof nav.share === 'function') {
@@ -499,12 +526,12 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     };
 
     const handleShortlistSubmit = async () => {
-        if (!selectedCandidate?.profile_id) return;
+        if (!selectedCandidate?.application_id) return;
 
         setIsSubmitting(true);
         try {
             await callForInterview({
-                user_id: selectedCandidate.profile_id,
+                user_id: selectedCandidate.application_id,
                 call_for_interview: true,
                 notes: shortlistReason || 'Candidate shortlisted for interview'
             });
@@ -529,12 +556,12 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     };
 
     const handleRemoveSubmit = async () => {
-        if (!selectedCandidate?.profile_id || !removeReason.trim()) return;
+        if (!selectedCandidate?.application_id || !removeReason.trim()) return;
 
         setIsSubmitting(true);
         try {
             await markFinalShortlist({
-                user_id: selectedCandidate.profile_id,
+                user_id: selectedCandidate.application_id,
                 final_shortlist: false,
                 reason: removeReason
             });
@@ -555,12 +582,12 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     const getVideoDataArray = () => {
         return sortedCandidates
             .map(candidate => {
-                const candidateData = getCandidateHighlights(candidate.profile_id);
+                const candidateData = getCandidateHighlights(candidate.application_id);
                 const magicVideoUrl = candidateData?.magic_video_url;
 
                 if (magicVideoUrl) {
                     return {
-                        id: candidate.profile_id,
+                        id: candidate.application_id,
                         url: magicVideoUrl,
                         title: `See ${candidateData?.name} Sell`,
                         candidateName: candidateData?.name || candidate.basic_information?.full_name || 'Unknown'
@@ -589,7 +616,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
         );
     };
 
-    const getExperienceYears = (candidate: Candidate): string => {
+    const getExperienceYears = (candidate: ManagerCandidate): string => {
         const totalExp = candidate?.career_overview?.total_years_experience || 0;
         const years = Math.floor(totalExp);
         const months = Math.round((totalExp - years) * 12);
@@ -597,7 +624,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     };
 
     // Average tenure helper in years and months
-    const getAverageTenure = (candidate: Candidate): string => {
+    const getAverageTenure = (candidate: ManagerCandidate): string => {
         const avg = candidate?.career_overview?.average_tenure_per_role || 0;
         const years = Math.floor(avg);
         const months = Math.round((avg - years) * 12);
@@ -613,7 +640,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
     };
 
     // Budget status relative to defined budget (7 LPA)
-    const getBudgetStatus = (candidate: Candidate): string => {
+    const getBudgetStatus = (candidate: ManagerCandidate): string => {
         const BASE = 9.5; // LPA
         const expected = getCtcValue(candidate?.basic_information?.expected_ctc);
         if (expected == null) return 'N/A';
@@ -733,6 +760,39 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                 }
             </div>
 
+            {/* Filter Indicator */}
+            {/* {(() => {
+                const activeFilters = [];
+                if (searchParams?.get('s')) activeFilters.push(`Status: ${searchParams.get('s')}`);
+                if (searchParams?.get('v') === 'true') activeFilters.push('Video Attended');
+                if (searchParams?.get('l') === 'true') activeFilters.push('Shortlisted');
+                if (searchParams?.get('c') === 'true') activeFilters.push('Call for Interview');
+                if (searchParams?.get('a') === 'true') activeFilters.push('Audio Attended');
+                if (searchParams?.get('i') === 'true') activeFilters.push('Video Interview Sent');
+                if (searchParams?.get('seen') === 'true') activeFilters.push('Seen');
+                if (searchParams?.get('seen') === 'false') activeFilters.push('Not Seen');
+                if (searchParams?.get('all') === 'true') activeFilters.push('All Candidates');
+
+                if (activeFilters.length === 0) return null;
+
+                return (
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mx-4 mb-4">
+                        <div className="flex items-center">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <FaList className="h-5 w-5 text-blue-400" />
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-blue-700">
+                                        <span className="font-medium">Active Filters:</span> {activeFilters.join(', ')}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()} */}
+
             {/* Mobile backdrop for floating candidate list */}
             {!showCandidateList && showListContainer && (
                 <div
@@ -835,12 +895,12 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                 </div>
 
                                 {/* Center Quick Notes button */}
-                                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-[65%] flex flex-col items-center">
+                                {/* <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-[65%] flex flex-col items-center">
                                     <Button variant="primary" onClick={() => setShowNotesDialog(true)} className="rounded-full w-12 h-12 p-2 sm:p-0 flex flex-col items-center justify-center gap-16">
                                         <Edit3 className='w-5 h-5 text-text-secondary' color='white' fill='white' />
                                     </Button>
                                     <p className="mt-2 text-xs sm:text-sm text-text-primary">Quick Notes</p>
-                                </div>
+                                </div> */}
                             </div>
 
                             {/* Main Content */}
@@ -860,7 +920,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                     </AccordionTrigger>
                                                     <AccordionContent className="px-4 pb-4">
                                                         {(() => {
-                                                            const assessment = selectedCandidate.job_fit_assessment || '';
+                                                            const assessment = String(selectedCandidate.audio_interview_details?.audio_interview_summary?.coaching_focus || '');
 
                                                             // Extract the overall rating (HIGH/MEDIUM/LOW)
                                                             const ratingMatch = assessment.match(/\*\*Job Fit Assessment:\s*(\w+)\*\*/);
@@ -1042,7 +1102,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             {/* Video Player */}
                                             <div className="bg-bg-main rounded-none p-4 sm:p-6 shadow-sm">
                                                 {(() => {
-                                                    const candidateData = selectedCandidate?.profile_id ? getCandidateHighlights(selectedCandidate.profile_id) : null;
+                                                    const candidateData = selectedCandidate?.application_id ? getCandidateHighlights(selectedCandidate.application_id) : null;
                                                     const videoUrl = candidateData?.main_video_url || selectedCandidate.interview_status?.processed_video_interview_url || selectedCandidate.interview_status?.video_interview_url;
                                                     const interviewEvents = selectedCandidate?.video_proctoring_details?.interview_events || [];
 
@@ -1076,13 +1136,13 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                     <div className="w-fit flex items-center justify-center bg-element-3 p-2 mx-auto mb-3">
                                                         <h4 className="font-bold text-text-primary text-center">Highlights</h4>
                                                     </div>
-                                                    {selectedCandidate?.profile_id && getCandidateHighlights(selectedCandidate.profile_id) ? (
+                                                    {selectedCandidate?.application_id && getCandidateHighlights(selectedCandidate.application_id) ? (
                                                         <div className="space-y-6">
                                                             {/* Why They Match Section */}
                                                             <div>
                                                                 <h5 className="font-semibold text-text-primary mb-3 text-green-600">Why They Match</h5>
                                                                 <ul className="space-y-2">
-                                                                    {getCandidateHighlights(selectedCandidate.profile_id)?.why_they_match?.map((match: string, index: number) => (
+                                                                    {getCandidateHighlights(selectedCandidate.application_id)?.why_they_match?.map((match: string, index: number) => (
                                                                         <li key={index} className="text-sm text-text-primary flex items-start gap-2">
                                                                             <FaCheck className="text-green-500 mt-1 w-3 h-3 flex-shrink-0" />
                                                                             <span>{match}</span>
@@ -1095,7 +1155,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                             <div>
                                                                 <h5 className="font-semibold text-text-primary mb-3 text-orange-600">Development Required</h5>
                                                                 <ul className="space-y-2">
-                                                                    {getCandidateHighlights(selectedCandidate.profile_id)?.development_required?.map((development: string, index: number) => (
+                                                                    {getCandidateHighlights(selectedCandidate.application_id)?.development_required?.map((development: string, index: number) => (
                                                                         <li key={index} className="text-sm text-text-primary flex items-start gap-2">
                                                                             <FaExclamationCircle className="text-orange-500 mt-1 w-3 h-3 flex-shrink-0" />
                                                                             <span>{development}</span>
@@ -1106,7 +1166,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                         </div>
                                                     ) : (
                                                         <div className='text-sm'>
-                                                            <ReactMarkdown>{selectedCandidate?.short_summary}</ReactMarkdown>
+                                                            <ReactMarkdown>{selectedCandidate?.professional_summary}</ReactMarkdown>
                                                         </div>
                                                     )}
                                                 </CardContent>
@@ -1299,11 +1359,11 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                             variant="secondary"
                                             className='w-48'
                                             onClick={() => {
-                                                if (selectedCandidate?.interview_status?.resume_url) {
-                                                    window.open(selectedCandidate.interview_status.resume_url, '_blank');
+                                                if (selectedCandidate?.resume_url) {
+                                                    window.open(selectedCandidate.resume_url, '_blank');
                                                 }
                                             }}
-                                            disabled={!selectedCandidate?.interview_status?.resume_url}
+                                            disabled={!selectedCandidate?.resume_url}
                                         >
                                             Download Resume
                                         </Button>
@@ -1401,9 +1461,8 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     }`}>
                                     {sortedCandidates.map((candidate) => (
                                         <Card
-                                            key={candidate.profile_id || candidate.user_id}
-                                            className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${selectedCandidate?.profile_id === candidate.profile_id ||
-                                                selectedCandidate?.user_id === candidate.user_id
+                                            key={candidate.application_id}
+                                            className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${selectedCandidate?.application_id === candidate.application_id
                                                 ? 'ring-2 ring-element-2 bg-bg-main'
                                                 : ''
                                                 }`}
@@ -1422,7 +1481,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                                             {candidate.basic_information?.current_location}
                                                         </p>
                                                         <div className="flex items-center gap-2 justify-center">
-                                                            {isNewCandidate(candidate.profile_id) ? (
+                                                            {isNewCandidate(candidate.application_id) ? (
                                                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                                                                     New
                                                                 </span>
@@ -1614,7 +1673,7 @@ export default function CandidatePortfolioPage({ params }: PageProps) {
                                     const expectedVal = getCtcValue(selectedCandidate.basic_information?.expected_ctc);
                                     const expected = expectedVal != null ? encodeURIComponent(String(expectedVal)) : "";
                                     const relocation = selectedCandidate.basic_information?.open_to_relocation ? 1 : 0;
-                                    const url = `/schedule-interview?jobId=${jobId}&profileId=${selectedCandidate.profile_id}&role=${role}&name=${name}&location=${location}&exp=${exp}&expected=${expected}&relocation=${relocation}`;
+                                    const url = `/schedule-interview?jobId=${jobId}&applicationId=${selectedCandidate.application_id}&role=${role}&name=${name}&location=${location}&exp=${exp}&expected=${expected}&relocation=${relocation}`;
                                     setShowPostShortlistDialog(false);
                                     router.push(url);
                                 }}

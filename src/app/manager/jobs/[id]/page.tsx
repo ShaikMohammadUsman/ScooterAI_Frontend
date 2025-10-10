@@ -33,6 +33,7 @@ import NewApplicantCard from "@/components/company/cards/NewApplicantCard";
 import SeenApplicantCard from "@/components/company/cards/SeenApplicantCard";
 import ShortlistedApplicantCard from "@/components/company/cards/ShortlistedApplicantCard";
 import RejectedApplicantCard from "@/components/company/cards/RejectedApplicantCard";
+import CandidatePortfolioComponent from "@/components/manager/CandidatePortfolioComponent";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -43,6 +44,8 @@ export default function JobCandidatesPage({ params }: PageProps) {
     const [loading, setLoading] = useState(true);
     const [selectedCandidate, setSelectedCandidate] = useState<ManagerCandidate | null>(null);
     const [jobDetails, setJobDetails] = useState<MyJobCandidatesResponse['job_details'] | null>(null);
+    const [showCandidateReport, setShowCandidateReport] = useState(false);
+    const [reportCandidate, setReportCandidate] = useState<ManagerCandidate | null>(null);
     const resolvedParams = use(params);
     const jobId = resolvedParams.id;
     const [filters, setFilters] = useState<FilterState>({
@@ -200,6 +203,24 @@ export default function JobCandidatesPage({ params }: PageProps) {
         }
     }, [activeTab]);
 
+    // Listen for custom event to open candidate details report
+    useEffect(() => {
+        const handleOpenCandidateDetails = (event: CustomEvent) => {
+            const { applicationId } = event.detail;
+            const candidate = candidatesBySection[activeTab].find(c => c.application_id === applicationId);
+            if (candidate) {
+                setReportCandidate(candidate);
+                setShowCandidateReport(true);
+            }
+        };
+
+        window.addEventListener('openCandidateDetails', handleOpenCandidateDetails as EventListener);
+
+        return () => {
+            window.removeEventListener('openCandidateDetails', handleOpenCandidateDetails as EventListener);
+        };
+    }, [candidatesBySection, activeTab]);
+
     // Fetch all sections simultaneously on initial mount
     const fetchAllSections = async () => {
         setLoading(true);
@@ -241,8 +262,8 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
             switch (section) {
                 case 'new':
-                    // New applicants = candidates who attended video interview
-                    videoAttendedParam = true;
+                    // New applicants = candidates who haven't been seen yet
+                    seenParam = false;
                     break;
                 case 'seen':
                     seenParam = true; // Use the new seen filter
@@ -329,7 +350,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
 
             switch (activeTab) {
                 case 'new':
-                    videoAttendedParam = true;
+                    seenParam = false;
                     break;
                 case 'seen':
                     seenParam = true;
@@ -2150,6 +2171,19 @@ export default function JobCandidatesPage({ params }: PageProps) {
                     />
                 </div>
             </div>
+
+            {/* Candidate Portfolio Report */}
+            {showCandidateReport && reportCandidate && (
+                <CandidatePortfolioComponent
+                    candidate={reportCandidate}
+                    jobId={jobId}
+                    jobDetails={jobDetails || undefined}
+                    onClose={() => {
+                        setShowCandidateReport(false);
+                        setReportCandidate(null);
+                    }}
+                />
+            )}
         </div>
     );
 } 
