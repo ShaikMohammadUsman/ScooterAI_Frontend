@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { candidateSignup, parseCandidateResume, isCandidateAccessTokenValid } from "@/lib/candidateService";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getRedirectUrl, clearRedirectUrl } from "@/lib/utils";
 import { FaEye, FaEyeSlash, FaUpload, FaGoogleDrive } from "react-icons/fa";
 import ScooterHeader from "@/components/ScooterHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -96,7 +97,14 @@ export default function CandidateSignupPage() {
 
     useEffect(() => {
         if (isCandidateAccessTokenValid()) {
-            router.replace("/candidate/dashboard");
+            // Check if there's a redirect URL stored
+            const redirectUrl = getRedirectUrl();
+            if (redirectUrl) {
+                clearRedirectUrl();
+                router.replace(redirectUrl);
+            } else {
+                router.replace("/candidate/dashboard");
+            }
         }
     }, []);
 
@@ -182,8 +190,15 @@ export default function CandidateSignupPage() {
                 if (parseRes?.data) {
                     setParsingData(parseRes.data);
                     setTimeout(() => {
-                        const next = jobId ? `/candidate/profile?job_id=${encodeURIComponent(jobId)}` : "/candidate/profile";
-                        router.push(next);
+                        // Check if there's a redirect URL stored
+                        const redirectUrl = getRedirectUrl();
+                        if (redirectUrl) {
+                            clearRedirectUrl();
+                            router.push(redirectUrl);
+                        } else {
+                            const next = jobId ? `/candidate/profile?job_id=${encodeURIComponent(jobId)}` : "/candidate/profile";
+                            router.push(next);
+                        }
                     }, 1500);
                 } else {
                     throw new Error("No parsed data received");
@@ -203,9 +218,16 @@ export default function CandidateSignupPage() {
 
                 setShowParsingOverlay(false);
                 setError(errorMessage);
-                // Still redirect to dashboard even if resume parsing fails
+                // Still redirect even if resume parsing fails
                 setTimeout(() => {
-                    router.push("/candidate/dashboard");
+                    // Check if there's a redirect URL stored
+                    const redirectUrl = getRedirectUrl();
+                    if (redirectUrl) {
+                        clearRedirectUrl();
+                        router.push(redirectUrl);
+                    } else {
+                        router.push("/candidate/dashboard");
+                    }
                 }, 3000); // Give user time to see the error
                 return;
             }
