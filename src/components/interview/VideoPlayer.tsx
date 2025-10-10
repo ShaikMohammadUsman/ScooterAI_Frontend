@@ -9,22 +9,25 @@ interface VideoPlayerProps {
     controls?: boolean;
     preload?: "auto" | "metadata" | "none";
     className?: string;
+    showPoster?: boolean;
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
     videoUrl,
     fallbackUrl,
-    poster = "",
+    poster = "/assets/images/newScooterLogo.png",
     autoPlay = false,
     controls = true,
     preload = "metadata",
     className = "w-full h-full rounded-lg shadow-lg",
+    showPoster = false,
 }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const lastTriedUrlRef = useRef<string | null>(null);
     const [hasError, setHasError] = useState(false);
     const [isUsingFallback, setIsUsingFallback] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
     const isDriveUrl = (u: string) => {
         try { return new URL(u).hostname.includes('drive.google.com'); } catch { return false; }
@@ -203,20 +206,43 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }, [videoUrl]);
 
     return (
-        <div className="relative">
+        <div className={`relative ${className}`}>
             {isDriveUrl(normalizeVideoUrl) ? (
-                <iframe
-                    title="Video"
-                    style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
-                    src={normalizeVideoUrl}
-                    className={className}
-                    allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                    allowFullScreen
-                />
+                <>
+                    {showPoster && !isVideoLoaded ? (
+                        <div
+                            className="w-full h-full bg-black flex items-center justify-center cursor-pointer"
+                            onClick={() => setIsVideoLoaded(true)}
+                        >
+                            <img
+                                src={poster}
+                                alt="Video thumbnail"
+                                className="w-full h-full object-contain px-2"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors">
+                                    <svg className="w-8 h-8 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <iframe
+                            title="Video"
+                            style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+                            src={normalizeVideoUrl}
+                            className="w-full h-full"
+                            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                            allowFullScreen
+                            onLoad={() => setIsVideoLoaded(true)}
+                        />
+                    )}
+                </>
             ) : (
                 <video
                     ref={videoRef}
-                    className={className}
+                    className="w-full h-full"
                     controls={controls}
                     autoPlay={autoPlay}
                     preload={preload}

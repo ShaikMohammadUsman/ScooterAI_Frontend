@@ -843,7 +843,7 @@ export default function VoiceInterviewPage() {
     };
 
     return (
-        <div className={`relative h-screen flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme ? 'bg-gray-900' : 'bg-background'}`}>
+        <div className={`relative min-h-screen flex flex-col transition-all duration-1000 ease-in-out ${isDarkTheme ? 'bg-gray-900' : 'bg-background'}`}>
             {/* Proctoring System */}
             {/* {
                 proctoringActive && (
@@ -1009,7 +1009,7 @@ export default function VoiceInterviewPage() {
             ) : (
                 <>
                     {/* Main Content - AI Speaking Animation */}
-                    <div className={`flex-1 overflow-hidden transition-all duration-1000 ease-in-out pb-24 ${isDarkTheme
+                    <div className={`flex-1 overflow-y-auto transition-all duration-1000 ease-in-out pb-24 ${isDarkTheme
                         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
                         : 'bg-gradient-to-br from-white via-slate-50 to-white'
                         }`}>
@@ -1061,6 +1061,9 @@ export default function VoiceInterviewPage() {
                                         description="Start by sharing a little about yourself"
                                         buttonText="I'm ready!"
                                         applicationId={applicationId || ""}
+                                        showVideo={true}
+                                        videoUrl="https://drive.google.com/file/d/1bP867jIf209dvt_Tq4slJzNHsFqShw6F/view?usp=sharing"
+                                        videoTitle="Quick Introduction"
                                     />
                                 )}
                             </div>
