@@ -14,6 +14,7 @@ import { ResumeProfile } from "@/lib/resumeService";
 import { updateCandidateData, applyJob } from "@/lib/candidateService";
 import SuccessOverlay from "@/components/candidate/SuccessOverlay";
 import ProfileSuccessPopup from "@/components/candidate/ProfileSuccessPopup";
+import { getRedirectUrl, clearRedirectUrl } from "@/lib/utils";
 
 
 
@@ -114,6 +115,24 @@ export default function CandidateProfileFlow() {
     };
 
     const [localProfile, setLocalProfile] = useState<ResumeProfile>(resumeProfile);
+
+    // Helper function to handle redirect logic after profile completion
+    const handleProfileCompletionRedirect = () => {
+        if (jobId) {
+            // If jobId is present, redirect to interview with application_id
+            return;
+        }
+
+        // If no jobId, check for saved redirect URL
+        const redirectUrl = getRedirectUrl();
+        if (redirectUrl) {
+            clearRedirectUrl();
+            router.push(redirectUrl);
+        } else {
+            // If no saved URL, redirect to dashboard
+            router.push("/candidate/dashboard");
+        }
+    };
 
     const handleSectionChange = (sectionId: string) => {
         const targetIndex = sections.findIndex(s => s.id === sectionId);
@@ -539,7 +558,7 @@ export default function CandidateProfileFlow() {
                     if (applicationId) {
                         router.push(`/interview/general?application_id=${encodeURIComponent(applicationId)}`);
                     } else {
-                        router.push("/candidate/dashboard");
+                        handleProfileCompletionRedirect();
                     }
                 }}
             />
@@ -547,7 +566,7 @@ export default function CandidateProfileFlow() {
             <ProfileSuccessPopup
                 visible={showProfileSuccess}
                 onProceed={() => {
-                    router.push("/candidate/dashboard");
+                    handleProfileCompletionRedirect();
                 }}
             />
         </div>

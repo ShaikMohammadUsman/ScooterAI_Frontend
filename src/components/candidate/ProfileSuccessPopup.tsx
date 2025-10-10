@@ -78,7 +78,7 @@ export default function ProfileSuccessPopup({
                             variant="primary"
                             className="flex-1 flex items-center justify-center gap-2"
                         >
-                            Go to Careers
+                            Redirect Now
                             <ArrowRight className="w-4 h-4" />
                         </Button>
                     </div>
