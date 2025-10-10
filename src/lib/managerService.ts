@@ -299,6 +299,8 @@ export interface ManagerCandidate {
     application_status_reason?: string;
     shortlist_status_reason?: string;
     interview_details?: {
+        session_id?: string;
+        created_at?: string;
         communication_evaluation?: {
             content_and_thought?: {
                 score?: number;
@@ -319,7 +321,9 @@ export interface ManagerCandidate {
             overall_score?: number;
             summary?: string;
         };
+        key_highlights?: string;
         qa_evaluations?: {
+            session_id?: string;
             question_evaluations?: {
                 question_number?: number;
                 step?: string;
@@ -343,7 +347,6 @@ export interface ManagerCandidate {
             interview_completed?: boolean;
             evaluation_timestamp?: string;
             role?: string;
-            session_id?: string;
         };
     };
 

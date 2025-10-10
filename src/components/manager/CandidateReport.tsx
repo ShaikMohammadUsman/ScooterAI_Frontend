@@ -1189,7 +1189,7 @@ export default function CandidatePortfolioOverlay({
                                     <CardHeader>
                                         <div className="flex items-center justify-between">
                                             <CardTitle>Video Interview Evaluation</CardTitle>
-                                            {selectedCandidate?.interview_status?.video_interview_url && (
+                                            {(selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -1207,40 +1207,158 @@ export default function CandidatePortfolioOverlay({
                                     </CardHeader>
                                     <CardContent>
                                         {/* Video Player */}
-                                        {showVideoPlayer && selectedCandidate?.interview_status?.video_interview_url && (
+                                        {showVideoPlayer && (selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
                                             <div className="mb-6 bg-gray-50 p-4 rounded-lg">
                                                 <VideoPlayerWithTimeline
-                                                    videoUrl={selectedCandidate.interview_status.video_interview_url}
+                                                    videoUrl={(selectedCandidate.interview_status.processed_video_interview_url || selectedCandidate.interview_status.video_interview_url) as string}
                                                 />
                                             </div>
                                         )}
 
                                         {/* Video Interview Summary */}
                                         <div className="mb-6">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                <div className="bg-gray-50 p-3 rounded-lg">
-                                                    <p className="text-sm text-gray-600">Average Score</p>
-                                                    <p className="text-lg font-semibold">
-                                                        {getVideoSummaryScore(selectedCandidate)?.toFixed(1) || 'N/A'}/100
-                                                    </p>
-                                                </div>
-                                                <div className="bg-gray-50 p-3 rounded-lg">
-                                                    <p className="text-sm text-gray-600">Credibility</p>
-                                                    <p className="text-lg font-semibold">
-                                                        {getVideoCredibilityScore(selectedCandidate)?.toFixed(1) || 'N/A'}/100
-                                                    </p>
-                                                </div>
-                                            </div>
+                                            {/* Communication Evaluation */}
+                                            {selectedCandidate?.interview_details?.communication_evaluation && (
+                                                <div className="mb-6">
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                        {selectedCandidate?.interview_details?.communication_evaluation?.overall_score && (
+                                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                                <p className="text-sm text-gray-600">Overall Score</p>
+                                                                <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.overall_score?.toFixed(1)}/5</p>
+                                                            </div>
+                                                        )}
+                                                        {selectedCandidate?.interview_details?.communication_evaluation?.content_and_thought && (
+                                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                                <p className="text-sm text-gray-600">Content & Thought</p>
+                                                                <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.content_and_thought?.score}/5</p>
+                                                            </div>
+                                                        )}
+                                                        {selectedCandidate?.interview_details?.communication_evaluation?.verbal_delivery && (
+                                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                                <p className="text-sm text-gray-600">Verbal Delivery</p>
+                                                                <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.verbal_delivery?.score}/5</p>
+                                                            </div>
+                                                        )}
+                                                        {selectedCandidate?.interview_details?.communication_evaluation?.non_verbal && (
+                                                            <div className="bg-gray-50 p-3 rounded-lg">
+                                                                <p className="text-sm text-gray-600">Non-Verbal</p>
+                                                                <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.communication_evaluation?.non_verbal?.score}/5</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
 
-                                            {/* Areas for Improvement */}
-                                            {getVideoAreasForImprovement(selectedCandidate).length > 0 && (
-                                                <div className="bg-red-50 p-4 rounded-lg">
-                                                    <h5 className="font-medium text-red-900 mb-2">Areas for Improvement</h5>
-                                                    <ul className="list-disc list-inside space-y-1">
-                                                        {getVideoAreasForImprovement(selectedCandidate).map((area: string, index: number) => (
-                                                            <li key={index} className="text-sm text-red-700">{area}</li>
-                                                        ))}
-                                                    </ul>
+                                                    {selectedCandidate?.interview_details?.communication_evaluation?.summary && (
+                                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                                            <h5 className="font-medium text-gray-900 mb-2">Communication Summary</h5>
+                                                            <div className="text-gray-700">
+                                                                <ReactMarkdown>{selectedCandidate?.interview_details?.communication_evaluation?.summary || ''}</ReactMarkdown>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Key Highlights */}
+                                            {selectedCandidate?.interview_details?.key_highlights && (
+                                                <div className="bg-green-50 p-4 rounded-lg mb-6">
+                                                    <h5 className="font-medium text-green-900 mb-2 flex items-center gap-2">
+                                                        <FaCheckCircle className="text-green-600" />
+                                                        Key Highlights
+                                                    </h5>
+                                                    <div className="text-sm text-green-700">
+                                                        <ReactMarkdown>{selectedCandidate?.interview_details?.key_highlights || ''}</ReactMarkdown>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Q&A Evaluations */}
+                                            {selectedCandidate?.interview_details?.qa_evaluations && (
+                                                <div className="mb-6">
+                                                    {/* Overall Scores */}
+                                                    {selectedCandidate?.interview_details?.qa_evaluations?.overall_scores && (
+                                                        <div className="mb-6">
+                                                            <h5 className="font-medium text-gray-900 mb-3">Overall Scores</h5>
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                                    <p className="text-sm text-gray-600">Average Skill Score</p>
+                                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.qa_evaluations?.overall_scores?.average_skill_score?.toFixed(1)}/5</p>
+                                                                </div>
+                                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                                    <p className="text-sm text-gray-600">Average Trait Score</p>
+                                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.qa_evaluations?.overall_scores?.average_trait_score?.toFixed(1)}/5</p>
+                                                                </div>
+                                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                                    <p className="text-sm text-gray-600">Total Questions</p>
+                                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.qa_evaluations?.overall_scores?.total_questions}</p>
+                                                                </div>
+                                                                <div className="bg-gray-50 p-3 rounded-lg">
+                                                                    <p className="text-sm text-gray-600">Questions with Signal</p>
+                                                                    <p className="text-lg font-semibold">{selectedCandidate?.interview_details?.qa_evaluations?.overall_scores?.questions_with_signal}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Question Evaluations */}
+                                                    {selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations && Array.isArray(selectedCandidate.interview_details.qa_evaluations.question_evaluations) && selectedCandidate.interview_details.qa_evaluations.question_evaluations.length > 0 && (
+                                                        <div className="space-y-4">
+                                                            <h4 className="text-lg font-semibold text-gray-900 mb-4">Interview Questions & Answers</h4>
+                                                            <Accordion type="single" collapsible className="w-full">
+                                                                {selectedCandidate.interview_details.qa_evaluations.question_evaluations.map((qa: any, index: number) => (
+                                                                    <AccordionItem key={index} value={`video-qa-${index}`} className="border border-gray-200 rounded-lg mb-3">
+                                                                        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                                                            <div className="flex items-center justify-between w-full pr-4">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                                                                                        Q{qa?.question_number}
+                                                                                    </span>
+                                                                                    <div className="flex gap-2">
+                                                                                        <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                                                                                            Skill: {qa?.skill_score}/5
+                                                                                        </span>
+                                                                                        <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">
+                                                                                            Trait: {qa?.trait_score}/5
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                {qa?.has_signal && (
+                                                                                    <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">
+                                                                                        Signal Detected
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </AccordionTrigger>
+                                                                        <AccordionContent>
+                                                                            <div className="px-4 pb-4 space-y-4">
+                                                                                <div>
+                                                                                    <h5 className="font-medium text-gray-900 mb-2">Question</h5>
+                                                                                    <p className="text-gray-700">{qa?.question}</p>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 className="font-medium text-gray-900 mb-2">Answer</h5>
+                                                                                    <p className="text-gray-700">{qa?.answer}</p>
+                                                                                </div>
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                    <div className="bg-blue-50 p-3 rounded-lg">
+                                                                                        <h6 className="font-medium text-blue-900 mb-2">Skill Reasoning</h6>
+                                                                                        <div className="text-sm text-blue-700">
+                                                                                            <ReactMarkdown>{qa?.skill_reasoning || ''}</ReactMarkdown>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="bg-green-50 p-3 rounded-lg">
+                                                                                        <h6 className="font-medium text-green-900 mb-2">Trait Reasoning</h6>
+                                                                                        <div className="text-sm text-green-700">
+                                                                                            <ReactMarkdown>{qa?.trait_reasoning || ''}</ReactMarkdown>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </AccordionContent>
+                                                                    </AccordionItem>
+                                                                ))}
+                                                            </Accordion>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
