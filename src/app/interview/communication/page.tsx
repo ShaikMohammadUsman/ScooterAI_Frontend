@@ -340,7 +340,7 @@ function CommunicationInterview() {
 
             // Start with a test question for camera check
             // const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in the role${jobTitle ? ` of ${jobTitle}` : ""}${jobTitle && jobDescription ? ` at ${jobDescription}` : ""}.`;
-            const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in your role${jobTitle ? ` of ${jobTitle}` : ""}.`;
+            const testQuestion = `Hi, how are you? Please click 'Start Assessment' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in your role${jobTitle ? ` of ${jobTitle}` : ""}.`;
             setCurrentQuestion(testQuestion);
             setMessages([{
                 own: false,
@@ -370,8 +370,8 @@ function CommunicationInterview() {
             setStarted(true);
             setMicEnabled(true);
         } catch (err: any) {
-            console.error("Error starting interview:", err);
-            setError(err.message || "Failed to start interview");
+            console.error("Error starting assessment:", err);
+            setError(err.message || "Failed to start assessment");
             // Deactivate proctoring on error
             setProctoringActive(false);
         } finally {
@@ -567,7 +567,7 @@ function CommunicationInterview() {
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 setCameraAccessDenied(true);
                 setShowCameraRetry(true);
-                setError("Camera access denied. Please allow camera and microphone access to continue with the interview.");
+                setError("Camera access denied. Please allow camera and microphone access to continue with the assessment.");
             } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
                 setError("No camera or microphone found. Please connect a camera and microphone to continue.");
             } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
@@ -864,6 +864,34 @@ function CommunicationInterview() {
 
             const res = await startVideoInterview(applicationId);
 
+            // Check if the API response indicates an error
+            if ('status' in res && !res.status) {
+                setError(res.message || "Failed to start video assessment");
+                toast({
+                    title: "Assessment Error",
+                    description: res.message || "You are not invited for this video assessment",
+                    variant: "destructive",
+                });
+                setLoading(false);
+                setIsProcessingResponse(false);
+                // Stop recording if it was started
+                if (mediaRecorderRef.current) {
+                    try {
+                        mediaRecorderRef.current.stop();
+                    } catch (error) {
+                        console.warn("Error stopping recording after API error:", error);
+                    }
+                }
+                return;
+            }
+
+            // Show success toast
+            toast({
+                title: "Assessment Started",
+                description: "Video assessment has been successfully started",
+                variant: "success",
+            });
+
             setSessionId(res.session_id);
             if (res.question) {
                 setCurrentQuestion(res.question);
@@ -915,8 +943,8 @@ function CommunicationInterview() {
             setCurrentAnswer(""); // Reset current answer for new question
             setIsRetaking(false); // Reset retaking state
         } catch (err: any) {
-            console.error("Error starting actual interview:", err);
-            setError(err.message || "Failed to start interview");
+            console.error("Error starting actual assessment:", err);
+            setError(err.message || "Failed to start assessment");
             cleanupRecording();
             // Deactivate proctoring on error
             setProctoringActive(false);
@@ -1072,6 +1100,20 @@ function CommunicationInterview() {
 
             const res = await continueVideoInterview(sessionId, textToSend);
 
+            // Check if the API response indicates an error
+            // if (!res.status) {
+            //     setError(res.message || "Failed to submit answer");
+            //     toast({
+            //         title: "Submission Error",
+            //         description: res.message || "Failed to submit your answer. Please try again.",
+            //         variant: "destructive",
+            //     });
+            //     setLoading(false);
+            //     setIsProcessingResponse(false);
+            //     setIsProcessingFinalResponse(false);
+            //     return;
+            // }
+
             // If server signals overall completion now, proceed to processing and upload flow
             if (res.step === "completed") {
                 // Immediately show processing indicator
@@ -1130,7 +1172,7 @@ function CommunicationInterview() {
                     }
                 } catch (err: any) {
                     console.error("Error in final submission process:", err);
-                    setError(err.message || "Failed to complete interview submission");
+                    setError(err.message || "Failed to complete assessment submission");
                     setShowSubmissionModal(false);
                     setIsSubmittingFinal(false);
                     setIsUploadingVideo(false);
@@ -1143,7 +1185,7 @@ function CommunicationInterview() {
                 // Add completion message to chat
                 setMessages((prev) => [...prev, {
                     own: false,
-                    text: (res as any).message || "Thank you for completing the interview. Your responses have been recorded.",
+                    text: (res as any).message || "Thank you for completing the assessment. Your responses have been recorded.",
                     icon: <FaUserTie className="text-primary w-6 h-6" />
                 }]);
 
@@ -1260,7 +1302,7 @@ function CommunicationInterview() {
             setShowSubmissionModal(false);
             setIsSubmittingFinal(false);
             setIsUploadingVideo(false);
-            setError("Interview ending process is taking longer than expected. Please try again or contact support.");
+            setError("Assessment ending process is taking longer than expected. Please try again or contact support.");
             cleanupRecording();
             setProctoringActive(false);
         }, 900000); // 15 minutes timeout
@@ -1270,7 +1312,7 @@ function CommunicationInterview() {
             if (!videoStreamRef.current) {
                 const hasAccess = await checkCameraAccess();
                 if (!hasAccess) {
-                    setError("Camera access required to end interview. Please allow camera access and try again.");
+                    setError("Camera access required to end assessment. Please allow camera access and try again.");
                     return;
                 }
             }
@@ -1299,8 +1341,8 @@ function CommunicationInterview() {
                     clearTimeout(earlyEndingTimeout);
                 }
             } catch (err: any) {
-                console.error("Error in early interview ending process:", err);
-                setError(err.message || "Failed to complete early interview ending");
+                console.error("Error in early assessment ending process:", err);
+                setError(err.message || "Failed to complete early assessment ending");
                 setShowSubmissionModal(false);
                 setIsSubmittingFinal(false);
                 setIsUploadingVideo(false);
@@ -1312,11 +1354,11 @@ function CommunicationInterview() {
 
             setShowCompletionScreen(true);
 
-            // Deactivate proctoring when interview ends
+            // Deactivate proctoring when assessment ends
             setProctoringActive(false);
         } catch (err: any) {
-            console.error("Error ending interview:", err);
-            setError(err.message || "Failed to end interview");
+            console.error("Error ending assessment:", err);
+            setError(err.message || "Failed to end assessment");
             // Deactivate proctoring on error
             setProctoringActive(false);
         } finally {
@@ -1522,13 +1564,13 @@ function CommunicationInterview() {
                                 Access Denied
                             </CardTitle>
                             <p className="text-gray-300">
-                                You are not authorized to access this interview
+                                You are not authorized to access this assessment
                             </p>
                         </CardHeader>
                         <CardContent className="text-center">
                             <div className="space-y-4">
                                 <p className="text-sm text-gray-400">
-                                    This interview requires a valid verification code. Please check your email for the correct interview link or contact support if you believe this is an error.
+                                    This assessment requires a valid verification code. Please check your email for the correct assessment link or contact support if you believe this is an error.
                                 </p>
                                 <Button
                                     onClick={() => router.push('/')}
@@ -1567,7 +1609,7 @@ function CommunicationInterview() {
                                         Permission Check Required
                                     </h1>
                                     <p className={`text-lg ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        We need to verify all required permissions before starting the interview.
+                                        We need to verify all required permissions before starting the assessment.
                                     </p>
                                 </div>
 
@@ -1723,7 +1765,7 @@ function CommunicationInterview() {
                                             <div className="flex items-center gap-2">
                                                 <FaCheck className="text-green-600 dark:text-green-400" />
                                                 <p className="text-green-600 dark:text-green-400 font-semibold">
-                                                    All permissions granted! You can now proceed to the interview.
+                                                    All permissions granted! You can now proceed to the assessment.
                                                 </p>
                                             </div>
                                         </div>
@@ -1782,7 +1824,7 @@ function CommunicationInterview() {
                                             // size="sm"
                                             className="w-full sm:w-auto"
                                         >
-                                            Continue to Interview
+                                            Continue to Assessment
                                         </Button>
                                     ) : (
                                         <Button
@@ -1908,10 +1950,10 @@ function CommunicationInterview() {
                                                 {isProcessingResponse ? (
                                                     <div className="flex items-center gap-2">
                                                         <LoadingDots bg="slate-300" />
-                                                        <span>Starting Interview...</span>
+                                                        <span>Starting Assessment...</span>
                                                     </div>
                                                 ) : (
-                                                    "Start Interview"
+                                                    "Start Assessment"
                                                 )}
                                             </Button>
                                             <Button
@@ -2008,7 +2050,7 @@ function CommunicationInterview() {
                             >
                                 <CardTitle className={`text-3xl font-bold mb-4 transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'
                                     }`}>
-                                    Interview Completed Successfully!
+                                    Assessment Completed Successfully!
                                 </CardTitle>
                                 <p className={`text-lg leading-relaxed transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'
                                     }`}>
@@ -2045,7 +2087,7 @@ function CommunicationInterview() {
                                                 </p>
                                                 <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-blue-200' : 'text-blue-700'
                                                     }`}>
-                                                    Your interview responses have been processed and recorded.
+                                                    Your assessment responses have been processed and recorded.
                                                 </p>
                                             </div>
                                         </div>
@@ -2142,14 +2184,14 @@ function CommunicationInterview() {
                             </CardTitle>
                             <p className={`transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'
                                 }`}>
-                                Please upload your latest resume to continue with the interview
+                                Please upload your latest resume to continue with the assessment
                             </p>
                         </CardHeader>
                         <CardContent className="text-center">
                             <div className="space-y-4">
                                 <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'
                                     }`}>
-                                    Your resume information needs to be updated to ensure we have the most current details for your interview.
+                                    Your resume information needs to be updated to ensure we have the most current details for your assessment.
                                 </p>
                                 <Button
                                     onClick={() => setShowResumeUploadModal(true)}
@@ -2219,10 +2261,10 @@ function CommunicationInterview() {
                             </div>
                         </div>
                         <AlertDialogTitle className="text-xl font-semibold text-center">
-                            Leave Interview?
+                            Leave Assessment?
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-center">
-                            Are you sure you want to leave? Your interview responses will be submitted.
+                            Are you sure you want to leave? Your assessment responses will be submitted.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex gap-3 justify-center">

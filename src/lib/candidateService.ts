@@ -260,6 +260,7 @@ export interface VideoInterviewRequest {
 }
 
 export interface VideoInterviewResponse {
+    status?: boolean;
     session_id: string;
     question: string;
     step: string;
