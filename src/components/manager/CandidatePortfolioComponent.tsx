@@ -810,13 +810,13 @@ export default function CandidatePortfolioComponent({
                                                 <div className="bg-bg-main rounded-none p-4 sm:p-6 shadow-sm">
                                                     {(() => {
                                                         const candidateData = selectedCandidate?.application_id ? getCandidateHighlights(selectedCandidate.application_id) : null;
-                                                        const videoUrl = candidateData?.main_video_url || selectedCandidate.interview_status?.processed_video_interview_url || selectedCandidate.interview_status?.video_interview_url;
+                                                        const videoUrl = candidateData?.main_video_url || selectedCandidate.interview_status?.processed_video_url || selectedCandidate.interview_status?.video_interview_url;
                                                         const interviewEvents = selectedCandidate?.video_proctoring_details?.interview_events || [];
 
                                                         return videoUrl ? (
                                                             <VideoPlayerWithTimeline
                                                                 videoUrl={videoUrl}
-                                                                fallbackUrl={selectedCandidate.interview_status?.processed_video_interview_url ? selectedCandidate.interview_status?.video_interview_url : null}
+                                                                fallbackUrl={selectedCandidate.interview_status?.processed_video_url ? selectedCandidate.interview_status?.video_interview_url : null}
                                                                 interviewEvents={interviewEvents}
                                                                 questionEvaluations={selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations?.map((q: any) => ({
                                                                     question_number: q?.question_number,

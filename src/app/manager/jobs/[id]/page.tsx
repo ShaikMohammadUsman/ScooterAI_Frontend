@@ -1839,7 +1839,7 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                         <div className="mt-8">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="text-lg font-semibold text-gray-900">Video Interview Evaluation</h4>
-                                                {(selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
+                                                {(selectedCandidate?.interview_status?.processed_video_url || selectedCandidate?.interview_status?.video_interview_url) && (
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -1856,13 +1856,13 @@ export default function JobCandidatesPage({ params }: PageProps) {
                                             </div>
 
                                             {/* Video Player */}
-                                            {showVideoPlayer && (selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
+                                            {showVideoPlayer && (selectedCandidate?.interview_status?.processed_video_url || selectedCandidate?.interview_status?.video_interview_url) && (
                                                 <div className="mb-6 bg-gray-50 p-4 rounded-lg">
                                                     <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
                                                         <VideoPlayer
-                                                            videoUrl={selectedCandidate.interview_status.processed_video_interview_url || selectedCandidate.interview_status.video_interview_url!}
-                                                            fallbackUrl={selectedCandidate.interview_status.processed_video_interview_url ? selectedCandidate.interview_status.video_interview_url : null}
-                                                            poster="/assets/images/scooterLogo.png"
+                                                            videoUrl={selectedCandidate.interview_status.processed_video_url || selectedCandidate.interview_status.video_interview_url!}
+                                                            fallbackUrl={selectedCandidate.interview_status.processed_video_url ? selectedCandidate.interview_status.video_interview_url : null}
+                                                            poster="/assets/images/newScooterLogo.png"
                                                             autoPlay={true}
                                                             controls={true}
                                                             preload="metadata"
