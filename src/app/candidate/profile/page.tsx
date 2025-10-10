@@ -14,7 +14,8 @@ import { ResumeProfile } from "@/lib/resumeService";
 import { updateCandidateData, applyJob } from "@/lib/candidateService";
 import SuccessOverlay from "@/components/candidate/SuccessOverlay";
 import ProfileSuccessPopup from "@/components/candidate/ProfileSuccessPopup";
-import { getRedirectUrl, clearRedirectUrl } from "@/lib/utils";
+import { getRedirectUrl, clearRedirectUrl, getJobIdFromUrl, getStoredJobId, clearStoredJobId } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 
 
@@ -45,7 +46,9 @@ export default function CandidateProfileFlow() {
     const [currentSection, setCurrentSection] = useState("work");
     const router = useRouter();
     const searchParams = useSearchParams();
-    const jobId = searchParams?.get('job_id') || '';
+    const jobIdFromUrl = getJobIdFromUrl(searchParams);
+    const jobIdFromStorage = getStoredJobId();
+    const jobId = jobIdFromUrl || jobIdFromStorage || '';
     const { profile, updateProfile, markerProfileComplete } = useCandidateProfileStore();
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -248,19 +251,71 @@ export default function CandidateProfileFlow() {
                 if (res?.status) {
                     markerProfileComplete();
 
-                    // If job_id is present in URL, apply for the job
+                    // If job_id is present, apply for the job
                     if (jobId) {
                         try {
                             const applyRes = await applyJob({ job_id: jobId });
-                            if (applyRes?.status) {
+                            if (applyRes?.status && applyRes?.applied) {
+                                // New application submitted successfully - clear jobId
+                                if (jobIdFromStorage) {
+                                    clearStoredJobId();
+                                }
                                 setApplicationId(applyRes.application_id || res.application_id);
                                 setShowSuccess(true);
+                                toast({
+                                    title: "Application Submitted",
+                                    description: "Your application has been submitted successfully!",
+                                    variant: "success"
+                                });
+                            } else if (!applyRes?.status && applyRes?.applied) {
+                                // User has already applied to this job - clear jobId
+                                if (jobIdFromStorage) {
+                                    clearStoredJobId();
+                                }
+                                toast({
+                                    title: "Already Applied",
+                                    description: "You have already applied to this job.",
+                                    variant: "default"
+                                });
+                                setApplicationId(null);
+                                setShowProfileSuccess(true);
+                                // Redirect to dashboard with jobId to show application status
+                                router.push(`/candidate/dashboard?job_id=${encodeURIComponent(jobId)}`);
                             } else {
+                                // Application failed for other reasons - don't clear jobId
                                 setSubmitError(applyRes?.message || 'Failed to apply for job');
+                                toast({
+                                    title: "Application Failed",
+                                    description: applyRes?.message || (applyRes as any)?.details || "Failed to apply for job",
+                                    variant: "destructive"
+                                });
                             }
                         } catch (applyError: any) {
-                            const applyMsg = applyError?.response?.data?.message || applyError?.message || 'Failed to apply for job';
-                            setSubmitError(applyMsg);
+                            console.log('Apply error caught in profile:', applyError);
+                            const responseData = applyError?.response?.data;
+
+                            // Check if this is an "already applied" error (400 with specific response)
+                            if (responseData && responseData.status === false && responseData.applied === true) {
+                                // This is an "already applied" case, handle it properly
+                                if (jobIdFromStorage) {
+                                    clearStoredJobId();
+                                }
+                                toast({
+                                    title: "Already Applied",
+                                    description: "You have already applied to this job.",
+                                    variant: "default"
+                                });
+                                router.push(`/candidate/dashboard?job_id=${encodeURIComponent(jobId)}`);
+                            } else {
+                                // This is a genuine error
+                                const applyMsg = responseData?.message || applyError?.message || 'Failed to apply for job';
+                                setSubmitError(applyMsg);
+                                toast({
+                                    title: "Application Failed",
+                                    description: applyMsg,
+                                    variant: "destructive"
+                                });
+                            }
                         }
                     } else {
                         // No job_id, show profile success popup

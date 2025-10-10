@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { getAllJobs, Job, JobsResponse } from "@/lib/userService"
-import { applyJob } from "@/lib/candidateService"
 import LoadingSpinner from "@/components/ui/loadingSpinner"
 import ErrorBox from "@/components/ui/error"
 import { ChevronLeft, ChevronRight, Mic, ArrowRight, X } from "lucide-react"
@@ -18,8 +17,6 @@ function CareersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<JobsResponse['pagination'] | null>(null);
     const [showFloatingComponent, setShowFloatingComponent] = useState(false);
-    const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
-    const [applyError, setApplyError] = useState<string | null>(null);
     const pageSize = 6; // Number of jobs per page
 
     useEffect(() => {
@@ -48,22 +45,8 @@ function CareersPage() {
         }
     };
 
-    const handleApplyJob = async (jobId: string) => {
-        setApplyingJobId(jobId);
-        setApplyError(null);
-        try {
-            const response = await applyJob({ job_id: jobId });
-            if (response?.status) {
-                // Redirect to profile page with job_id to complete the application
-                router.push(`/candidate/dashboard`);
-            } else {
-                setApplyError(response?.message || 'Failed to apply for job');
-            }
-        } catch (err: any) {
-            setApplyError(err?.response?.data?.message || err?.message || 'Failed to apply for job');
-        } finally {
-            setApplyingJobId(null);
-        }
+    const handleViewDetails = (jobId: string) => {
+        router.push(`/home/careers/${jobId}`);
     };
 
     // Function to get badge color based on badge text
@@ -177,11 +160,10 @@ function CareersPage() {
                                 <div className="flex flex-col-reverse md:flex-row justify-between items-center">
                                     <Button
                                         className="my-2 px-8 py-2 text-base font-semibold"
-                                        onClick={() => handleApplyJob(job.job_id)}
-                                        disabled={applyingJobId === job.job_id}
+                                        onClick={() => handleViewDetails(job.job_id)}
                                         variant="default"
                                     >
-                                        {applyingJobId === job.job_id ? "Applying..." : "Apply Now"}
+                                        View Details
                                     </Button>
                                     <p className="text-sm text-muted-foreground">
                                         Posted {new Date(job.created_at).toLocaleDateString()}
@@ -192,22 +174,6 @@ function CareersPage() {
                     ))}
                 </div>
 
-                {/* Apply Error Display */}
-                {applyError && (
-                    <div className="mt-6 flex items-center justify-center">
-                        <div className="flex flex-col justify-center bg-red-50 border border-red-200 rounded-lg p-4 max-w-md">
-                            <p className="text-red-800 text-sm text-center">{applyError}</p>
-                            <Button
-                                onClick={() => setApplyError(null)}
-                                variant="outline"
-                                size="sm"
-                                className="mt-2 w-fit mx-auto rounded-full"
-                            >
-                                Dismiss
-                            </Button>
-                        </div>
-                    </div>
-                )}
 
                 {pagination && (
                     <div className="mt-8 flex items-center justify-center gap-4">

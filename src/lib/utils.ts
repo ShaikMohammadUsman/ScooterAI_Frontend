@@ -82,3 +82,30 @@ export function getCurrentUrlWithQuery(): string {
     return '';
 }
 
+// JobId tracking utilities
+export function storeJobId(jobId: string): void {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('pending_job_application', jobId);
+    }
+}
+
+export function getStoredJobId(): string | null {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem('pending_job_application');
+    }
+    return null;
+}
+
+export function clearStoredJobId(): void {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('pending_job_application');
+    }
+}
+
+export function getJobIdFromUrl(searchParams: URLSearchParams | null): string | null {
+    if (searchParams) {
+        return searchParams.get('job_id');
+    }
+    return null;
+}
+

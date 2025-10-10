@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getJobById, Job, JobDetailsResponse } from "@/lib/userService";
-import { applyJob } from "@/lib/candidateService";
+import { applyJob, isCandidateAccessTokenValid } from "@/lib/candidateService";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
+import { storeJobId, storeRedirectUrl } from "@/lib/utils";
 import LoadingSpinner from "@/components/ui/loadingSpinner";
 import ErrorBox from "@/components/ui/error";
 import {
@@ -74,21 +75,68 @@ export default function JobDetailsPage() {
 
         setApplying(true);
         setApplyError(null);
+
         try {
-            const response = await applyJob({ job_id: job.job_id });
-            if (response?.status) {
+            // Check if candidate is already logged in
+            if (isCandidateAccessTokenValid()) {
+                // User is logged in, proceed with application
+                const response = await applyJob({ job_id: job.job_id });
+                if (response?.status && response?.applied) {
+                    // New application submitted successfully
+                    toast({
+                        title: "Application Submitted",
+                        description: "Your application has been submitted successfully!",
+                        variant: "default"
+                    });
+                    router.push(`/candidate/dashboard`);
+                } else if (!response?.status && response?.applied) {
+                    // User has already applied to this job
+                    toast({
+                        title: "Already Applied",
+                        description: "You have already applied to this job.",
+                        variant: "default"
+                    });
+                    router.push(`/candidate/dashboard?job_id=${encodeURIComponent(job.job_id)}`);
+                } else {
+                    // Application failed for other reasons
+                    setApplyError(response?.message || 'Failed to apply for job');
+                }
+            } else {
+                // User is not logged in, store jobId and redirect to login
+                storeJobId(job.job_id);
+                storeRedirectUrl(`/home/careers/${job.job_id}`);
                 toast({
-                    title: "Application Submitted",
-                    description: "Your application has been submitted successfully!",
+                    title: "Login Required",
+                    description: "Please log in to apply for this job.",
                     variant: "default"
                 });
-                // Redirect to profile page to complete the application
-                router.push(`/candidate/dashboard`);
-            } else {
-                setApplyError(response?.message || 'Failed to apply for job');
+                router.push(`/candidate/login?job_id=${encodeURIComponent(job.job_id)}`);
             }
         } catch (err: any) {
-            setApplyError(err?.response?.data?.message || err?.message || 'Failed to apply for job');
+            console.log('Error caught:', err);
+            console.log('Error response data:', err?.response?.data);
+
+            // Check if this is an "already applied" error (400 with specific response)
+            const responseData = err?.response?.data;
+            if (responseData && responseData.status === false && responseData.applied === true) {
+                // This is an "already applied" case, handle it properly
+                console.log('Already applied case detected in catch block:', responseData);
+                toast({
+                    title: "Already Applied",
+                    description: "You have already applied to this job.",
+                    variant: "default"
+                });
+                window.location.href = `/candidate/dashboard?job_id=${encodeURIComponent(job.job_id)}`;
+            } else {
+                // This is a genuine error
+                const errorMessage = responseData?.message || err?.message || 'Failed to apply for job';
+                setApplyError(errorMessage);
+                toast({
+                    title: "Error",
+                    description: errorMessage,
+                    variant: "destructive"
+                });
+            }
         } finally {
             setApplying(false);
         }

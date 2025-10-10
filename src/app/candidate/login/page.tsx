@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { candidateLogin, isCandidateAccessTokenValid } from "@/lib/candidateService";
-import { useRouter } from "next/navigation";
-import { getRedirectUrl, clearRedirectUrl } from "@/lib/utils";
+import { candidateLogin, isCandidateAccessTokenValid, applyJob } from "@/lib/candidateService";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getRedirectUrl, clearRedirectUrl, getJobIdFromUrl, getStoredJobId, clearStoredJobId } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import ScooterHeader from "@/components/ScooterHeader";
 import BottomQuote from "@/components/candidate/BottomQuote";
@@ -30,6 +31,12 @@ export default function CandidateLoginPage() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Get jobId from URL or localStorage for use in signup link
+    const jobIdFromUrl = getJobIdFromUrl(searchParams);
+    const jobIdFromStorage = getStoredJobId();
+    const jobId = jobIdFromUrl || jobIdFromStorage;
 
     const form = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -65,13 +72,79 @@ export default function CandidateLoginPage() {
                 password: data.password
             });
             if (res?.status) {
-                // Check if there's a redirect URL stored
-                const redirectUrl = getRedirectUrl();
-                if (redirectUrl) {
-                    clearRedirectUrl();
-                    router.push(redirectUrl);
+                // Use the jobId from component scope
+
+                if (jobId) {
+                    try {
+                        // Apply for the job
+                        const applyRes = await applyJob({ job_id: jobId });
+                        if (applyRes?.status && applyRes?.applied) {
+                            // New application submitted successfully - clear jobId
+                            if (jobIdFromStorage) {
+                                clearStoredJobId();
+                            }
+                            toast({
+                                title: "Application Submitted",
+                                description: "Your application has been submitted successfully!",
+                                variant: "default"
+                            });
+                            router.push("/candidate/dashboard");
+                        } else if (!applyRes?.status && applyRes?.applied) {
+                            // User has already applied to this job - clear jobId
+                            if (jobIdFromStorage) {
+                                clearStoredJobId();
+                            }
+                            toast({
+                                title: "Already Applied",
+                                description: "You have already applied to this job.",
+                                variant: "default"
+                            });
+                            router.push(`/candidate/dashboard?job_id=${encodeURIComponent(jobId)}`);
+                        } else {
+                            // Application failed for other reasons - don't clear jobId
+                            toast({
+                                title: "Application Failed",
+                                description: applyRes?.message || "Failed to apply for job",
+                                variant: "destructive"
+                            });
+                            router.push("/candidate/dashboard");
+                        }
+                    } catch (applyError: any) {
+                        console.log('Apply error caught:', applyError);
+                        const responseData = applyError?.response?.data;
+
+                        // Check if this is an "already applied" error (400 with specific response)
+                        if (responseData && responseData.status === false && responseData.applied === true) {
+                            // This is an "already applied" case, handle it properly
+                            if (jobIdFromStorage) {
+                                clearStoredJobId();
+                            }
+                            toast({
+                                title: "Already Applied",
+                                description: "You have already applied to this job.",
+                                variant: "default"
+                            });
+                            router.push(`/candidate/dashboard?job_id=${encodeURIComponent(jobId)}`);
+                        } else {
+                            // This is a genuine error
+                            const applyMsg = responseData?.message || applyError?.message || 'Failed to apply for job';
+                            toast({
+                                title: "Application Failed",
+                                description: applyMsg,
+                                variant: "destructive"
+                            });
+                            router.push("/candidate/dashboard");
+                        }
+                    }
                 } else {
-                    router.push("/candidate/dashboard");
+                    // No jobId, check for redirect URL or go to dashboard
+                    const redirectUrl = getRedirectUrl();
+                    if (redirectUrl) {
+                        clearRedirectUrl();
+                        router.push(redirectUrl);
+                    } else {
+                        router.push("/candidate/dashboard");
+                    }
                 }
                 return;
             }
@@ -181,7 +254,7 @@ export default function CandidateLoginPage() {
 
                         <div className="flex flex-col items-center justify-center gap-3 space-y-3">
                             <p className="font-bold">New to Scooter?</p>
-                            <Link href="/candidate/signup">
+                            <Link href={`/candidate/signup${jobId ? `?job_id=${encodeURIComponent(jobId)}` : ''}`}>
                                 <Button variant="primary">Sign Up with Email Address</Button>
                             </Link>
                             <Button variant="primary">Sign Up with Google Account</Button>

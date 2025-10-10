@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { candidateSignup, parseCandidateResume, isCandidateAccessTokenValid } from "@/lib/candidateService";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getJobIdFromUrl, getStoredJobId } from "@/lib/utils";
 import { FaEye, FaEyeSlash, FaUpload, FaGoogleDrive } from "react-icons/fa";
 import ScooterHeader from "@/components/ScooterHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,7 +49,9 @@ export default function CandidateSignupPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const jobId = searchParams?.get('job_id') || '';
+    const jobIdFromUrl = getJobIdFromUrl(searchParams);
+    const jobIdFromStorage = getStoredJobId();
+    const jobId = jobIdFromUrl || jobIdFromStorage || '';
 
     const { setParsingData } = useCandidateProfileStore();
 
@@ -182,6 +185,7 @@ export default function CandidateSignupPage() {
                 if (parseRes?.data) {
                     setParsingData(parseRes.data);
                     setTimeout(() => {
+                        // Don't clear jobId here - it will be used in profile page
                         const next = jobId ? `/candidate/profile?job_id=${encodeURIComponent(jobId)}` : "/candidate/profile";
                         router.push(next);
                     }, 1500);

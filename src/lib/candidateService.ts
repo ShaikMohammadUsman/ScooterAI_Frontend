@@ -221,6 +221,7 @@ export interface ApplyJobResponse {
     status: boolean;
     message: string;
     application_id?: string;
+    applied?: boolean;
 }
 
 export interface AudioInterviewRequest {
