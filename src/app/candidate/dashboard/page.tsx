@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getCandidateData, getCandidateDashboardData, CandidateProfileData, ApplicationHistory } from "@/lib/candidateService";
 import { MdRefresh } from "react-icons/md";
 import {
@@ -30,11 +30,13 @@ import { FaWhatsapp } from "react-icons/fa";
 
 export default function CandidateDashboardPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [candidateData, setCandidateData] = useState<CandidateProfileData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedApplication, setSelectedApplication] = useState<any>(null);
     const [currentStageAccordionOpen, setCurrentStageAccordionOpen] = useState<string | undefined>(undefined);
+    const [rolesAppliedAccordionOpen, setRolesAppliedAccordionOpen] = useState<string | undefined>(undefined);
 
     const fetchDashboardData = async () => {
         try {
@@ -62,6 +64,32 @@ export default function CandidateDashboardPage() {
     useEffect(() => {
         fetchDashboardData();
     }, []);
+
+    // Handle job_id query parameter to auto-open accordions and select application
+    useEffect(() => {
+        const jobId = searchParams?.get('job_id');
+        if (jobId && candidateData?.application_history) {
+            // console.log('Job ID from query:', jobId);
+            // console.log('Available applications:', candidateData.application_history);
+
+            // Find the application with matching job_id
+            const matchingApplication = candidateData.application_history.find((app: any) =>
+                app.job_id === jobId
+            );
+
+            if (matchingApplication) {
+                // console.log('Found matching application:', matchingApplication);
+                // Open the roles applied accordion
+                setRolesAppliedAccordionOpen('roles-applied');
+                // Select the matching application
+                setSelectedApplication(matchingApplication);
+                // Open the current stage accordion
+                setCurrentStageAccordionOpen('current-stage');
+            } else {
+                console.log('No matching application found for job_id:', jobId);
+            }
+        }
+    }, [searchParams, candidateData]);
 
     // Get applications from candidate data
     const applications = candidateData?.application_history || [];
@@ -438,7 +466,13 @@ export default function CandidateDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Left Column - Roles Applied For */}
                 <Card className="shadow-none border-0 bg-bg-main">
-                    <Accordion type="single" collapsible className="w-full">
+                    <Accordion
+                        type="single"
+                        collapsible
+                        className="w-full"
+                        value={rolesAppliedAccordionOpen}
+                        onValueChange={setRolesAppliedAccordionOpen}
+                    >
                         <AccordionItem value="roles-applied">
                             <AccordionTrigger className="px-6 py-4 hover:no-underline data-[state=closed]:bg-element-3 data-[state=open]:bg-gradient-to-r data-[state=open]:from-grad-1 data-[state=open]:to-grad-2 data-[state=open]:text-white data-[state=closed]:text-text-primary">
                                 <div className="flex items-center gap-3">
@@ -467,34 +501,43 @@ export default function CandidateDashboardPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {applications.map((application: any) => (
-                                            <div
-                                                key={application.application_id}
-                                                className="flex items-start gap-4 p-4 rounded-lg bg-bg-secondary-5 cursor-pointer hover:shadow-md transition-shadow"
-                                                onClick={() => handleApplicationSelect(application)}
-                                            >
-                                                <div className="w-8 h-8 bg-gray-300 rounded flex items-center justify-center flex-shrink-0">
-                                                    <BriefcaseBusiness className="h-4 w-4 text-gray-600" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h4 className="font-semibold text-lg text-text-primary">
-                                                        {application.job_role_name}
-                                                    </h4>
-                                                    <p className="text-sm mb-2 text-text-primary">
-                                                        Application ID: {application.application_id}
-                                                    </p>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-medium text-text-primary">Current Status:</span>
-                                                        <Badge
-                                                            className="px-3 py-1 text-xs font-medium border-0"
-                                                            style={getStatusColor(application)}
-                                                        >
-                                                            {getStatusText(application)}
-                                                        </Badge>
+                                        {applications.map((application: any) => {
+                                            const isSelected = selectedApplication?.application_id === application.application_id;
+                                            const jobId = searchParams?.get('job_id');
+                                            const isHighlighted = jobId && application.job_id === jobId;
+
+                                            return (
+                                                <div
+                                                    key={application.application_id}
+                                                    className={`flex items-start gap-4 p-4 rounded-lg cursor-pointer hover:shadow-md transition-shadow ${isHighlighted
+                                                        ? 'bg-gradient-to-r from-grad-1 to-grad-2 text-white'
+                                                        : 'bg-bg-secondary-5'
+                                                        }`}
+                                                    onClick={() => handleApplicationSelect(application)}
+                                                >
+                                                    <div className="w-8 h-8 bg-gray-300 rounded flex items-center justify-center flex-shrink-0">
+                                                        <BriefcaseBusiness className="h-4 w-4 text-gray-600" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h4 className="font-semibold text-lg text-text-primary">
+                                                            {application.job_role_name}
+                                                        </h4>
+                                                        <p className="text-sm mb-2 text-text-primary">
+                                                            Application ID: {application.application_id}
+                                                        </p>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm font-medium text-text-primary">Current Status:</span>
+                                                            <Badge
+                                                                className="px-3 py-1 text-xs font-medium border-0"
+                                                                style={getStatusColor(application)}
+                                                            >
+                                                                {getStatusText(application)}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </AccordionContent>
