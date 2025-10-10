@@ -1189,7 +1189,7 @@ export default function CandidatePortfolioOverlay({
                                     <CardHeader>
                                         <div className="flex items-center justify-between">
                                             <CardTitle>Video Interview Evaluation</CardTitle>
-                                            {(selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
+                                            {(selectedCandidate?.interview_status?.processed_video_url || selectedCandidate?.interview_status?.video_interview_url) && (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -1207,11 +1207,21 @@ export default function CandidatePortfolioOverlay({
                                     </CardHeader>
                                     <CardContent>
                                         {/* Video Player */}
-                                        {showVideoPlayer && (selectedCandidate?.interview_status?.processed_video_interview_url || selectedCandidate?.interview_status?.video_interview_url) && (
-                                            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-                                                <VideoPlayerWithTimeline
-                                                    videoUrl={(selectedCandidate.interview_status.processed_video_interview_url || selectedCandidate.interview_status.video_interview_url) as string}
-                                                />
+                                        {showVideoPlayer && (selectedCandidate?.interview_status?.processed_video_url || selectedCandidate?.interview_status?.video_interview_url) && (
+                                            <div className="mb-6 max-w-3xl mx-auto bg-gray-50 p-4 rounded-lg">
+                                                <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                                                    <VideoPlayerWithTimeline
+                                                        videoUrl={(selectedCandidate.interview_status.processed_video_url || selectedCandidate.interview_status.video_interview_url) as string}
+                                                        fallbackUrl={selectedCandidate.interview_status.processed_video_url ? selectedCandidate.interview_status.video_interview_url : null}
+                                                        poster="/assets/images/scooterLogo.png"
+                                                        autoPlay={true}
+                                                        controls={true}
+                                                        preload="metadata"
+                                                        className="w-full h-full rounded-lg shadow-lg"
+                                                        interviewEvents={selectedCandidate?.video_proctoring_details?.interview_events || []}
+                                                        questionEvaluations={selectedCandidate?.interview_details?.qa_evaluations?.question_evaluations || []}
+                                                    />
+                                                </div>
                                             </div>
                                         )}
 

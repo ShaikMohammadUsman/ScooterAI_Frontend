@@ -236,7 +236,7 @@ export interface ManagerCandidate {
         audio_interview_attended: boolean;
         video_email_sent: boolean;
         video_interview_url: string | null;
-        processed_video_interview_url: string | null;
+        processed_video_url: string | null;
         audio_interview_url: string;
         resume_url_from_user_account: string;
     };
