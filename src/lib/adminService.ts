@@ -564,7 +564,7 @@ export const getJobCandidates = async (
         if (all_candidates !== undefined) params.append('all_candidates', all_candidates.toString());
 
         console.log(params.toString());
-        const response = await axios.get(`${BASE_URL}/job-candidates/${jobId}?${params.toString()}`);
+        const response = await axios.get(`${BASE_URL}/old-job-candidates/${jobId}?${params.toString()}`);
         return response.data;
     } catch (error) {
         console.error('Error fetching job candidates:', error);
