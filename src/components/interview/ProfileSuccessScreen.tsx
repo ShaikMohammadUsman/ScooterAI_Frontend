@@ -57,7 +57,7 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                             <div className="text-left">
                                 <h4 className="font-medium text-yellow-800 mb-1">💡 Pro Tip: Use Chrome on Desktop/Laptop</h4>
                                 <p className="text-sm text-yellow-700">
-                                    For the best interview experience and to avoid technical issues, we recommend using Google Chrome on a desktop or laptop computer. This ensures optimal audio recording and speech recognition functionality.
+                                    For the best interaction experience and to avoid technical issues, we recommend using Google Chrome on a desktop or laptop computer. This ensures optimal audio recording and speech recognition functionality.
                                 </p>
                             </div>
                         </div>
@@ -70,7 +70,7 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                             <div className="text-left">
                                 <h4 className="font-medium text-blue-800 mb-1">Need to take a break?</h4>
                                 <p className="text-sm text-blue-700">
-                                    You can resume this audio interview later by refreshing this page and using the same email address. Your progress will be saved automatically.
+                                    You can resume this audio interaction later by refreshing this page and using the same email address. Your progress will be saved automatically.
                                 </p>
                             </div>
                         </div>
@@ -83,14 +83,14 @@ function ProfileSuccessScreen({ handleStartInterview }: { handleStartInterview: 
                         onClick={handleStartInterview}
                         className="h-14 px-12 text-xl font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 bg-primary hover:bg-primary/90 text-white"
                     >
-                        Start Interview
+                        Start Interaction
                     </Button>
 
                     <Button
                         onClick={() => router.push('/interview/practice')}
                         className="h-14 px-12 text-xl font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 bg-white text-primary border-2 border-primary hover:bg-primary/5"
                     >
-                        Practice First
+                        Practice Interaction
                     </Button>
                 </div>
             </div>

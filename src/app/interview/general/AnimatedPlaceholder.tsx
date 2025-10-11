@@ -232,7 +232,7 @@ export function AnimatedPlaceholder({ onStart, title, description, buttonText, s
                             className="text-blue-600 hover:text-blue-800 cursor-pointer underline"
                             onClick={handleScheduleClick}
                         >
-                            Click here to schedule your assessment for later
+                            Click here to schedule your interaction for later
                         </span>
                     </p>
                 </motion.div>

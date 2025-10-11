@@ -325,7 +325,7 @@ function CommunicationInterview() {
                 }
             }
 
-            // All permissions granted, proceed with interview
+            // All permissions granted, proceed with interaction
             setShowPermissionChecker(false);
 
             // Activate proctoring when camera check starts
@@ -340,7 +340,7 @@ function CommunicationInterview() {
 
             // Start with a test question for camera check
             // const testQuestion = `Hi, how are you? Please click 'Start Interview' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in the role${jobTitle ? ` of ${jobTitle}` : ""}${jobTitle && jobDescription ? ` at ${jobDescription}` : ""}.`;
-            const testQuestion = `Hi, how are you? Please click 'Start Assessment' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in your role${jobTitle ? ` of ${jobTitle}` : ""}.`;
+            const testQuestion = `Hi, how are you? Please click 'Start Interaction' to begin. I'll be asking you some questions that will reflect real-life scenarios you may encounter in your role${jobTitle ? ` of ${jobTitle}` : ""}.`;
             setCurrentQuestion(testQuestion);
             setMessages([{
                 own: false,
@@ -370,8 +370,8 @@ function CommunicationInterview() {
             setStarted(true);
             setMicEnabled(true);
         } catch (err: any) {
-            console.error("Error starting assessment:", err);
-            setError(err.message || "Failed to start assessment");
+            console.error("Error starting interaction:", err);
+            setError(err.message || "Failed to start interaction");
             // Deactivate proctoring on error
             setProctoringActive(false);
         } finally {
@@ -567,7 +567,7 @@ function CommunicationInterview() {
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 setCameraAccessDenied(true);
                 setShowCameraRetry(true);
-                setError("Camera access denied. Please allow camera and microphone access to continue with the assessment.");
+                setError("Camera access denied. Please allow camera and microphone access to continue with the interaction.");
             } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
                 setError("No camera or microphone found. Please connect a camera and microphone to continue.");
             } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
@@ -866,10 +866,10 @@ function CommunicationInterview() {
 
             // Check if the API response indicates an error
             if ('status' in res && !res.status) {
-                setError(res.message || "Failed to start video assessment");
+                setError(res.message || "Failed to start video interaction");
                 toast({
-                    title: "Assessment Error",
-                    description: res.message || "You are not invited for this video assessment",
+                    title: "Interaction Error",
+                    description: res.message || "You are not invited for this video interaction",
                     variant: "destructive",
                 });
                 setLoading(false);
@@ -887,8 +887,8 @@ function CommunicationInterview() {
 
             // Show success toast
             toast({
-                title: "Assessment Started",
-                description: "Video assessment has been successfully started",
+                title: "Interaction Started",
+                description: "Video interaction has been successfully started",
                 variant: "success",
             });
 
@@ -943,8 +943,8 @@ function CommunicationInterview() {
             setCurrentAnswer(""); // Reset current answer for new question
             setIsRetaking(false); // Reset retaking state
         } catch (err: any) {
-            console.error("Error starting actual assessment:", err);
-            setError(err.message || "Failed to start assessment");
+            console.error("Error starting actual interaction:", err);
+            setError(err.message || "Failed to start interaction");
             cleanupRecording();
             // Deactivate proctoring on error
             setProctoringActive(false);
@@ -1172,7 +1172,7 @@ function CommunicationInterview() {
                     }
                 } catch (err: any) {
                     console.error("Error in final submission process:", err);
-                    setError(err.message || "Failed to complete assessment submission");
+                    setError(err.message || "Failed to complete interaction submission");
                     setShowSubmissionModal(false);
                     setIsSubmittingFinal(false);
                     setIsUploadingVideo(false);
@@ -1185,14 +1185,14 @@ function CommunicationInterview() {
                 // Add completion message to chat
                 setMessages((prev) => [...prev, {
                     own: false,
-                    text: (res as any).message || "Thank you for completing the assessment. Your responses have been recorded.",
+                    text: (res as any).message || "Thank you for completing the video interaction. Your responses have been recorded.",
                     icon: <FaUserTie className="text-primary w-6 h-6" />
                 }]);
 
                 cleanupRecording();
                 setShowCompletionScreen(true);
 
-                // Deactivate proctoring when interview completes normally
+                // Deactivate proctoring when interaction completes normally
                 setProctoringActive(false);
                 return;
             }
@@ -1302,7 +1302,7 @@ function CommunicationInterview() {
             setShowSubmissionModal(false);
             setIsSubmittingFinal(false);
             setIsUploadingVideo(false);
-            setError("Assessment ending process is taking longer than expected. Please try again or contact support.");
+            setError("Interaction ending process is taking longer than expected. Please try again or contact support.");
             cleanupRecording();
             setProctoringActive(false);
         }, 900000); // 15 minutes timeout
@@ -1312,7 +1312,7 @@ function CommunicationInterview() {
             if (!videoStreamRef.current) {
                 const hasAccess = await checkCameraAccess();
                 if (!hasAccess) {
-                    setError("Camera access required to end assessment. Please allow camera access and try again.");
+                    setError("Camera access required to end interaction. Please allow camera access and try again.");
                     return;
                 }
             }
@@ -1341,8 +1341,8 @@ function CommunicationInterview() {
                     clearTimeout(earlyEndingTimeout);
                 }
             } catch (err: any) {
-                console.error("Error in early assessment ending process:", err);
-                setError(err.message || "Failed to complete early assessment ending");
+                console.error("Error in early interaction ending process:", err);
+                setError(err.message || "Failed to complete early interaction ending");
                 setShowSubmissionModal(false);
                 setIsSubmittingFinal(false);
                 setIsUploadingVideo(false);
@@ -1354,11 +1354,11 @@ function CommunicationInterview() {
 
             setShowCompletionScreen(true);
 
-            // Deactivate proctoring when assessment ends
+            // Deactivate proctoring when interaction ends
             setProctoringActive(false);
         } catch (err: any) {
-            console.error("Error ending assessment:", err);
-            setError(err.message || "Failed to end assessment");
+            console.error("Error ending interaction:", err);
+            setError(err.message || "Failed to end interaction");
             // Deactivate proctoring on error
             setProctoringActive(false);
         } finally {
@@ -1564,13 +1564,13 @@ function CommunicationInterview() {
                                 Access Denied
                             </CardTitle>
                             <p className="text-gray-300">
-                                You are not authorized to access this assessment
+                                You are not authorized to access this interaction
                             </p>
                         </CardHeader>
                         <CardContent className="text-center">
                             <div className="space-y-4">
                                 <p className="text-sm text-gray-400">
-                                    This assessment requires a valid verification code. Please check your email for the correct assessment link or contact support if you believe this is an error.
+                                    This interaction requires a valid verification code. Please check your email for the correct interaction link or contact support if you believe this is an error.
                                 </p>
                                 <Button
                                     onClick={() => router.push('/')}
@@ -1609,7 +1609,7 @@ function CommunicationInterview() {
                                         Permission Check Required
                                     </h1>
                                     <p className={`text-lg ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        We need to verify all required permissions before starting the assessment.
+                                        We need to verify all required permissions before starting the interaction.
                                     </p>
                                 </div>
 
@@ -1765,7 +1765,7 @@ function CommunicationInterview() {
                                             <div className="flex items-center gap-2">
                                                 <FaCheck className="text-green-600 dark:text-green-400" />
                                                 <p className="text-green-600 dark:text-green-400 font-semibold">
-                                                    All permissions granted! You can now proceed to the assessment.
+                                                    All permissions granted! You can now proceed to the interaction.
                                                 </p>
                                             </div>
                                         </div>
@@ -1824,7 +1824,7 @@ function CommunicationInterview() {
                                             // size="sm"
                                             className="w-full sm:w-auto"
                                         >
-                                            Continue to Assessment
+                                            Continue to Interaction
                                         </Button>
                                     ) : (
                                         <Button
@@ -1950,10 +1950,10 @@ function CommunicationInterview() {
                                                 {isProcessingResponse ? (
                                                     <div className="flex items-center gap-2">
                                                         <LoadingDots bg="slate-300" />
-                                                        <span>Starting Assessment...</span>
+                                                        <span>Starting Interaction...</span>
                                                     </div>
                                                 ) : (
-                                                    "Start Assessment"
+                                                    "Start Interaction"
                                                 )}
                                             </Button>
                                             <Button
@@ -2050,11 +2050,11 @@ function CommunicationInterview() {
                             >
                                 <CardTitle className={`text-3xl font-bold mb-4 transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'
                                     }`}>
-                                    Assessment Completed Successfully!
+                                    Interaction Completed Successfully!
                                 </CardTitle>
                                 <p className={`text-lg leading-relaxed transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'
                                     }`}>
-                                    Thank you for completing your communication skills assessment. Your responses have been recorded and are being evaluated.
+                                    Thank you for completing your communication skills interaction. Your responses have been recorded and are being evaluated.
                                 </p>
                             </motion.div>
                         </CardHeader>
@@ -2087,7 +2087,7 @@ function CommunicationInterview() {
                                                 </p>
                                                 <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-blue-200' : 'text-blue-700'
                                                     }`}>
-                                                    Your assessment responses have been processed and recorded.
+                                                    Your interaction responses have been processed and recorded.
                                                 </p>
                                             </div>
                                         </div>
@@ -2147,11 +2147,11 @@ function CommunicationInterview() {
                                         Go to Home
                                     </Button>
                                     <Button
-                                        onClick={() => router.push('/home/careers')}
+                                        onClick={() => router.push('/candidate/dashboard')}
                                         variant="secondary"
                                         className={`w-full sm:w-auto h-12 text-base font-semibold transition-all duration-500`}
                                     >
-                                        Explore Jobs
+                                        Go to Dashboard
                                     </Button>
                                 </div>
                             </motion.div>
@@ -2184,14 +2184,14 @@ function CommunicationInterview() {
                             </CardTitle>
                             <p className={`transition-colors duration-1000 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'
                                 }`}>
-                                Please upload your latest resume to continue with the assessment
+                                Please upload your latest resume to continue with the interaction
                             </p>
                         </CardHeader>
                         <CardContent className="text-center">
                             <div className="space-y-4">
                                 <p className={`text-sm transition-colors duration-1000 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'
                                     }`}>
-                                    Your resume information needs to be updated to ensure we have the most current details for your assessment.
+                                    Your resume information needs to be updated to ensure we have the most current details for your interaction.
                                 </p>
                                 <Button
                                     onClick={() => setShowResumeUploadModal(true)}
@@ -2261,10 +2261,10 @@ function CommunicationInterview() {
                             </div>
                         </div>
                         <AlertDialogTitle className="text-xl font-semibold text-center">
-                            Leave Assessment?
+                            Leave Interaction?
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-center">
-                            Are you sure you want to leave? Your assessment responses will be submitted.
+                            Are you sure you want to leave? Your interaction responses will be submitted.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex gap-3 justify-center">
@@ -2278,7 +2278,7 @@ function CommunicationInterview() {
                             onClick={handleLeaveInterview}
                             className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white"
                         >
-                            Leave Interview
+                            Leave Interaction
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

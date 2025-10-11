@@ -29,12 +29,12 @@ export function SubmissionModal({
                     <DialogTitle className="text-2xl font-bold text-center">
                         {submissionStep === 'submitting' && "Submitting Your Response"}
                         {submissionStep === 'processing' && "Processing Your Response"}
-                        {submissionStep === 'uploading' && "Uploading Interview Video"}
+                        {submissionStep === 'uploading' && "Uploading Interaction Video"}
                     </DialogTitle>
                     <DialogDescription className="text-center">
                         {submissionStep === 'submitting' && "We're submitting your responses, please wait..."}
                         {submissionStep === 'processing' && "We're processing your final response..."}
-                        {submissionStep === 'uploading' && "Please wait while we upload your interview video..."}
+                        {submissionStep === 'uploading' && "Please wait while we upload your interaction video..."}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col items-center justify-center py-6">
@@ -117,7 +117,7 @@ export function SubmissionModal({
                         <p className="text-lg font-medium text-gray-700">
                             {submissionStep === 'submitting' && "Submitting your final answer..."}
                             {submissionStep === 'processing' && "Please wait while we process your response..."}
-                            {submissionStep === 'uploading' && "Uploading your interview video..."}
+                            {submissionStep === 'uploading' && "Uploading your interaction video..."}
                         </p>
                         {submissionStep === 'submitting' && (
                             <div className="mt-4 space-y-2">

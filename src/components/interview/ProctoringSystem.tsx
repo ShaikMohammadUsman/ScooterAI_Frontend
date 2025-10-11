@@ -251,8 +251,8 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
             const handleBeforeUnload = (e: BeforeUnloadEvent) => {
                 addViolation("page_unload", "Page unload attempt detected", "critical", "User attempted to close or navigate away from the page");
                 e.preventDefault();
-                e.returnValue = "Interview in progress. Please do not close this window.";
-                return "Interview in progress. Please do not close this window.";
+                e.returnValue = "Interaction in progress. Please do not close this window.";
+                return "Interaction in progress. Please do not close this window.";
             };
 
             // Monitor page visibility API
@@ -928,7 +928,7 @@ const ProctoringSystem = forwardRef<ProctoringSystemRef, ProctoringSystemProps>(
                             </CardHeader>
                             <CardContent className="p-6">
                                 <p className="text-gray-700 mb-4">
-                                    For security purposes, the interview must be conducted in fullscreen mode.
+                                    For security purposes, the video interaction must be conducted in fullscreen mode.
                                 </p>
                                 <div className="flex justify-end gap-2">
                                     <Button

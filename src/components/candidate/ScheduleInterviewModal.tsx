@@ -52,7 +52,7 @@ function SuccessModal({ isOpen, onClose }: SuccessModalProps) {
                             Your interaction has been scheduled.
                         </h3>
                         <p className="text-sm sm:text-base text-gray-600 mb-2">
-                            We'll send you a whatsapp link to join the assessment.
+                            We'll send you a whatsapp link to join the interaction.
                         </p>
                         <p className="text-sm sm:text-base text-gray-600">
                             Please note the link will only be active for the 36 hrs.
@@ -131,15 +131,15 @@ export function ScheduleInterviewModal({ isOpen, onClose, applicationId }: Sched
             } else {
                 toast({
                     title: "Error",
-                    description: response.message || "Failed to schedule assessment",
+                    description: response.message || "Failed to schedule interaction",
                     variant: "destructive",
                 });
             }
         } catch (error: any) {
-            console.error("Error scheduling assessment:", error);
+            console.error("Error scheduling interaction:", error);
             toast({
                 title: "Error",
-                description: error?.response?.data?.message || error?.message || "Failed to schedule assessment",
+                description: error?.response?.data?.message || error?.message || "Failed to schedule interaction",
                 variant: "destructive",
             });
         } finally {

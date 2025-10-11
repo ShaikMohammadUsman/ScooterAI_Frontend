@@ -77,7 +77,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isOpen, onToggle, messages }) => 
 
                         {messages.length === 0 && (
                             <div className="text-center text-gray-400 py-8">
-                                <p className="text-sm">No messages yet. Start the interview to begin the conversation.</p>
+                                <p className="text-sm">No messages yet. Start the interaction to begin the conversation.</p>
                             </div>
                         )}
                     </div>

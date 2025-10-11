@@ -217,7 +217,7 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>{isLeaving ? "Saving progress..." : "Leave interview"}</p>
+                            <p>{isLeaving ? "Saving progress..." : "Leave interaction"}</p>
                         </TooltipContent>
                     </Tooltip> */}
                 </div>

@@ -30,14 +30,14 @@ export function GeneralSubmissionModal({
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold text-center">
                         {submissionStep === 'processing' && "Processing Your Response"}
-                        {submissionStep === 'uploading' && "Uploading Interview Audio"}
+                        {submissionStep === 'uploading' && "Uploading Interaction Audio"}
                         {submissionStep === 'evaluating' && "Evaluating Communication Skills"}
                     </DialogTitle>
                     <DialogDescription className="text-center">
                         {evaluationStatus || (
                             submissionStep === 'processing' && "We're processing your final response..."
                         )}
-                        {!evaluationStatus && submissionStep === 'uploading' && "Please wait while we upload your interview audio..."}
+                        {!evaluationStatus && submissionStep === 'uploading' && "Please wait while we upload your interaction audio..."}
                         {!evaluationStatus && submissionStep === 'evaluating' && "Analyzing your communication skills..."}
                     </DialogDescription>
                 </DialogHeader>
@@ -89,7 +89,7 @@ export function GeneralSubmissionModal({
                             {evaluationStatus || (
                                 submissionStep === 'processing' && "Please wait while we process your response..."
                             )}
-                            {!evaluationStatus && submissionStep === 'uploading' && "Uploading your interview audio..."}
+                            {!evaluationStatus && submissionStep === 'uploading' && "Uploading your interaction audio..."}
                             {!evaluationStatus && submissionStep === 'evaluating' && "Evaluating your communication skills..."}
                         </p>
                         {submissionStep === 'uploading' && (

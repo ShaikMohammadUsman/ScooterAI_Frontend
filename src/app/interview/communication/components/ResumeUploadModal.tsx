@@ -78,7 +78,7 @@ export function ResumeUploadModal({
 
             toast({
                 title: "Resume uploaded successfully!",
-                description: "Your resume has been updated and you can now proceed with the interview.",
+                description: "Your resume has been updated and you can now proceed with the video interaction.",
             });
 
             onResumeUploaded();
@@ -127,7 +127,7 @@ export function ResumeUploadModal({
                         Resume Update Required
                     </DialogTitle>
                     <DialogDescription className="text-center">
-                        Please upload your latest resume to continue with the interview
+                        Please upload your latest resume to continue with the video interaction
                     </DialogDescription>
                 </DialogHeader>
 
@@ -238,7 +238,7 @@ export function ResumeUploadModal({
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <h4 className="font-medium text-blue-900 mb-2">Why is this required?</h4>
                         <p className="text-sm text-blue-700">
-                            Your resume information needs to be updated to ensure we have the most current details for your interview evaluation.
+                            Your resume information needs to be updated to ensure we have the most current details for your video interaction's evaluation.
                         </p>
                     </div>
                 </div>

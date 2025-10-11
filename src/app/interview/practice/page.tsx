@@ -101,8 +101,8 @@ export default function PracticeInterviewPage() {
             setStarted(true);
             await askQuestion(0);
         } catch (err: any) {
-            console.error("Error starting practice interview:", err);
-            setError(err.message || "Failed to start practice interview");
+            console.error("Error starting practice interaction:", err);
+            setError(err.message || "Failed to start practice interaction");
         } finally {
             setLoading(false);
         }
@@ -543,7 +543,7 @@ export default function PracticeInterviewPage() {
                                     <AnimatedPlaceholder
                                         onStart={handleStart}
                                         title="Ready to Practice?"
-                                        description="Click the button below to start your practice interview session"
+                                        description="Click the button below to start your practice interaction session"
                                         buttonText="Start Practice"
                                     />
                                 </div>

@@ -269,10 +269,10 @@ export default function VoiceInterviewPage() {
             });
 
             if (!res.status) {
-                setError(res.message || "Failed to start interview");
+                setError(res.message || "Failed to start interaction");
                 toast({
                     title: "Alert",
-                    description: res.message || "Failed to start interview",
+                    description: res.message || "Failed to start interaction",
                     variant: "destructive",
                 });
                 return;
@@ -291,7 +291,7 @@ export default function VoiceInterviewPage() {
             // Start continuous recording for the entire interview
             try {
                 await audioRecorderRef.current.startContinuousRecording();
-                console.log("Continuous recording started for entire interview");
+                console.log("Continuous recording started for entire interaction");
             } catch (error) {
                 console.error("Failed to start continuous recording:", error);
                 // Continue without continuous recording as fallback
@@ -333,8 +333,8 @@ export default function VoiceInterviewPage() {
             setStarted(true);
             await askQuestion(0, language as SupportedLanguageCode, res.question || '');
         } catch (err: any) {
-            console.error("Error starting interview:", err);
-            setError(err.message || "Failed to start interview");
+            console.error("Error starting interaction:", err);
+            setError(err.message || "Failed to start interaction");
             // Deactivate proctoring on error
             setProctoringActive(false);
         } finally {
@@ -656,7 +656,7 @@ export default function VoiceInterviewPage() {
             // Stop continuous recording after all uploads are complete
             if (audioRecorderRef.current) {
                 try {
-                    console.log("Stopping continuous recording after leave interview uploads completed");
+                    console.log("Stopping continuous recording after leave interaction uploads completed");
                     audioRecorderRef.current.stopContinuousRecording();
                 } catch (error) {
                     console.warn("Error stopping continuous recording on leave:", error);
@@ -739,13 +739,13 @@ export default function VoiceInterviewPage() {
             // }
 
             // Skip evaluation for audio round - just complete the interview
-            setEvaluationStatus('Audio interview completed successfully!');
+            setEvaluationStatus('Audio interaction completed successfully!');
             await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
 
             setShowResults(true);
             setProctoringActive(false);
         } catch (err: any) {
-            setError(err.message || "Failed to complete interview");
+            setError(err.message || "Failed to complete interaction");
             setEvaluationStatus('An error occurred during submission.');
             setProctoringActive(false);
         } finally {
@@ -988,10 +988,10 @@ export default function VoiceInterviewPage() {
                 </div>
                 <div className="flex-1">
                     <div className={`font-bold text-lg tracking-tight transition-colors duration-1000 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-                        Voice Skills Assessment
+                        Voice Skills Interaction
                     </div>
                     <div className={`text-xs transition-colors duration-1000 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Audio Assessment Simulation
+                        Audio Interaction Simulation
                     </div>
                 </div>
             </div> */}
@@ -1028,7 +1028,7 @@ export default function VoiceInterviewPage() {
                                                     : 'border-gray-300 dark:border-gray-600'
                                             }`}>
                                             <p className="text-sm">
-                                                {micPermissionStatus === 'granted' && 'Permission granted. You can start the interview.'}
+                                                {micPermissionStatus === 'granted' && 'Permission granted. You can start the interaction.'}
                                                 {micPermissionStatus === 'denied' && 'Permission denied. Please allow microphone access and retry.'}
                                                 {micPermissionStatus === 'unsupported' && 'Microphone is not supported in this browser/device context.'}
                                                 {micPermissionStatus === 'checking' && 'Checking permission...'}
