@@ -371,8 +371,10 @@ candidateApi.interceptors.request.use((config) => {
         }
         // Clear any stored auth data
         clearCandidateAuth();
-        // Redirect to login page
-        if (typeof window !== 'undefined') {
+        // Only redirect to login page if we're not already on login/signup pages
+        if (typeof window !== 'undefined' && 
+            !window.location.pathname.includes('/candidate/login') && 
+            !window.location.pathname.includes('/candidate/signup')) {
             window.location.href = '/candidate/login';
         }
         // Reject the request
@@ -449,8 +451,10 @@ candidateApi.interceptors.response.use(
                 }
                 // clear stored auth on failure
                 clearCandidateAuth();
-                // Redirect to login page when refresh fails
-                if (typeof window !== 'undefined') {
+                // Only redirect to login page if we're not already on login/signup pages
+                if (typeof window !== 'undefined' && 
+                    !window.location.pathname.includes('/candidate/login') && 
+                    !window.location.pathname.includes('/candidate/signup')) {
                     window.location.href = '/candidate/login';
                 }
                 return Promise.reject(refreshErr);
