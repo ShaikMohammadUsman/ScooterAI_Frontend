@@ -40,31 +40,31 @@ export default function ImmediateActionCard({ applications }: ImmediateActionCar
         const actionableJobs: ActionableJob[] = [];
 
         applications.forEach((application) => {
-            // Check for audio interview action needed
+            // Check for audio interaction action needed
             if (!application.audio_interview_status && application.application_status !== 'Rejected') {
                 actionableJobs.push({
                     application_id: application.application_id,
                     job_role_name: application.job_role_name,
                     job_id: application.job_id,
                     actionType: 'audio',
-                    actionText: 'Complete Audio Interview',
+                    actionText: 'Complete Audio Interaction',
                     actionIcon: <Mic className="h-4 w-4" />,
-                    actionButtonText: 'Start Audio Interview',
+                    actionButtonText: 'Start Audio Interaction',
                     actionRoute: `/interview/general?application_id=${application.application_id}`,
                     isUrgent: true
                 });
             }
 
-            // Check for video interview action needed
+            // Check for video interaction action needed
             if (application.video_email_sent && !application.video_interview_start && application.application_status !== 'Rejected') {
                 actionableJobs.push({
                     application_id: application.application_id,
                     job_role_name: application.job_role_name,
                     job_id: application.job_id,
                     actionType: 'video',
-                    actionText: 'Complete Video Interview',
+                    actionText: 'Complete Video Interaction',
                     actionIcon: <Video className="h-4 w-4" />,
-                    actionButtonText: 'Start Video Interview',
+                    actionButtonText: 'Start Video Interaction',
                     actionRoute: `/interview/communication?application_id=${application.application_id}`,
                     isUrgent: true
                 });
@@ -135,12 +135,9 @@ export default function ImmediateActionCard({ applications }: ImmediateActionCar
                                 </div>
                                 <Button
                                     size="sm"
+                                    variant="primary"
                                     onClick={() => handleActionClick(job.actionRoute)}
-                                    className="ml-3 border-0"
-                                    style={{
-                                        backgroundColor: 'var(--color-cta-primary)',
-                                        color: 'var(--color-cta-primary-text)'
-                                    }}
+                                    className="ml-3 rounded-full"
                                 >
                                     <PlayCircle className="h-4 w-4 mr-2" />
                                     {job.actionButtonText}
@@ -152,7 +149,7 @@ export default function ImmediateActionCard({ applications }: ImmediateActionCar
                 <div className="mt-4 text-sm text-text-primary">
                     <p className="flex items-center gap-2">
                         <AlertCircle className="h-4 w-4" style={{ color: 'var(--color-grad-1)' }} />
-                        Complete these interviews to move forward in the application process
+                        Complete these interactions to move forward in the application process
                     </p>
                 </div>
             </CardContent>

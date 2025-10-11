@@ -26,26 +26,26 @@ export default function ActionPopup({ isOpen, onClose, application }: ActionPopu
     if (!application) return null;
 
     const getActionDetails = () => {
-        // Check for audio interview action needed
+        // Check for audio interaction action needed
         if (!application.audio_interview_status && application.application_status !== 'Rejected') {
             return {
                 type: 'audio',
-                title: 'Complete Audio Interview',
-                description: 'You have an audio interview pending for this position. Complete it to move forward.',
+                title: 'Complete Audio Interaction',
+                description: 'You have an audio interaction pending for this position. Complete it to move forward.',
                 icon: <Mic className="h-6 w-6" />,
-                buttonText: 'Start Audio Interview',
+                buttonText: 'Start Audio Interaction',
                 route: `/interview/general?application_id=${application.application_id}`
             };
         }
 
-        // Check for video interview action needed
+        // Check for video interaction action needed
         if (application.video_email_sent && !application.video_interview_start && application.application_status !== 'Rejected') {
             return {
                 type: 'video',
-                title: 'Complete Video Interview',
-                description: 'You have a video interview scheduled for this position. Join now to proceed.',
+                title: 'Complete Video Interaction',
+                description: 'You have a video interaction scheduled for this position. Join now to proceed.',
                 icon: <Video className="h-6 w-6" />,
-                buttonText: 'Start Video Interview',
+                buttonText: 'Start Video Interaction',
                 route: `/interview/communication?application_id=${application.application_id}`
             };
         }
@@ -67,7 +67,7 @@ export default function ActionPopup({ isOpen, onClose, application }: ActionPopu
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="">
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <DialogTitle className="flex items-center gap-2">
@@ -76,14 +76,6 @@ export default function ActionPopup({ isOpen, onClose, application }: ActionPopu
                             </div>
                             <span className="text-text-primary">Action Required</span>
                         </DialogTitle>
-                        {/* <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClose}
-                            className="h-6 w-6 p-0"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button> */}
                     </div>
                 </DialogHeader>
 
@@ -112,7 +104,7 @@ export default function ActionPopup({ isOpen, onClose, application }: ActionPopu
                         <Badge
                             className="px-3 py-1 text-xs font-medium border-0 bg-element-2 text-white"
                         >
-                            {actionDetails.type === 'audio' ? 'Audio Interview' : 'Video Interview'}
+                            {actionDetails.type === 'audio' ? 'Audio Interaction' : 'Video Interaction'}
                         </Badge>
                         <Badge
                             className="px-3 py-1 text-xs font-medium border-0 bg-destructive text-destructive-foreground"
@@ -140,7 +132,7 @@ export default function ActionPopup({ isOpen, onClose, application }: ActionPopu
                     </div>
 
                     <div className="text-xs text-text-primary text-center">
-                        Complete this interview to continue with your application
+                        Complete this interaction to continue with your application
                     </div>
                 </div>
             </DialogContent>

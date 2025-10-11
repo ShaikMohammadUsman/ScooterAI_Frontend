@@ -139,11 +139,11 @@ export default function CandidateDashboardPage() {
 
     const getStatusText = (application: ApplicationHistory) => {
         if (application.video_interview_start) {
-            return "Video Interview Completed";
+            return "Video Interaction Completed";
         } else if (application.video_email_sent && !application.video_interview_start) {
-            return "Interview Link Sent";
+            return "Interaction Link Sent";
         } else if (application.audio_interview_status) {
-            return "Audio Interview Completed";
+            return "Audio Interaction Completed";
         } else if (application.application_status) {
             return application.application_status;
         } else {
@@ -155,13 +155,13 @@ export default function CandidateDashboardPage() {
         if (application.video_interview_start) {
             return "Awaiting Results";
         } else if (application.video_email_sent && !application.video_interview_start) {
-            return "Proceed to Video Interview";
+            return "Proceed to Video Interaction";
         } else if (application.audio_interview_status && application.video_email_sent) {
-            return "Proceed to Video Interview";
+            return "Proceed to Video Interaction";
         } else if (application.audio_interview_status) {
-            return "Awaiting Video Interview Link";
+            return "Awaiting Video Interaction Link";
         } else {
-            return "Complete Audio Interview";
+            return "Complete Audio Interaction";
         }
     };
 
@@ -324,16 +324,16 @@ export default function CandidateDashboardPage() {
                                                             <span className="text-sm text-text-primary">Application Submitted</span>
                                                         </div>
 
-                                                        {/* Audio Interview */}
+                                                        {/* Audio Interaction */}
                                                         <div className="flex items-center gap-3">
                                                             <div className={`w-3 h-3 rounded-full ${application.audio_interview_status ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                                                            <span className="text-sm text-text-primary">Audio Interview</span>
+                                                            <span className="text-sm text-text-primary">Audio Interaction</span>
                                                         </div>
 
-                                                        {/* Video Interview */}
+                                                        {/* Video Interaction */}
                                                         <div className="flex items-center gap-3">
                                                             <div className={`w-3 h-3 rounded-full ${application.video_interview_start ? 'bg-green-500' : application.video_email_sent ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
-                                                            <span className="text-sm text-text-primary">Video Interview</span>
+                                                            <span className="text-sm text-text-primary">Video Interaction</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -358,7 +358,7 @@ export default function CandidateDashboardPage() {
                                                             onClick={() => router.push(`/interview/communication?application_id=${application.application_id}`)}
                                                         >
                                                             <PlayCircle className="mr-2 h-4 w-4" />
-                                                            Video Interview
+                                                            Video Interaction
                                                         </Button>
                                                     )}
 
@@ -371,7 +371,7 @@ export default function CandidateDashboardPage() {
                                                             onClick={() => router.push(`/interview/general?application_id=${application.application_id}`)}
                                                         >
                                                             <CheckCircle className="mr-2 h-4 w-4" />
-                                                            Audio Interview
+                                                            Audio Interaction
                                                         </Button>
                                                     )}
 
@@ -638,16 +638,16 @@ export default function CandidateDashboardPage() {
                                                     <span className="text-sm text-text-primary">Application Submitted</span>
                                                 </div>
 
-                                                {/* Audio Interview */}
+                                                {/* Audio Interaction */}
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-3 h-3 rounded-full ${selectedApplication.audio_interview_status ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                                                    <span className="text-sm text-text-primary">Audio Interview</span>
+                                                    <span className="text-sm text-text-primary">Audio Interaction</span>
                                                 </div>
 
-                                                {/* Video Interview */}
+                                                {/* Video Interaction */}
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-3 h-3 rounded-full ${selectedApplication.video_interview_start ? 'bg-green-500' : selectedApplication.video_email_sent ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
-                                                    <span className="text-sm text-text-primary">Video Interview</span>
+                                                    <span className="text-sm text-text-primary">Video Interaction</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -671,7 +671,7 @@ export default function CandidateDashboardPage() {
                                                     onClick={() => router.push(`/interview/communication?application_id=${selectedApplication.application_id}`)}
                                                 >
                                                     <PlayCircle className="mr-2 h-4 w-4" />
-                                                    Video Interview
+                                                    Video Interaction
                                                 </Button>
                                             )}
 
@@ -683,7 +683,7 @@ export default function CandidateDashboardPage() {
                                                     onClick={() => router.push(`/interview/general?application_id=${selectedApplication.application_id}`)}
                                                 >
                                                     <CheckCircle className="mr-2 h-4 w-4" />
-                                                    Audio Interview
+                                                    Audio Interaction
                                                 </Button>
                                             )}
 
