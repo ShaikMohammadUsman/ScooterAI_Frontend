@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import JobCard from "@/components/JobCard";
 import { FaWhatsapp } from "react-icons/fa";
+import ImmediateActionCard from "@/components/candidate/ImmediateActionCard";
+import ActionPopup from "@/components/candidate/ActionPopup";
 
 export default function CandidateDashboardPage() {
     const router = useRouter();
@@ -37,6 +39,8 @@ export default function CandidateDashboardPage() {
     const [selectedApplication, setSelectedApplication] = useState<any>(null);
     const [currentStageAccordionOpen, setCurrentStageAccordionOpen] = useState<string | undefined>(undefined);
     const [rolesAppliedAccordionOpen, setRolesAppliedAccordionOpen] = useState<string | undefined>(undefined);
+    const [showActionPopup, setShowActionPopup] = useState(false);
+    const [latestJobForAction, setLatestJobForAction] = useState<ApplicationHistory | null>(null);
 
     const fetchDashboardData = async () => {
         try {
@@ -64,6 +68,31 @@ export default function CandidateDashboardPage() {
     useEffect(() => {
         fetchDashboardData();
     }, []);
+
+    // Check for latest job that needs action and show popup
+    useEffect(() => {
+        if (candidateData?.application_history && candidateData.application_history.length > 0) {
+            const applications = candidateData.application_history;
+
+            // Find the latest application that needs action
+            const latestActionableJob = applications.find((application) => {
+                // Check for audio interview action needed
+                if (!application.audio_interview_status && application.application_status !== 'Rejected') {
+                    return true;
+                }
+                // Check for video interview action needed
+                if (application.video_email_sent && !application.video_interview_start && application.application_status !== 'Rejected') {
+                    return true;
+                }
+                return false;
+            });
+
+            if (latestActionableJob) {
+                setLatestJobForAction(latestActionableJob);
+                setShowActionPopup(true);
+            }
+        }
+    }, [candidateData]);
 
     // Handle job_id query parameter to auto-open accordions and select application
     useEffect(() => {
@@ -419,6 +448,11 @@ export default function CandidateDashboardPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Immediate Action Required Card */}
+            {applications.length > 0 && (
+                <ImmediateActionCard applications={applications} />
+            )}
 
             {/* Work Experience Accordion */}
             <Card className="shadow-none border-0 mb-8 bg-bg-main">
@@ -783,6 +817,13 @@ export default function CandidateDashboardPage() {
                     </AccordionItem>
                 </Accordion>
             </Card>
+
+            {/* Action Popup for Latest Job */}
+            <ActionPopup
+                isOpen={showActionPopup}
+                onClose={() => setShowActionPopup(false)}
+                application={latestJobForAction}
+            />
         </div>
     );
 }
